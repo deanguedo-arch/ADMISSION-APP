@@ -1,6 +1,7 @@
 param(
   [string]$ConfigPath = ".\\config\\sheets_sync.json",
-  [switch]$SkipValidation
+  [switch]$SkipValidation,
+  [switch]$SkipRebuild
 )
 
 Set-StrictMode -Version Latest
@@ -62,8 +63,12 @@ if (-not (Test-Path $python)) {
   throw "Missing venv python at $python. Run: .\\tools\\setup-python.ps1"
 }
 
-Write-Host "Rebuilding canonical dataset..."
-powershell -ExecutionPolicy Bypass -File .\\tools\\clean-master.ps1 | Out-Host
+if (-not $SkipRebuild) {
+  Write-Host "Rebuilding canonical dataset..."
+  powershell -ExecutionPolicy Bypass -File .\\tools\\clean-master.ps1 | Out-Host
+} else {
+  Write-Host "Skipping canonical rebuild (-SkipRebuild)."
+}
 
 $canonicalPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv"
 $fallbackCanonicalPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new"

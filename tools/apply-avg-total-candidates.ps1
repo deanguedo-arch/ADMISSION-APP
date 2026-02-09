@@ -76,13 +76,13 @@ if (-not (Test-Path $CandidatesPath)) {
 
 $canonicalSourcePath = Resolve-CanonicalPath -canonicalPath $CanonicalPath -fallbackPath $CanonicalFallbackPath
 
-$canonicalRows = Import-Csv $canonicalSourcePath
-if (-not $canonicalRows -or $canonicalRows.Count -eq 0) {
+$canonicalRows = @(Import-Csv $canonicalSourcePath)
+if ($canonicalRows.Count -eq 0) {
   throw "Canonical CSV is empty: $canonicalSourcePath"
 }
 
-$candidates = Import-Csv $CandidatesPath
-if (-not $candidates -or $candidates.Count -eq 0) {
+$candidates = @(Import-Csv $CandidatesPath)
+if ($candidates.Count -eq 0) {
   throw "Candidates CSV is empty: $CandidatesPath"
 }
 

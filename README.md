@@ -111,6 +111,18 @@ One-click local sync (Windows):
 - `SYNC_PROGRAMS.cmd`
 - `SYNC_ELECTIVE_RULES.cmd` (uploads `out/ElectiveRules.*.csv` to `ElectiveRules` tab)
 - `SYNC_ALL.cmd` (Programs + ElectiveRules in one run)
+- `REFRESH_ALL.cmd` (full refresh: rebuild + scrape/enrich + apply Avg_Total + prefill ElectiveRules + sync)
+
+Full end-to-end refresh in one command:
+
+```powershell
+.\REFRESH_ALL.cmd
+```
+
+Useful variants:
+- quick smoke run (no publish): `.\REFRESH_ALL.cmd -Limit 10 -SkipSync`
+- reuse existing scrape output and just publish: `.\REFRESH_ALL.cmd -SkipScrape -SkipAvgApply`
+- run full flow but skip fixture checks: `.\REFRESH_ALL.cmd -SkipFixtures`
 
 Guardrails now included in local sync:
 - `tools/validate-canonical.ps1` runs before upload (schema + row sanity checks)

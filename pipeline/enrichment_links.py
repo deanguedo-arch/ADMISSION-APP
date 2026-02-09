@@ -61,7 +61,6 @@ LINK_PROFILES: dict[str, LinkProfile] = {
             "admission-requirements",
             "program-admission",
             "academic-requirements",
-            "how-to-apply",
             "english-language",
         ),
         demotes=("campus-life", "continuing-education"),
@@ -72,7 +71,6 @@ LINK_PROFILES: dict[str, LinkProfile] = {
             "admission-requirements",
             "course-requirements",
             "admission average",
-            "how-to-apply",
         ),
         demotes=("open-house", "services/fees"),
     ),
@@ -81,7 +79,6 @@ LINK_PROFILES: dict[str, LinkProfile] = {
             "norquest.ca/programs",
             "admission-requirements",
             "program-requirements",
-            "how-to-apply",
             "academic-upgrading",
         ),
         demotes=("student-services", "continuing-education"),
@@ -93,7 +90,6 @@ LINK_PROFILES: dict[str, LinkProfile] = {
             "competitive-requirements",
             "subject-requirements",
             "high-school",
-            "how-to-apply",
         ),
         demotes=("campus-life", "events", "residence", "student-services"),
         max_links=10,
@@ -145,10 +141,14 @@ def score_link(candidate: LinkCandidate, profile: LinkProfile) -> int:
         if term in haystack:
             score -= 4
 
+    if "admission-requirements" in haystack:
+        score += 8
     if "admission requirements" in haystack or "admission requirement" in haystack:
-        score += 3
+        score += 6
+    if "subject-requirements" in haystack or "competitive-requirements" in haystack:
+        score += 4
     if "how to apply" in haystack or "how-to-apply" in haystack:
-        score += 2
+        score += 1
     if "competitive" in haystack and "admission" in haystack:
         score += 2
 

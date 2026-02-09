@@ -88,5 +88,16 @@ Useful variants:
 - Programs only: `.\SYNC_ALL.cmd -SkipElectiveRules`
 - ElectiveRules only: `.\SYNC_ALL.cmd -SkipPrograms`
 
+## Full refresh (scrape + merge + sync) in one command
+To run the full maintainer flow (rebuild canonical, scrape/enrich candidates, apply `Avg_Total`, prefill `ElectiveRules`, then sync):
+
+```powershell
+.\REFRESH_ALL.cmd
+```
+
+Useful variants:
+- quick smoke run without publishing: `.\REFRESH_ALL.cmd -Limit 10 -SkipSync`
+- publish only from existing artifacts: `.\REFRESH_ALL.cmd -SkipScrape -SkipAvgApply`
+
 ## Security note
 The web app URL + token is effectively write access. Keep the token private.

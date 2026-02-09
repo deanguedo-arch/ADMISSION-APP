@@ -36,12 +36,17 @@ After lockdown, staff should normally work only in:
 Use this only when you need updated Programs or ElectiveRules in Sheets.
 
 1. Open PowerShell in project root.
-2. Run:
+2. Run (recommended full refresh):
 ```powershell
-.\SYNC_ALL.cmd
+.\REFRESH_ALL.cmd
 ```
 3. Wait for success message.
 4. In Google Sheets, run `Check Eligibility` again.
+
+Fast publish-only option (skip scrape/enrichment):
+```powershell
+.\SYNC_ALL.cmd
+```
 
 ## 5) What people should NOT use day to day
 - Do not run individual scripts under `tools/` unless you are the maintainer.
@@ -49,7 +54,7 @@ Use this only when you need updated Programs or ElectiveRules in Sheets.
 - Do not hand-edit `Programs` tab if you plan to sync from local (sync can overwrite it).
 
 ## 6) Common issues
-- `Programs tab is empty`: run `SYNC_ALL.cmd` (maintainer) or import canonical CSV into `Programs`.
+- `Programs tab is empty`: run `REFRESH_ALL.cmd` or `SYNC_ALL.cmd` (maintainer) or import canonical CSV into `Programs`.
 - Missing menu items: reload the sheet.
 - Group dropdowns missing in `Student D:F`: run `One-Time Setup (Recommended)` again.
 - Internal tabs (for example `Programs`, `ElectiveRules`, backups) are visible to staff: owner runs `Admin: Apply Staff Lockdown`.
