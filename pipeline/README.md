@@ -28,3 +28,17 @@ Different institutions put “average based on X courses” in different places 
 
 For the full pipeline spec, see `docs/PIPELINE.md`.
 
+## Institution adapters (scaffold)
+`pipeline/adapters/` now provides adapter classes for:
+- `NAIT`
+- `MacEwan`
+- `NorQuest`
+- `UAlberta`
+- fallback `generic`
+
+`pipeline/run.py` routes each program by institution and writes:
+- `avg_total_confidence`
+- `avg_total_rule`
+- `avg_total_adapter`
+
+These fields make extraction behavior auditable before fully automated publishing.

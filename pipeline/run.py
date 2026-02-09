@@ -17,6 +17,11 @@ import requests
 import trafilatura
 from bs4 import BeautifulSoup
 
+try:
+    from adapters.registry import adapter_for_institution
+except ImportError:
+    from pipeline.adapters.registry import adapter_for_institution
+
 
 KEYWORDS = [
     "admission",
@@ -131,31 +136,6 @@ def pick_enrichment_links(base_url: str, links: Iterable[str], limit: int = 8) -
     return [u for _, u in scored[:limit]]
 
 
-AVG_TOTAL_PATTERNS: list[tuple[re.Pattern[str], int]] = [
-    (re.compile(r"\baverage of five\b", re.I), 5),
-    (re.compile(r"\bfive courses?\b", re.I), 5),
-    (re.compile(r"\baverage of four\b", re.I), 4),
-    (re.compile(r"\bfour courses?\b", re.I), 4),
-    (re.compile(r"\baverage of (\d+)\b", re.I), -1),
-]
-
-
-def extract_avg_total(text: str) -> tuple[int | None, str | None]:
-    t = " ".join(text.split())
-    for rx, val in AVG_TOTAL_PATTERNS:
-        m = rx.search(t)
-        if not m:
-            continue
-        if val != -1:
-            snippet = t[max(0, m.start() - 60) : min(len(t), m.end() + 60)]
-            return val, snippet
-        n = int(m.group(1))
-        if 1 <= n <= 10:
-            snippet = t[max(0, m.start() - 60) : min(len(t), m.end() + 60)]
-            return n, snippet
-    return None, None
-
-
 def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
@@ -223,7 +203,10 @@ def run(index_path: Path, out_dir: Path, limit: int | None, institutions: set[st
         merged = "\n\n".join([f"URL: {u}\n{t}" for u, t in enriched_texts if t.strip()])
         (enrich_folder / "enriched.txt").write_text(merged, encoding="utf-8")
 
-        avg_total, avg_snip = extract_avg_total(merged)
+        adapter = adapter_for_institution(r.institution)
+        match = adapter.extract_avg_total(merged)
+        avg_total = match.value
+        avg_snip = match.snippet
 
         structured_rows.append(
             {
@@ -234,6 +217,9 @@ def run(index_path: Path, out_dir: Path, limit: int | None, institutions: set[st
                 "program_id": program_id,
                 "avg_total": avg_total,
                 "avg_total_snippet": avg_snip,
+                "avg_total_confidence": match.confidence,
+                "avg_total_rule": match.rule,
+                "avg_total_adapter": adapter.name,
             }
         )
 
@@ -249,6 +235,9 @@ def run(index_path: Path, out_dir: Path, limit: int | None, institutions: set[st
                 "program_id",
                 "avg_total",
                 "avg_total_snippet",
+                "avg_total_confidence",
+                "avg_total_rule",
+                "avg_total_adapter",
                 "error",
             ],
         )

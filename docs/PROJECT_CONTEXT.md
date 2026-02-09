@@ -22,7 +22,7 @@ Google Sheets + Apps Script.
 - `Programs`: import `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
 - `Student`:
   - Named courses: rows 3+ in A:B (Course, Mark)
-  - Electives: D3:F12 (Group A/B/C/D + Mark; label optional)
+  - Optional manual electives: D2:F6 (Dropdown course + optional Group override + Mark)
 - `Results`: produced by Apps Script menu
 - `Eligible`, `Ineligible`, `Uncheckable`: filtered views produced by Apps Script
 - Optional: `AvgRules` (temporary override when dataset doesn't specify average course-count)

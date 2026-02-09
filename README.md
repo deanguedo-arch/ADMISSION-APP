@@ -31,6 +31,13 @@ Network scraping isn’t run from here (and programs change), but the pipeline s
 5. **QA gates**: invalid URLs, missing reqs, suspicious “unknowns”, duplicates
 6. **Publish**: overwrite the canonical CSV + push to Sheets
 
+Institution nuance scaffold:
+- `pipeline/adapters/` contains NAIT, MacEwan, NorQuest, UAlberta, and generic adapters.
+- `pipeline/run.py` now records `avg_total_confidence`, `avg_total_rule`, and `avg_total_adapter`.
+
+Before expanding full automation, lock the current baseline:
+- `docs/V1_LOCK_CHECKLIST.md`
+
 ## Get something working today (Google Sheets)
 
 ### A) Generate the canonical CSV
@@ -53,12 +60,14 @@ This writes: `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
    - Starting at row 3, enter named course marks:
      - Column A: Course name (examples: `English 30-1`, `Math 30-2`, `Biology 30`)
      - Column B: Mark (number)
-   - Electives (up to 10): rows 3–12 in columns D–F:
-     - Column D: optional label (anything)
-     - Column E: elective group (`A`, `B`, `C`, or `D`)
+   - Elective groups are auto-derived from courses entered in `A:B`.
+   - Optional manual overrides (up to 5): rows 2-6 in columns D-F:
+     - Column D: elective course (dropdown after setup)
+     - Column E: auto-filled group (or optional manual override: `A`, `B`, `C`, or `D`)
      - Column F: mark (number)
 4. Open Extensions -> Apps Script, paste `apps_script/Code.gs` into the editor, save.
-5. Reload the sheet -> use menu **Admissions Checker -> Check Eligibility**.
+5. Reload the sheet -> run **Admissions Checker -> Setup Student Elective Dropdowns** once.
+6. Use **Admissions Checker -> Check Eligibility**.
 
 The script writes:
 - `Results` (all programs)
@@ -68,9 +77,15 @@ The script writes:
 
 Output layout (left-to-right): Institution, Program, Credential, Min Avg, Student Avg, Avg Courses, Avg Used, Competitive Guidance, Missing, Notes.
 
-### Student template (pre-filled course list)
-If you want the `Student` tab to already list the common courses (and you just fill marks), copy/paste:
+### Student template (compact input layout)
+If you want a compact `Student` tab with 5 manual elective slots, copy/paste:
 - `examples/student_template.tsv`
+
+Notes:
+- Run **Admissions Checker -> Setup Student Elective Dropdowns** after pasting the template.
+- Group in column E auto-fills when you pick a course in column D.
+- For cross-listed courses (e.g., B/C), E stays blank by default so the checker can consider all mapped groups.
+- Core-required subjects in `A:B` are never double-counted as electives.
 
 ### Optional: auto-sync Programs tab from local pipeline
 If you want local scraping to automatically overwrite the Sheet’s `Programs` tab, set up the webhook:
@@ -128,5 +143,8 @@ In the `Results` tab:
 ## Notes / known limits (MVP)
 - Admission average is computed **per program**:
   - If `Elective_Qty` is present (e.g., “Three”), average uses: required named courses + that many elective marks (best marks from allowed groups).
+  - Core-required courses are consumed first and not reused as electives; elective picks are optimized from available grouped courses.
+  - Note-derived group rules are applied when present (example: `max 1 Group B`).
   - If `Elective_Qty` is blank but the program has a minimum average, the checker uses `Avg_Total` (if present) or `AvgRules` (if present); otherwise it falls back to a **5-course average** (and notes that it’s a default, except for NAIT where 5 is treated as the standard default).
 - Rows like “See Degree / Refer to Degree” are treated as **not checkable** until you decide how to model inheritance.
+

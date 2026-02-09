@@ -31,3 +31,7 @@ Keep entries short and append-only.
 - Added GitHub automation starter: `.github/workflows/sync-programs.yml` (manual + scheduled sync with validation and secret checks).
 - Added rollout docs: `docs/GITHUB_AUTOMATION.md`; updated `README.md` and `docs/SHEETS_SYNC.md` with guardrail/automation notes.
 - Updated `apps_script/SyncPrograms.gs` backup behavior so `<SheetName>_BACKUP` is always created/updated (even when source tab is empty); writes metadata + source row count.
+- Patched setupStudentElectiveInputs completion message to avoid SpreadsheetApp.getUi() context errors when run from Apps Script editor; now falls back to sheet toast/logger if UI is unavailable.
+- Added `docs/V1_LOCK_CHECKLIST.md` to freeze current Sheets/sync behavior before full scrape automation.
+- Added pipeline institution adapter scaffold in `pipeline/adapters/` (NAIT, MacEwan, NorQuest, UAlberta, generic fallback) and wired `pipeline/run.py` to use adapter routing.
+- Extended `pipeline/run.py` extract output with `avg_total_confidence`, `avg_total_rule`, and `avg_total_adapter`; updated `pipeline/README.md` and `README.md` accordingly.
