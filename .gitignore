@@ -3,4 +3,5 @@
 /out/
 /data/*.new
 /config/sheets_sync.json
-
+__pycache__/
+*.pyc
