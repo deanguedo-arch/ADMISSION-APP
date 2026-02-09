@@ -57,5 +57,36 @@ Sheet rollback safety:
 - every webhook sync snapshots the current tab into `<SheetName>_BACKUP` before overwrite
 - for `Programs`, the backup tab is `Programs_BACKUP`
 
+## Sync `ElectiveRules` tab (no manual paste)
+Use the same webhook/token to upload an ElectiveRules CSV directly:
+
+```powershell
+.\SYNC_ELECTIVE_RULES.cmd
+```
+
+Defaults:
+- target tab: `ElectiveRules`
+- source CSV preference from config `elective_rules_source`:
+  - `priority` -> `out/ElectiveRules.priority.csv`
+  - `prefill` -> `out/ElectiveRules.prefill.csv`
+  - `todo` -> `out/ElectiveRules.todo.csv`
+
+Override source file on demand:
+
+```powershell
+.\SYNC_ELECTIVE_RULES.cmd -CsvPath .\out\ElectiveRules.prefill.csv
+```
+
+## Sync everything in one command
+To sync both Programs and ElectiveRules in sequence:
+
+```powershell
+.\SYNC_ALL.cmd
+```
+
+Useful variants:
+- Programs only: `.\SYNC_ALL.cmd -SkipElectiveRules`
+- ElectiveRules only: `.\SYNC_ALL.cmd -SkipPrograms`
+
 ## Security note
 The web app URL + token is effectively write access. Keep the token private.

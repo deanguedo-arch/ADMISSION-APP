@@ -1,0 +1,192 @@
+[
+  {
+    "id": "nait-prefers-admissions-links",
+    "institution": "NAIT",
+    "base_url": "https://www.nait.ca/programs/business-administration",
+    "limit": 5,
+    "links": [
+      {
+        "url": "https://www.nait.ca/admissions/admission-requirements/business-administration",
+        "text": "Admission requirements"
+      },
+      {
+        "url": "https://www.nait.ca/admissions/how-to-apply",
+        "text": "How to apply"
+      },
+      {
+        "url": "https://www.nait.ca/tuition-and-financial-aid/tuition-and-fees",
+        "text": "Tuition and fees"
+      },
+      {
+        "url": "https://www.nait.ca/campus-life/student-services",
+        "text": "Student services"
+      },
+      {
+        "url": "https://www.nait.ca/news",
+        "text": "News"
+      },
+      {
+        "url": "https://www.facebook.com/nait",
+        "text": "Facebook"
+      }
+    ],
+    "expected_first_contains": "admission-requirements",
+    "expected_includes": [
+      "how-to-apply"
+    ],
+    "expected_excludes": [
+      "facebook.com",
+      "/news"
+    ]
+  },
+  {
+    "id": "macewan-prefers-admission-requirements",
+    "institution": "MacEwan University",
+    "base_url": "https://www.macewan.ca/academics/programs/bachelor-of-commerce/",
+    "limit": 5,
+    "links": [
+      {
+        "url": "https://www.macewan.ca/academics/programs/bachelor-of-commerce/admission-requirements/",
+        "text": "Admission requirements"
+      },
+      {
+        "url": "https://www.macewan.ca/apply-enrol/admissions/how-to-apply/",
+        "text": "How to apply"
+      },
+      {
+        "url": "https://www.macewan.ca/apply-enrol/admissions/english-language-proficiency/",
+        "text": "English language requirements"
+      },
+      {
+        "url": "https://www.macewan.ca/tuition-aid/tuition-fees/",
+        "text": "Tuition fees"
+      },
+      {
+        "url": "https://www.macewan.ca/campus-life/events/",
+        "text": "Events"
+      }
+    ],
+    "expected_first_contains": "admission-requirements",
+    "expected_includes": [
+      "how-to-apply",
+      "english-language-proficiency"
+    ],
+    "expected_excludes": [
+      "/events/"
+    ]
+  },
+  {
+    "id": "norquest-prefers-program-admissions",
+    "institution": "NorQuest College",
+    "base_url": "https://www.norquest.ca/programs/health-care-aide.aspx",
+    "limit": 6,
+    "links": [
+      {
+        "url": "https://www.norquest.ca/programs/health-care-aide/admission-requirements.aspx",
+        "text": "Admission requirements"
+      },
+      {
+        "url": "https://www.norquest.ca/applying/how-to-apply.aspx",
+        "text": "How to apply"
+      },
+      {
+        "url": "https://www.norquest.ca/programs/academic-upgrading/admission-requirements.aspx",
+        "text": "Academic upgrading requirements"
+      },
+      {
+        "url": "https://www.norquest.ca/student-services/financial-aid.aspx",
+        "text": "Financial aid"
+      },
+      {
+        "url": "https://www.instagram.com/norquestcollege/",
+        "text": "Instagram"
+      }
+    ],
+    "expected_first_contains": "admission-requirements",
+    "expected_includes": [
+      "how-to-apply"
+    ],
+    "expected_excludes": [
+      "financial-aid",
+      "instagram.com"
+    ]
+  },
+  {
+    "id": "ualberta-prefers-undergrad-admissions-paths",
+    "institution": "University of Alberta",
+    "base_url": "https://www.ualberta.ca/en/admissions/undergraduate/admission/index.html",
+    "limit": 6,
+    "links": [
+      {
+        "url": "https://www.ualberta.ca/en/admissions/undergraduate/admission/admission-requirements/index.html",
+        "text": "Admission requirements"
+      },
+      {
+        "url": "https://www.ualberta.ca/en/admissions/undergraduate/admission/competitive-requirements.html",
+        "text": "Competitive requirements"
+      },
+      {
+        "url": "https://www.ualberta.ca/en/admissions/undergraduate/admission/how-to-apply/index.html",
+        "text": "How to apply"
+      },
+      {
+        "url": "https://www.ualberta.ca/en/campus-life/events.html",
+        "text": "Campus events"
+      },
+      {
+        "url": "https://www.ualberta.ca/en/admissions/undergraduate/admission/tuition-and-scholarships.html",
+        "text": "Tuition and scholarships"
+      },
+      {
+        "url": "https://www.youtube.com/@ualberta",
+        "text": "YouTube"
+      }
+    ],
+    "expected_first_contains": "admission-requirements",
+    "expected_includes": [
+      "competitive-requirements",
+      "how-to-apply"
+    ],
+    "expected_excludes": [
+      "youtube.com",
+      "events.html"
+    ]
+  },
+  {
+    "id": "generic-fallback-still-finds-admissions",
+    "institution": "Example Polytechnic",
+    "base_url": "https://www.example.edu/programs/software-development",
+    "limit": 4,
+    "links": [
+      {
+        "url": "https://www.example.edu/admissions/requirements",
+        "text": "Admission requirements"
+      },
+      {
+        "url": "https://www.example.edu/apply/how-to-apply",
+        "text": "How to apply"
+      },
+      {
+        "url": "https://www.example.edu/student-life/events",
+        "text": "Events"
+      },
+      {
+        "url": "https://blog.example.edu/news/program-highlights",
+        "text": "Program news"
+      },
+      {
+        "url": "https://www.other.edu/admissions/requirements",
+        "text": "Other admissions"
+      }
+    ],
+    "expected_first_contains": "/admissions/requirements",
+    "expected_includes": [
+      "/how-to-apply"
+    ],
+    "expected_excludes": [
+      "other.edu",
+      "/events"
+    ],
+    "max_count": 3
+  }
+]

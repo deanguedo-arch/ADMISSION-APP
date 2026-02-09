@@ -2,6 +2,8 @@
   "webhook_url": "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec",
   "sync_token": "YOUR_SYNC_TOKEN",
   "sheet_name": "Programs",
+  "elective_rules_sheet_name": "ElectiveRules",
+  "elective_rules_source": "priority",
   "min_rows": 100,
   "max_row_drop_percent": 35,
   "baseline_path": "out/last_good_programs.csv",

@@ -10,11 +10,22 @@
  */
 
 function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu("Admissions Checker")
-    .addItem("Check Eligibility", "runEligibility")
-    .addItem("Setup Student Elective Dropdowns", "setupStudentElectiveInputs")
-    .addToUi();
+  // onOpen can be invoked from contexts where Spreadsheet UI is unavailable (for example,
+  // running onOpen directly from the Apps Script editor). In that case, skip menu creation.
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu("Admissions Checker")
+      .addItem("Check Eligibility", "runEligibility")
+      .addItem("One-Time Setup (Recommended)", "setupWorkbookForStaff")
+      .addItem("Setup Student Elective Dropdowns", "setupStudentElectiveInputs")
+      .addItem("Setup ElectiveRules Template", "setupElectiveRulesTemplate")
+      .addSeparator()
+      .addItem("Admin: Apply Staff Lockdown", "applyStaffLockdown")
+      .addItem("Admin: Show All Tabs", "adminShowAllTabs")
+      .addToUi();
+  } catch (err) {
+    Logger.log("onOpen skipped: Spreadsheet UI is not available in this execution context.");
+  }
 }
 
 const MANUAL_ELECTIVE_START_ROW = 2;
@@ -22,6 +33,8 @@ const MANUAL_ELECTIVE_SLOTS = 5;
 const MANUAL_ELECTIVE_COL = 4; // D
 const MANUAL_GROUP_COL = 5; // E
 const MANUAL_ELECTIVE_WIDTH = 3; // D:F
+const STAFF_EDITABLE_SHEET_NAMES = ["Student", "Eligible", "Ineligible", "Uncheckable", "Results"];
+const MANAGED_INTERNAL_PROTECTION_DESC = "Admissions Checker: managed internal sheet protection";
 
 function onEdit(e) {
   autoFillManualElectiveGroupsFromEdit_(e);
@@ -98,6 +111,7 @@ function runEligibility() {
   const ineligibleSheet = ss.getSheetByName("Ineligible") || ss.insertSheet("Ineligible");
   const uncheckableSheet = ss.getSheetByName("Uncheckable") || ss.insertSheet("Uncheckable");
   const avgRules = readAvgRules(ss);
+  const electiveRuleOverrides = readElectiveRuleOverrides(ss);
 
   if (!programsSheet || !studentSheet || !resultsSheet) {
     throw new Error("Missing one of: Programs, Student, Results sheets");
@@ -158,8 +172,14 @@ function runEligibility() {
     const advisories = [];
 
     const requirementType = getStr(r, idx, "Requirement_Type");
+    const requirementTypeOverride = resolveElectiveRuleOverrideText_(
+      electiveRuleOverrides,
+      institution,
+      program
+    );
+    const requirementTypeEffective = combineRuleText_(requirementType, requirementTypeOverride);
     const competitiveGuidance = normalizeCompetitive(getStr(r, idx, "Competitive_Final"));
-    appendDatasetNotes_(requirementType, notes, advisories);
+    appendDatasetNotes_(requirementTypeEffective, notes, advisories);
 
     const englishReq = unifyEnglishReq(r, idx);
     const englishMin = toNumber(unifyEnglishMin(r, idx));
@@ -185,7 +205,7 @@ function runEligibility() {
     const electiveNeedParsed = parseElectiveQty(electiveQty);
     const electivePool = getStr(r, idx, "Elective_Pool");
     const allowedGroups = parseAllowedGroups(electivePool);
-    const electiveRules = parseElectiveRules_(requirementType);
+    const electiveRules = parseElectiveRules_(requirementTypeEffective);
 
     const avgMin = toNumber(getStr(r, idx, "Min_Avg_Final"));
     const avgTotalFromData = toNumber(getStr(r, idx, "Avg_Total"));
@@ -384,6 +404,68 @@ function readAvgRules(ss) {
   }
 
   return { byKey, byInstitution };
+}
+
+function readElectiveRuleOverrides(ss) {
+  const sheet = ss.getSheetByName("ElectiveRules");
+  if (!sheet) return { byKey: {}, byInstitution: {} };
+
+  const values = sheet.getDataRange().getValues();
+  if (!values || values.length < 2) return { byKey: {}, byInstitution: {} };
+
+  const header = values[0].map((x) => String(x || "").trim());
+  const idx = {};
+  header.forEach((h, i) => (idx[normHeaderKey(h)] = i));
+
+  const institutionCol = idx["institution"];
+  const programCol = idx["program"];
+  const ruleColCandidates = ["rule_text", "requirement_type", "elective_rule", "rule", "rules"];
+  const ruleCol = ruleColCandidates.find((k) => idx[k] !== undefined);
+  if (institutionCol === undefined || programCol === undefined || ruleCol === undefined) {
+    return { byKey: {}, byInstitution: {} };
+  }
+
+  const byKey = {};
+  const byInstitution = {};
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    const institution = String(row[institutionCol] || "").trim();
+    const program = String(row[programCol] || "").trim();
+    const ruleText = String(row[idx[ruleCol]] || "").trim();
+    if (!institution || !ruleText) continue;
+
+    if (program === "*" || !program) {
+      if (!byInstitution[institution]) byInstitution[institution] = [];
+      byInstitution[institution].push(ruleText);
+      continue;
+    }
+
+    const key = `${institution}||${program}`;
+    if (!byKey[key]) byKey[key] = [];
+    byKey[key].push(ruleText);
+  }
+
+  return { byKey, byInstitution };
+}
+
+function resolveElectiveRuleOverrideText_(overrides, institution, program) {
+  if (!overrides) return "";
+  const parts = [];
+  if (overrides.byInstitution && overrides.byInstitution[institution]) {
+    parts.push(...overrides.byInstitution[institution]);
+  }
+  const key = `${institution}||${program}`;
+  if (overrides.byKey && overrides.byKey[key]) {
+    parts.push(...overrides.byKey[key]);
+  }
+  return unique(parts.map((x) => String(x || "").trim()).filter(Boolean)).join("; ");
+}
+
+function combineRuleText_(baseText, overrideText) {
+  const a = String(baseText || "").trim();
+  const b = String(overrideText || "").trim();
+  if (a && b) return `${a}; ${b}`;
+  return a || b || "";
 }
 
 function resolveAvgTotal(opts) {
@@ -938,7 +1020,153 @@ function listElectiveCourseOptions_() {
   return unique(options).sort((a, b) => String(a).localeCompare(String(b)));
 }
 
-function setupStudentElectiveInputs() {
+function setupWorkbookForStaff(opts) {
+  const ss = SpreadsheetApp.getActive();
+  ensureSheet_(ss, "Programs");
+  const studentSheet = ensureSheet_(ss, "Student");
+  ensureSheet_(ss, "Results");
+  ensureSheet_(ss, "Eligible");
+  ensureSheet_(ss, "Ineligible");
+  ensureSheet_(ss, "Uncheckable");
+  ensureSheet_(ss, "ElectiveRules");
+
+  const studentHeaders = studentSheet.getRange(1, 1, 1, 2).getValues()[0];
+  const hasStudentHeaders =
+    String(studentHeaders[0] || "").trim() !== "" || String(studentHeaders[1] || "").trim() !== "";
+  if (!hasStudentHeaders) {
+    studentSheet.getRange(1, 1, 1, 2).setValues([["Course", "Mark"]]);
+  }
+
+  const studentSetupMsg = setupStudentElectiveInputs({ quiet: true });
+  const rulesSetupMsg = setupElectiveRulesTemplate({ quiet: true });
+  const message = `Workbook setup complete. ${studentSetupMsg} ${rulesSetupMsg} Enter marks in Student, then run Check Eligibility.`;
+  if (!isQuietSetup_(opts)) notifyStudentSetupComplete_(ss, message);
+  return message;
+}
+
+function ensureSheet_(ss, name) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  return sheet;
+}
+
+function isStaffEditableSheet_(name) {
+  const t = String(name || "").trim();
+  return STAFF_EDITABLE_SHEET_NAMES.indexOf(t) >= 0;
+}
+
+function isQuietSetup_(opts) {
+  return !!(opts && typeof opts === "object" && opts.quiet === true);
+}
+
+function assertAdminRunner_(ss) {
+  const owner = ss && ss.getOwner ? ss.getOwner() : null;
+  const ownerEmail = owner && owner.getEmail ? String(owner.getEmail() || "").toLowerCase() : "";
+  const me = Session.getEffectiveUser();
+  const meEmail = me && me.getEmail ? String(me.getEmail() || "").toLowerCase() : "";
+  if (ownerEmail && meEmail && ownerEmail !== meEmail) {
+    throw new Error(`Admin action blocked. Run this as sheet owner (${ownerEmail}).`);
+  }
+}
+
+function removeManagedSheetProtection_(sheet) {
+  const protections = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET) || [];
+  protections.forEach((p) => {
+    const desc = String((p && p.getDescription && p.getDescription()) || "").trim();
+    if (desc !== MANAGED_INTERNAL_PROTECTION_DESC) return;
+    try {
+      p.remove();
+    } catch (err) {}
+  });
+}
+
+function ensureManagedSheetProtection_(sheet, ss) {
+  const protections = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET) || [];
+  let protection = null;
+  protections.forEach((p) => {
+    if (protection) return;
+    const desc = String((p && p.getDescription && p.getDescription()) || "").trim();
+    if (desc === MANAGED_INTERNAL_PROTECTION_DESC) protection = p;
+  });
+  if (!protection) {
+    protection = sheet.protect();
+    protection.setDescription(MANAGED_INTERNAL_PROTECTION_DESC);
+  }
+
+  protection.setWarningOnly(false);
+  try {
+    if (protection.canDomainEdit()) protection.setDomainEdit(false);
+  } catch (err) {}
+
+  const allowed = {};
+  const owner = ss && ss.getOwner ? ss.getOwner() : null;
+  const ownerEmail = owner && owner.getEmail ? String(owner.getEmail() || "").toLowerCase() : "";
+  if (ownerEmail) allowed[ownerEmail] = true;
+  const me = Session.getEffectiveUser();
+  const meEmail = me && me.getEmail ? String(me.getEmail() || "").toLowerCase() : "";
+  if (meEmail) allowed[meEmail] = true;
+
+  const editors = protection.getEditors() || [];
+  editors.forEach((u) => {
+    const email = u && u.getEmail ? String(u.getEmail() || "").toLowerCase() : "";
+    if (!email || allowed[email]) return;
+    try {
+      protection.removeEditor(u);
+    } catch (err) {}
+  });
+
+  if (meEmail) {
+    try {
+      protection.addEditor(meEmail);
+    } catch (err) {}
+  }
+}
+
+function applyStaffLockdown() {
+  const ss = SpreadsheetApp.getActive();
+  assertAdminRunner_(ss);
+  setupWorkbookForStaff({ quiet: true });
+
+  const studentSheet = ss.getSheetByName("Student");
+  if (studentSheet) ss.setActiveSheet(studentSheet);
+
+  let hiddenCount = 0;
+  let protectedCount = 0;
+  (ss.getSheets() || []).forEach((sheet) => {
+    const name = sheet.getName();
+    if (isStaffEditableSheet_(name)) {
+      if (sheet.isSheetHidden()) sheet.showSheet();
+      removeManagedSheetProtection_(sheet);
+      return;
+    }
+
+    ensureManagedSheetProtection_(sheet, ss);
+    protectedCount += 1;
+    if (!sheet.isSheetHidden()) {
+      sheet.hideSheet();
+      hiddenCount += 1;
+    }
+  });
+
+  notifyStudentSetupComplete_(
+    ss,
+    `Staff lockdown applied. Protected ${protectedCount} internal tab(s), hid ${hiddenCount} tab(s).`
+  );
+}
+
+function adminShowAllTabs() {
+  const ss = SpreadsheetApp.getActive();
+  assertAdminRunner_(ss);
+  let shownCount = 0;
+  (ss.getSheets() || []).forEach((sheet) => {
+    if (!sheet.isSheetHidden()) return;
+    sheet.showSheet();
+    shownCount += 1;
+  });
+  notifyStudentSetupComplete_(ss, `Shown ${shownCount} hidden tab(s).`);
+}
+
+function setupStudentElectiveInputs(opts) {
   const ss = SpreadsheetApp.getActive();
   const studentSheet = ss.getSheetByName("Student");
   if (!studentSheet) throw new Error("Missing Student sheet.");
@@ -967,7 +1195,28 @@ function setupStudentElectiveInputs() {
     .setValues([["Elective Course (Dropdown)", "Group Override (Optional)", "Mark"]]);
 
   const message = `Configured Student elective inputs in D${MANUAL_ELECTIVE_START_ROW}:F${MANUAL_ELECTIVE_START_ROW + MANUAL_ELECTIVE_SLOTS - 1}.`;
-  notifyStudentSetupComplete_(ss, message);
+  if (!isQuietSetup_(opts)) notifyStudentSetupComplete_(ss, message);
+  return message;
+}
+
+function setupElectiveRulesTemplate(opts) {
+  const ss = SpreadsheetApp.getActive();
+  const sheet = ss.getSheetByName("ElectiveRules") || ss.insertSheet("ElectiveRules");
+
+  sheet.getRange(1, 1, 1, 3).setValues([["Institution", "Program", "Rule_Text"]]);
+  const existingRow2 = sheet.getRange(2, 1, 1, 3).getValues()[0];
+  const row2HasContent = existingRow2.some((x) => String(x || "").trim() !== "");
+  if (!row2HasContent) {
+    sheet
+      .getRange(2, 1, 1, 3)
+      .setValues([["MacEwan", "Bachelor of Arts Undeclared", "Maximum of two Group B subjects"]]);
+  }
+  sheet.setFrozenRows(1);
+
+  const message =
+    "Configured ElectiveRules template (Institution, Program, Rule_Text). Add rows for any program-specific elective caps.";
+  if (!isQuietSetup_(opts)) notifyStudentSetupComplete_(ss, message);
+  return message;
 }
 
 function notifyStudentSetupComplete_(ss, message) {
@@ -1281,13 +1530,42 @@ function parseElectiveRules_(requirementTypeText) {
   if (!text) return rules;
 
   let m;
-  const maxRe = /max\s+(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+group\s+([abcd])/ig;
-  while ((m = maxRe.exec(text))) {
-    const count = parseCountToken_(m[1]);
-    const group = String(m[2] || "").toUpperCase();
-    if (!isFinite(count) || count < 0 || !group) continue;
+  const countToken = "(one|two|three|four|five|six|seven|eight|nine|ten|\\d+)";
+  const applyMaxRule = (groupRaw, countRaw) => {
+    const count = parseCountToken_(countRaw);
+    const group = String(groupRaw || "").toUpperCase();
+    if (!isFinite(count) || count < 0 || !group) return;
     if (rules.maxByGroup[group] === undefined) rules.maxByGroup[group] = count;
     else rules.maxByGroup[group] = Math.min(rules.maxByGroup[group], count);
+  };
+
+  // Examples:
+  // - "max two Group B"
+  // - "maximum of two Group B subjects"
+  // - "at most 2 option C"
+  // - "up to 1 admission subject from group D"
+  const maxReForward = new RegExp(
+    "(?:max(?:imum)?(?:\\s+of)?|at\\s+most|up\\s+to)\\s+" +
+      countToken +
+      "\\s+(?:(?:admission\\s+)?(?:subjects?|courses?|electives?)\\s+from\\s+|from\\s+)?" +
+      "(?:groups?|options?)\\s+([abcd])(?:'s)?(?:\\s+(?:subjects?|courses?|electives?))?",
+    "ig"
+  );
+  while ((m = maxReForward.exec(text))) {
+    applyMaxRule(m[2], m[1]);
+  }
+
+  // Also support reversed phrasing:
+  // - "Group B maximum of two subjects"
+  // - "Option C max 1"
+  const maxReReverse = new RegExp(
+    "(?:groups?|options?)\\s+([abcd])(?:'s)?(?:\\s+(?:subjects?|courses?|electives?))?" +
+      "\\s*[:,-]?\\s*(?:max(?:imum)?(?:\\s+of)?|at\\s+most|up\\s+to)\\s+" +
+      countToken,
+    "ig"
+  );
+  while ((m = maxReReverse.exec(text))) {
+    applyMaxRule(m[1], m[2]);
   }
 
   const minCandidates = [];
@@ -1340,6 +1618,30 @@ function formatElectiveRuleSummary_(rules) {
 
   if (isFinite(rules.minMark)) parts.push(`subject marks >= ${rules.minMark}`);
   return parts.join("; ");
+}
+
+function runElectiveRuleSelfTest_() {
+  const parsed = parseElectiveRules_("Maximum of two Group B subjects; at most 1 option C");
+  if ((parsed.maxByGroup || {}).B !== 2) throw new Error("Elective rule parse failed: expected max Group B = 2");
+  if ((parsed.maxByGroup || {}).C !== 1) throw new Error("Elective rule parse failed: expected max Group C = 1");
+
+  const parsedVariants = parseElectiveRules_(
+    "Maximum two from Group B electives; Options C: max 1 course; up to 1 from Group D's courses"
+  );
+  if ((parsedVariants.maxByGroup || {}).B !== 2) throw new Error("Variant parse failed: expected max Group B = 2");
+  if ((parsedVariants.maxByGroup || {}).C !== 1) throw new Error("Variant parse failed: expected max Group C = 1");
+  if ((parsedVariants.maxByGroup || {}).D !== 1) throw new Error("Variant parse failed: expected max Group D = 1");
+
+  const candidates = [
+    { group: "B", mark: 92, key: "B1", sourceKey: "B1" },
+    { group: "B", mark: 91, key: "B2", sourceKey: "B2" },
+    { group: "B", mark: 90, key: "B3", sourceKey: "B3" },
+    { group: "A", mark: 86, key: "A1", sourceKey: "A1" },
+  ];
+  const selected = selectBestElectives_(candidates, 3, parsed);
+  const bCount = selected.filter((x) => String(x.group || "").toUpperCase() === "B").length;
+  if (selected.length !== 3) throw new Error(`Elective selection failed: expected 3 selected, got ${selected.length}`);
+  if (bCount > 2) throw new Error(`Elective cap failed: expected max 2 from Group B, got ${bCount}`);
 }
 
 function parseCountToken_(token) {

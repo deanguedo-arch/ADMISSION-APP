@@ -6,6 +6,9 @@ This folder contains your consolidated admissions dataset (NAIT + MacEwan + NorQ
 - Use **Apps Script** to run the eligibility check inside the sheet
 - Keep a **repeatable data pipeline** (scrape -> enrich -> extract -> QA -> publish) so you can add **University of Alberta** later without redoing everything
 
+If you are handing this to a coworker, start here:
+- `docs/USER_MANUAL.md`
+
 ## Recommended Architecture (what lives where)
 
 ### 1) Canonical data (locked schema)
@@ -33,8 +36,11 @@ Network scraping isn’t run from here (and programs change), but the pipeline s
 
 Institution nuance scaffold:
 - `pipeline/adapters/` contains NAIT, MacEwan, NorQuest, UAlberta, and generic adapters.
+- `pipeline/enrichment_links.py` applies institution-aware link ranking so enrichment focuses on admissions pages.
 - `pipeline/run.py` now records `avg_total_confidence`, `avg_total_rule`, and `avg_total_adapter`.
 - adapter regression fixtures: `python .\pipeline\check_avg_total_fixtures.py`
+- enrichment-link fixtures: `python .\pipeline\check_enrichment_link_fixtures.py`
+- apply extracted averages into canonical: `.\tools\apply-avg-total-candidates.ps1 -CandidatesPath .\pipeline_artifacts\extract\avg_total_candidates.csv` (use `-DryRun` first)
 
 Before expanding full automation, lock the current baseline:
 - `docs/V1_LOCK_CHECKLIST.md`
@@ -67,8 +73,14 @@ This writes: `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
      - Column E: auto-filled group (or optional manual override: `A`, `B`, `C`, or `D`)
      - Column F: mark (number)
 4. Open Extensions -> Apps Script, paste `apps_script/Code.gs` into the editor, save.
-5. Reload the sheet -> run **Admissions Checker -> Setup Student Elective Dropdowns** once.
+5. Reload the sheet -> run **Admissions Checker -> One-Time Setup (Recommended)** once.
 6. Use **Admissions Checker -> Check Eligibility**.
+
+Optional advanced setup:
+- **Admissions Checker -> Setup Student Elective Dropdowns** (rebuild D2:F6 input controls)
+- **Admissions Checker -> Setup ElectiveRules Template** (create/repair ElectiveRules headers/sample row)
+- **Admissions Checker -> Admin: Apply Staff Lockdown** (owner-only; protect + hide internal tabs)
+- **Admissions Checker -> Admin: Show All Tabs** (owner-only; temporarily reveal hidden tabs for maintenance)
 
 The script writes:
 - `Results` (all programs)
@@ -97,6 +109,8 @@ If you want local scraping to automatically overwrite the Sheet’s `Programs` t
 
 One-click local sync (Windows):
 - `SYNC_PROGRAMS.cmd`
+- `SYNC_ELECTIVE_RULES.cmd` (uploads `out/ElectiveRules.*.csv` to `ElectiveRules` tab)
+- `SYNC_ALL.cmd` (Programs + ElectiveRules in one run)
 
 Guardrails now included in local sync:
 - `tools/validate-canonical.ps1` runs before upload (schema + row sanity checks)
@@ -127,6 +141,37 @@ To generate a fill-in template listing programs that need `AvgRules`, run:
 ```
 
 It writes: `out/AvgRules.todo.csv`
+
+## Optional: elective constraint overrides (recommended for edge cases)
+Some programs include elective composition constraints not yet captured in the dataset text (for example, caps like "maximum of two Group B subjects").
+
+Add a tab named `ElectiveRules` with headers:
+- `Institution`
+- `Program` (exact match, or `*` for institution-wide default)
+- `Rule_Text` (free text, e.g., `Maximum of two Group B subjects`)
+
+These rule-text overrides are merged with the program `Requirement_Type` text before elective selection.
+
+Example starter file: `examples/ElectiveRules.example.csv`
+
+To generate a review template of programs that may need elective constraint rule text, run:
+
+```powershell
+.\tools\generate-elective-rules-template.ps1
+```
+
+It writes: `out/ElectiveRules.todo.csv`
+
+To auto-suggest high-confidence `ElectiveRules` rows from live program pages, run:
+
+```powershell
+.\.venv\Scripts\python.exe .\tools\prefill-elective-rules.py
+```
+
+Outputs:
+- `out/ElectiveRules.prefill.csv` (full suggested rows for import)
+- `out/ElectiveRules.priority.csv` (top-priority subset)
+- `out/ElectiveRules.prefill.audit.csv` (matching/evidence audit)
 
 ## Optional: run the checker locally (PowerShell)
 

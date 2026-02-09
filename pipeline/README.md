@@ -40,6 +40,7 @@ For the full pipeline spec, see `docs/PIPELINE.md`.
 - `avg_total_confidence`
 - `avg_total_rule`
 - `avg_total_adapter`
+- enrichment links are now ranked with institution-aware profiles in `pipeline/enrichment_links.py`
 
 These fields make extraction behavior auditable before fully automated publishing.
 
@@ -54,3 +55,29 @@ Fixture cases live in:
 - `pipeline/fixtures/avg_total_cases.json`
 
 This gives a quick pass/fail signal whenever adapter rules change.
+
+## Phase 2A: enrichment link fixtures
+Use link-selection fixtures to lock which admissions pages get prioritized per institution:
+
+```powershell
+python .\pipeline\check_enrichment_link_fixtures.py
+```
+
+Fixture cases live in:
+- `pipeline/fixtures/enrichment_link_cases.json`
+
+This catches regressions when tweaking enrichment link scoring rules.
+
+## Apply extracted `Avg_Total` into canonical
+After `pipeline/run.py` writes `pipeline_artifacts/extract/avg_total_candidates.csv`, apply confident values into the freshest canonical file (`.csv` vs `.csv.new`):
+
+```powershell
+.\tools\apply-avg-total-candidates.ps1 -CandidatesPath .\pipeline_artifacts\extract\avg_total_candidates.csv
+```
+
+Defaults are conservative:
+- only `high`/`medium` confidence rows
+- skip ambiguous program matches
+- do not overwrite existing `Avg_Total` unless `-AllowOverwriteExisting` is set
+
+Use `-DryRun` first to preview changes.

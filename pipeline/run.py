@@ -3,13 +3,11 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import os
 import re
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 from urllib.parse import urljoin, urlparse
 
 import pandas as pd
@@ -22,20 +20,10 @@ try:
 except ImportError:
     from pipeline.adapters.registry import adapter_for_institution
 
-
-KEYWORDS = [
-    "admission",
-    "admissions",
-    "entrance",
-    "requirement",
-    "requirements",
-    "how-to-apply",
-    "how to apply",
-    "apply",
-    "english",
-    "math",
-    "academic requirements",
-]
+try:
+    from enrichment_links import LinkCandidate, pick_enrichment_links
+except ImportError:
+    from pipeline.enrichment_links import LinkCandidate, pick_enrichment_links
 
 
 @dataclass(frozen=True)
@@ -93,47 +81,29 @@ def extract_text(html: str, url: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def candidate_links(base_url: str, html: str) -> list[str]:
+def candidate_links(base_url: str, html: str) -> list[LinkCandidate]:
     soup = BeautifulSoup(html, "lxml")
-    links: list[str] = []
+    links: list[LinkCandidate] = []
     for a in soup.select("a[href]"):
         href = str(a.get("href") or "").strip()
         if not href:
             continue
+        anchor_text = a.get_text(" ", strip=True)
         abs_url = urljoin(base_url, href)
         p = urlparse(abs_url)
         if p.scheme not in ("http", "https"):
             continue
-        links.append(abs_url)
+        links.append(LinkCandidate(url=abs_url, text=anchor_text))
     # Keep order but dedupe
     seen: set[str] = set()
-    out: list[str] = []
-    for u in links:
+    out: list[LinkCandidate] = []
+    for candidate in links:
+        u = candidate.url
         if u in seen:
             continue
         seen.add(u)
-        out.append(u)
+        out.append(candidate)
     return out
-
-
-def score_link(url: str) -> int:
-    u = url.lower()
-    return sum(1 for k in KEYWORDS if k in u)
-
-
-def pick_enrichment_links(base_url: str, links: Iterable[str], limit: int = 8) -> list[str]:
-    base_host = urlparse(base_url).netloc.lower()
-    scored: list[tuple[int, str]] = []
-    for u in links:
-        host = urlparse(u).netloc.lower()
-        if host and host != base_host:
-            continue
-        s = score_link(u)
-        if s <= 0:
-            continue
-        scored.append((s, u))
-    scored.sort(key=lambda x: (-x[0], x[1]))
-    return [u for _, u in scored[:limit]]
 
 
 def ensure_dir(p: Path) -> None:
@@ -185,7 +155,7 @@ def run(index_path: Path, out_dir: Path, limit: int | None, institutions: set[st
         (base_folder / "base.txt").write_text(base_text, encoding="utf-8")
 
         links = candidate_links(r.source_url, html)
-        enrich_links = pick_enrichment_links(r.source_url, links)
+        enrich_links = pick_enrichment_links(r.source_url, links, institution=r.institution)
         (enrich_folder / "links.csv").write_text(
             "url\n" + "\n".join(enrich_links) + "\n", encoding="utf-8"
         )

@@ -26,14 +26,17 @@ Google Sheets + Apps Script.
 - `Results`: produced by Apps Script menu
 - `Eligible`, `Ineligible`, `Uncheckable`: filtered views produced by Apps Script
 - Optional: `AvgRules` (temporary override when dataset doesn't specify average course-count)
+- Optional: `ElectiveRules` (manual rule-text overrides for elective caps/constraints not yet captured in dataset text)
 
 ### Apps Script
 - File: `apps_script/Code.gs`
 - Menu: **Admissions Checker -> Check Eligibility**
+- Admin menu: **Admissions Checker -> Admin: Apply Staff Lockdown** hides/protects internal tabs; keeps `Student`, `Results`, `Eligible`, `Ineligible`, `Uncheckable` visible/editable.
 - Computes averages per program using:
   - dataset `Avg_Total` if present
   - else `AvgRules` if present
   - else fallback to 5 (and marks as not fully checkable)
+- Elective selection uses dataset `Requirement_Type` rules plus optional `ElectiveRules` override text (e.g., max per group constraints).
 
 ## Dataset
 Canonical CSV:
@@ -58,6 +61,15 @@ Generate a template of programs that need an average course-count rule:
 
 Output: `out/AvgRules.todo.csv`
 
+## Filling missing elective cap/rule text (short-term)
+Generate a template of active programs with electives but no parsed elective rule text:
+
+```powershell
+.\tools\generate-elective-rules-template.ps1
+```
+
+Output: `out/ElectiveRules.todo.csv`
+
 ## Long-term: repeatable rescrape
 Pipeline must:
 - seed with a program index
@@ -76,3 +88,7 @@ If a chat gets long, run:
 ```
 
 Then start a new chat and paste the contents of `docs/SESSION_HANDOFF.md`.
+
+## Coworker handoff
+For non-technical users, use:
+- `docs/USER_MANUAL.md`
