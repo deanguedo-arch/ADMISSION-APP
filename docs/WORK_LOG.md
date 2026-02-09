@@ -30,3 +30,4 @@ Keep entries short and append-only.
 - Added sheet rollback safety in `apps_script/SyncPrograms.gs`: snapshot current tab into `<SheetName>_BACKUP` before overwrite.
 - Added GitHub automation starter: `.github/workflows/sync-programs.yml` (manual + scheduled sync with validation and secret checks).
 - Added rollout docs: `docs/GITHUB_AUTOMATION.md`; updated `README.md` and `docs/SHEETS_SYNC.md` with guardrail/automation notes.
+- Updated `apps_script/SyncPrograms.gs` backup behavior so `<SheetName>_BACKUP` is always created/updated (even when source tab is empty); writes metadata + source row count.

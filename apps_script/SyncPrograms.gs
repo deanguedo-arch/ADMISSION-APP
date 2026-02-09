@@ -83,19 +83,28 @@ function jsonResponse_(status, obj) {
 
 function backupSheetSnapshot_(ss, sourceSheet, sourceName) {
   const backupName = sourceName + "_BACKUP";
-  const existing = sourceSheet.getDataRange().getValues();
-  if (!existing || !existing.length) {
-    return { name: backupName, rows: 0 };
-  }
-
   const backupSheet = ss.getSheetByName(backupName) || ss.insertSheet(backupName);
   backupSheet.clearContents();
+
+  const existing = sourceSheet.getDataRange().getValues();
+  const hasData =
+    !!existing &&
+    existing.length > 0 &&
+    existing.some((row) => row.some((cell) => String(cell === null || cell === undefined ? "" : cell).trim() !== ""));
+
+  const existingRows = hasData ? existing.length : 0;
 
   const stampUtc = Utilities.formatDate(new Date(), "Etc/UTC", "yyyy-MM-dd HH:mm:ss'Z'");
   backupSheet.getRange(1, 1, 1, 3).setValues([["Meta_Key", "Meta_Value", "Source_Tab"]]);
   backupSheet.getRange(2, 1, 1, 3).setValues([["Backup_UTC", stampUtc, sourceName]]);
-  backupSheet.getRange(3, 1, existing.length, existing[0].length).setValues(existing);
-  backupSheet.setFrozenRows(3);
+  backupSheet.getRange(3, 1, 1, 3).setValues([["Source_Row_Count", String(existingRows), sourceName]]);
 
-  return { name: backupName, rows: existing.length };
+  if (hasData) {
+    backupSheet.getRange(4, 1, existing.length, existing[0].length).setValues(existing);
+    backupSheet.setFrozenRows(4);
+  } else {
+    backupSheet.setFrozenRows(3);
+  }
+
+  return { name: backupName, rows: existingRows };
 }
