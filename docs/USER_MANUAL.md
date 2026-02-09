@@ -8,7 +8,7 @@ This is the only guide a coworker should need.
 - Produces `Eligible`, `Ineligible`, and `Uncheckable` lists.
 
 ## 2) Who does what
-- Checker user (most staff): works only inside Google Sheets.
+- Checker user (most staff): uses either Google Sheets menu flow or the web app link.
 - Data maintainer (one person): runs local sync commands when program data changes.
 
 ## 3) Checker user workflow (Sheets only)
@@ -31,6 +31,19 @@ After lockdown, staff should normally work only in:
 - `Eligible`
 - `Ineligible`
 - `Uncheckable`
+
+## 3B) Checker user workflow (Web app)
+1. Open the web app URL provided by the owner.
+2. Enter named courses and marks.
+3. Optional: enter elective overrides (course + group + mark).
+4. Click `Check Eligibility`.
+5. Review categories:
+   - `Eligible`
+   - `Missing`
+   - `Uncheckable`
+6. Export if needed:
+   - `Export CSV` (all program rows)
+   - `Export PDF` (current view)
 
 ## 4) Data maintainer workflow (local)
 Use this only when you need updated Programs or ElectiveRules in Sheets.

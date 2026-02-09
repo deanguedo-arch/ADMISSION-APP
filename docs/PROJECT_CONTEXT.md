@@ -16,7 +16,7 @@ Staff enters a student's final marks (only admissions-relevant courses + electiv
 - **Uncheckable** (requirements are not program-admissions checkable from the dataset yet; should not be treated as ineligible)
 
 ## Current operational UI
-Google Sheets + Apps Script.
+Google Sheets + Apps Script, plus a staff-facing Apps Script web app.
 
 ### Sheets tabs
 - `Programs`: import `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
@@ -31,6 +31,8 @@ Google Sheets + Apps Script.
 ### Apps Script
 - File: `apps_script/Code.gs`
 - Menu: **Admissions Checker -> Check Eligibility**
+- Web app entrypoint: `doGet()` + `apps_script/WebApp.html`
+- Web app backend call: `runWebEligibility(payload)` (same eligibility engine as sheet menu)
 - Admin menu: **Admissions Checker -> Admin: Apply Staff Lockdown** hides/protects internal tabs; keeps `Student`, `Results`, `Eligible`, `Ineligible`, `Uncheckable` visible/editable.
 - Computes averages per program using:
   - dataset `Avg_Total` if present

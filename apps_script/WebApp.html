@@ -1,0 +1,776 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Next Step Admissions Checker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;700;800&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-cream: #f8f6ef;
+        --bg-mint: #dff5e9;
+        --ink: #102421;
+        --ink-soft: #2c4d46;
+        --accent: #126e57;
+        --accent-2: #0d4d3e;
+        --line: #c7dfd6;
+        --card: #ffffffcc;
+        --good: #1f7a5a;
+        --warn: #8d4f00;
+        --neutral: #2b5f9a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Source Sans 3", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at 8% 10%, #ecfff3 0%, transparent 42%),
+          radial-gradient(circle at 92% 16%, #e2f5ff 0%, transparent 35%),
+          linear-gradient(155deg, var(--bg-cream), var(--bg-mint));
+      }
+
+      .shell {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 22px 18px 28px;
+      }
+
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 18px;
+        margin-bottom: 18px;
+        animation: rise 0.55s ease-out;
+      }
+
+      .title {
+        margin: 0;
+        font-family: "Sora", sans-serif;
+        font-size: clamp(1.4rem, 2vw + 1rem, 2.3rem);
+        letter-spacing: 0.2px;
+      }
+
+      .subtitle {
+        margin: 6px 0 0;
+        color: var(--ink-soft);
+      }
+
+      .stamp {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #ffffffa3;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(300px, 450px) minmax(420px, 1fr);
+        gap: 16px;
+      }
+
+      .panel {
+        background: var(--card);
+        backdrop-filter: blur(6px);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 14px 30px #12312817;
+        animation: rise 0.5s ease-out;
+      }
+
+      .panel h2 {
+        margin: 0 0 12px;
+        font-family: "Sora", sans-serif;
+        font-size: 1.05rem;
+      }
+
+      .panel h3 {
+        margin: 14px 0 8px;
+        font-size: 0.95rem;
+      }
+
+      .hint {
+        color: var(--ink-soft);
+        margin: 0 0 10px;
+        font-size: 0.94rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #dce9e4;
+        text-align: left;
+        padding: 7px 6px;
+        vertical-align: middle;
+      }
+
+      th {
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        color: #39564f;
+        text-transform: uppercase;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 100%;
+        border: 1px solid #bfd4cb;
+        border-radius: 10px;
+        padding: 8px 9px;
+        font: inherit;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px #126e571f;
+      }
+
+      .actions {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .btn {
+        border: 1px solid transparent;
+        border-radius: 11px;
+        font: inherit;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: transform 0.14s ease, background 0.14s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-main {
+        background: linear-gradient(140deg, var(--accent), var(--accent-2));
+        color: #fff;
+        font-weight: 700;
+      }
+
+      .btn-subtle {
+        border-color: #b9d7cc;
+        background: #fff;
+        color: var(--ink);
+      }
+
+      .btn-danger-lite {
+        background: #fff3ef;
+        border-color: #f1cdc3;
+        color: #7d3525;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .stat {
+        border-radius: 12px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+
+      .stat .label {
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+      }
+
+      .stat .value {
+        margin-top: 4px;
+        font-family: "Sora", sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .stat.good .value {
+        color: var(--good);
+      }
+
+      .stat.warn .value {
+        color: var(--warn);
+      }
+
+      .stat.neutral .value {
+        color: var(--neutral);
+      }
+
+      .result-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .filter-btn {
+        border: 1px solid #b8d5c8;
+        border-radius: 999px;
+        background: #fff;
+        padding: 5px 10px;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .filter-btn.active {
+        background: #d7f0e6;
+        border-color: #96c8b5;
+        font-weight: 700;
+      }
+
+      .results-wrap {
+        border: 1px solid #cae0d6;
+        border-radius: 13px;
+        overflow: auto;
+        max-height: 68vh;
+        background: #fff;
+      }
+
+      .results-wrap table {
+        min-width: 860px;
+      }
+
+      .results-wrap tbody tr:nth-child(odd) {
+        background: #f8fcfa;
+      }
+
+      .status {
+        margin-top: 8px;
+        min-height: 20px;
+        color: var(--ink-soft);
+      }
+
+      .status.error {
+        color: #8c2f25;
+      }
+
+      .empty {
+        padding: 18px;
+        color: var(--ink-soft);
+      }
+
+      .ghost {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 960px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .summary {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <h1 class="title">Next Step Admissions Checker</h1>
+          <p class="subtitle">Enter grades once, then review Eligible, Missing, and Uncheckable programs.</p>
+        </div>
+        <div class="stamp" id="stamp">Loading options...</div>
+      </header>
+
+      <main class="layout">
+        <section class="panel">
+          <h2>Student Marks</h2>
+          <p class="hint">Add all final Grade 12 marks you have. Leave unknown courses blank.</p>
+
+          <h3>Named Courses</h3>
+          <table id="namedTable">
+            <thead>
+              <tr>
+                <th style="width: 68%">Course</th>
+                <th style="width: 24%">Mark</th>
+                <th style="width: 8%"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="actions">
+            <button class="btn btn-subtle" id="addNamedBtn" type="button">Add Course</button>
+          </div>
+
+          <h3>Optional Elective Overrides</h3>
+          <p class="ghost">Use this only when you need to force group A/B/C/D for an elective.</p>
+          <table id="electiveTable">
+            <thead>
+              <tr>
+                <th style="width: 54%">Course</th>
+                <th style="width: 16%">Group</th>
+                <th style="width: 22%">Mark</th>
+                <th style="width: 8%"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="actions">
+            <button class="btn btn-subtle" id="addElectiveBtn" type="button">Add Elective</button>
+          </div>
+
+          <div class="actions" style="margin-top: 14px">
+            <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
+            <button class="btn btn-subtle" id="csvBtn" type="button" disabled>Export CSV</button>
+            <button class="btn btn-subtle" id="pdfBtn" type="button" disabled>Export PDF</button>
+            <button class="btn btn-danger-lite" id="resetBtn" type="button">Reset Form</button>
+          </div>
+          <p class="status" id="status"></p>
+        </section>
+
+        <section class="panel">
+          <h2>Results</h2>
+          <div class="summary">
+            <div class="stat neutral">
+              <div class="label">Programs Checked</div>
+              <div class="value" id="sumTotal">0</div>
+            </div>
+            <div class="stat good">
+              <div class="label">Eligible</div>
+              <div class="value" id="sumEligible">0</div>
+            </div>
+            <div class="stat warn">
+              <div class="label">Missing</div>
+              <div class="value" id="sumMissing">0</div>
+            </div>
+            <div class="stat neutral">
+              <div class="label">Uncheckable</div>
+              <div class="value" id="sumUncheckable">0</div>
+            </div>
+          </div>
+
+          <div class="result-toolbar">
+            <div class="filter-group" id="filterGroup">
+              <button class="filter-btn active" type="button" data-view="eligible">Eligible</button>
+              <button class="filter-btn" type="button" data-view="ineligible">Missing</button>
+              <button class="filter-btn" type="button" data-view="uncheckable">Uncheckable</button>
+              <button class="filter-btn" type="button" data-view="all">All</button>
+            </div>
+            <div class="ghost" id="rowsStamp">No results yet</div>
+          </div>
+
+          <div class="results-wrap" id="resultsWrap">
+            <div class="empty">Run a check to see program-by-program results.</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <datalist id="namedCourses"></datalist>
+    <datalist id="electiveCourses"></datalist>
+
+    <script>
+      const state = {
+        boot: null,
+        result: null,
+        view: "eligible",
+      };
+
+      const ui = {
+        stamp: document.getElementById("stamp"),
+        status: document.getElementById("status"),
+        namedBody: document.querySelector("#namedTable tbody"),
+        electiveBody: document.querySelector("#electiveTable tbody"),
+        runBtn: document.getElementById("runBtn"),
+        csvBtn: document.getElementById("csvBtn"),
+        pdfBtn: document.getElementById("pdfBtn"),
+        resultsWrap: document.getElementById("resultsWrap"),
+        rowsStamp: document.getElementById("rowsStamp"),
+        sumTotal: document.getElementById("sumTotal"),
+        sumEligible: document.getElementById("sumEligible"),
+        sumMissing: document.getElementById("sumMissing"),
+        sumUncheckable: document.getElementById("sumUncheckable"),
+        filterGroup: document.getElementById("filterGroup"),
+      };
+
+      boot();
+
+      document.getElementById("addNamedBtn").addEventListener("click", () => addNamedRow());
+      document.getElementById("addElectiveBtn").addEventListener("click", () => addElectiveRow());
+      document.getElementById("runBtn").addEventListener("click", runCheck);
+      document.getElementById("csvBtn").addEventListener("click", exportCsv);
+      document.getElementById("pdfBtn").addEventListener("click", exportPdf);
+      document.getElementById("resetBtn").addEventListener("click", resetForm);
+      ui.filterGroup.addEventListener("click", onFilterClick);
+
+      function boot() {
+        resetForm();
+        if (!isAppsScriptContext()) {
+          setStatus(
+            "This page is ready. Open it through the deployed Apps Script web app URL to run checks.",
+            true
+          );
+          ui.stamp.textContent = "Standalone preview";
+          return;
+        }
+        google.script.run
+          .withSuccessHandler((data) => {
+            state.boot = data || {};
+            bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
+            bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
+            seedRows();
+            const stamp = (state.boot.generatedAt || "").replace("T", " ").replace("Z", " UTC");
+            ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
+            setStatus("Ready.");
+          })
+          .withFailureHandler((err) => {
+            setStatus(readError(err), true);
+            ui.stamp.textContent = "Load failed";
+          })
+          .getWebAppBootstrapData();
+      }
+
+      function seedRows() {
+        if (ui.namedBody.children.length === 0) {
+          for (let i = 0; i < 8; i++) addNamedRow();
+        }
+        if (ui.electiveBody.children.length === 0) {
+          const slots = Number(state.boot && state.boot.manualElectiveSlots) || 5;
+          for (let i = 0; i < slots; i++) addElectiveRow();
+        }
+      }
+
+      function resetForm() {
+        ui.namedBody.innerHTML = "";
+        ui.electiveBody.innerHTML = "";
+        for (let i = 0; i < 8; i++) addNamedRow();
+        for (let i = 0; i < 5; i++) addElectiveRow();
+        state.result = null;
+        state.view = "eligible";
+        ui.csvBtn.disabled = true;
+        ui.pdfBtn.disabled = true;
+        updateSummary({ totalPrograms: 0, eligible: 0, missing: 0, uncheckable: 0 });
+        renderResults();
+        setStatus("");
+        syncFilterButtons();
+      }
+
+      function addNamedRow(seed) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" list="namedCourses" placeholder="English 30-1" value="${escapeAttr(
+            seed && seed.course
+          )}" /></td>
+          <td><input type="number" min="0" max="100" step="0.1" placeholder="%" value="${escapeAttr(
+            seed && seed.mark
+          )}" /></td>
+          <td><button class="btn btn-subtle" type="button">x</button></td>
+        `;
+        tr.querySelector("button").addEventListener("click", () => {
+          tr.remove();
+        });
+        ui.namedBody.appendChild(tr);
+      }
+
+      function addElectiveRow(seed) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" list="electiveCourses" placeholder="Art 30" value="${escapeAttr(
+            seed && seed.course
+          )}" /></td>
+          <td>
+            <select>
+              <option value="">Auto</option>
+              <option value="A"${seed && seed.group === "A" ? " selected" : ""}>A</option>
+              <option value="B"${seed && seed.group === "B" ? " selected" : ""}>B</option>
+              <option value="C"${seed && seed.group === "C" ? " selected" : ""}>C</option>
+              <option value="D"${seed && seed.group === "D" ? " selected" : ""}>D</option>
+            </select>
+          </td>
+          <td><input type="number" min="0" max="100" step="0.1" placeholder="%" value="${escapeAttr(
+            seed && seed.mark
+          )}" /></td>
+          <td><button class="btn btn-subtle" type="button">x</button></td>
+        `;
+        tr.querySelector("button").addEventListener("click", () => {
+          tr.remove();
+        });
+        ui.electiveBody.appendChild(tr);
+      }
+
+      function collectPayload() {
+        const namedCourses = Array.from(ui.namedBody.querySelectorAll("tr"))
+          .map((tr) => {
+            const cells = tr.querySelectorAll("td");
+            const course = (cells[0].querySelector("input").value || "").trim();
+            const markRaw = (cells[1].querySelector("input").value || "").trim();
+            const mark = markRaw === "" ? NaN : Number(markRaw);
+            return { course, mark };
+          })
+          .filter((x) => x.course && Number.isFinite(x.mark));
+
+        const manualElectives = Array.from(ui.electiveBody.querySelectorAll("tr"))
+          .map((tr) => {
+            const cells = tr.querySelectorAll("td");
+            const course = (cells[0].querySelector("input").value || "").trim();
+            const group = (cells[1].querySelector("select").value || "").trim().toUpperCase();
+            const markRaw = (cells[2].querySelector("input").value || "").trim();
+            const mark = markRaw === "" ? NaN : Number(markRaw);
+            return { course, group, mark };
+          })
+          .filter((x) => x.course && Number.isFinite(x.mark));
+
+        return { namedCourses, manualElectives };
+      }
+
+      function runCheck() {
+        const payload = collectPayload();
+        if (!payload.namedCourses.length && !payload.manualElectives.length) {
+          setStatus("Enter at least one course and mark before running the check.", true);
+          return;
+        }
+        if (!isAppsScriptContext()) {
+          setStatus("Open this page using the deployed Apps Script web app URL to run checks.", true);
+          return;
+        }
+
+        setBusy(true);
+        setStatus("Checking admissions rules...");
+        google.script.run
+          .withSuccessHandler((data) => {
+            state.result = data || null;
+            state.view = "eligible";
+            ui.csvBtn.disabled = !state.result;
+            ui.pdfBtn.disabled = !state.result;
+            updateSummary((state.result && state.result.summary) || {});
+            syncFilterButtons();
+            renderResults();
+            setStatus("Check complete.");
+            setBusy(false);
+          })
+          .withFailureHandler((err) => {
+            setStatus(readError(err), true);
+            setBusy(false);
+          })
+          .runWebEligibility(payload);
+      }
+
+      function updateSummary(summary) {
+        ui.sumTotal.textContent = Number(summary.totalPrograms || 0);
+        ui.sumEligible.textContent = Number(summary.eligible || 0);
+        ui.sumMissing.textContent = Number(summary.missing || 0);
+        ui.sumUncheckable.textContent = Number(summary.uncheckable || 0);
+      }
+
+      function onFilterClick(e) {
+        const btn = e.target && e.target.closest("button[data-view]");
+        if (!btn) return;
+        state.view = btn.dataset.view || "eligible";
+        syncFilterButtons();
+        renderResults();
+      }
+
+      function syncFilterButtons() {
+        const all = ui.filterGroup.querySelectorAll("button[data-view]");
+        all.forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.view === state.view);
+        });
+      }
+
+      function renderResults() {
+        if (!state.result) {
+          ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
+          ui.rowsStamp.textContent = "No results yet";
+          return;
+        }
+
+        const headers = state.result.headers || [];
+        const categoryRows = ((state.result.results || {})[state.view] || []).slice();
+        ui.rowsStamp.textContent = `${categoryRows.length} rows`;
+
+        if (!categoryRows.length) {
+          ui.resultsWrap.innerHTML = `<div class="empty">No rows in this category.</div>`;
+          return;
+        }
+
+        const headHtml = `<tr>${headers.map((h) => `<th>${escapeHtml(String(h))}</th>`).join("")}</tr>`;
+        const bodyHtml = categoryRows
+          .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(formatCell(c))}</td>`).join("")}</tr>`)
+          .join("");
+        ui.resultsWrap.innerHTML = `<table><thead>${headHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+      }
+
+      function exportCsv() {
+        if (!state.result) return;
+        const rows = [state.result.headers || []].concat((state.result.results || {}).all || []);
+        const csv = rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+        downloadBlob(csv, "text/csv;charset=utf-8", fileStamp("admissions_results", "csv"));
+      }
+
+      function exportPdf() {
+        if (!state.result) return;
+        const headers = state.result.headers || [];
+        const rows = ((state.result.results || {})[state.view] || []).slice();
+        const label = viewLabel(state.view);
+        const generated = (state.result.generatedAt || "").replace("T", " ").replace("Z", " UTC");
+        const html = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Admissions ${escapeHtml(label)}</title>
+    <style>
+      body { font-family: "Source Sans 3", sans-serif; margin: 24px; color: #102421; }
+      h1 { margin: 0 0 4px; font-size: 20px; }
+      p { margin: 0 0 14px; color: #36544e; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      th, td { border: 1px solid #d3e3dc; padding: 5px; text-align: left; vertical-align: top; }
+      th { background: #eef8f3; }
+      @media print { body { margin: 8mm; } }
+    </style>
+  </head>
+  <body>
+    <h1>Next Step Admissions Checker</h1>
+    <p>${escapeHtml(label)} | ${escapeHtml(generated)}</p>
+    <table>
+      <thead><tr>${headers.map((h) => `<th>${escapeHtml(String(h))}</th>`).join("")}</tr></thead>
+      <tbody>${rows
+        .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(formatCell(c))}</td>`).join("")}</tr>`)
+        .join("")}</tbody>
+    </table>
+  </body>
+</html>`;
+        const w = window.open("", "_blank");
+        if (!w) {
+          setStatus("Popup was blocked. Allow popups to export PDF.", true);
+          return;
+        }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => {
+          w.print();
+        }, 250);
+      }
+
+      function isAppsScriptContext() {
+        return !!(window.google && google.script && google.script.run);
+      }
+
+      function bindDatalist(id, options) {
+        const list = document.getElementById(id);
+        const safeOptions = Array.isArray(options) ? options : [];
+        list.innerHTML = safeOptions
+          .map((opt) => `<option value="${escapeAttr(String(opt || "").trim())}"></option>`)
+          .join("");
+      }
+
+      function setBusy(isBusy) {
+        ui.runBtn.disabled = !!isBusy;
+        ui.runBtn.textContent = isBusy ? "Checking..." : "Check Eligibility";
+      }
+
+      function setStatus(message, isError) {
+        ui.status.textContent = message || "";
+        ui.status.classList.toggle("error", !!isError);
+      }
+
+      function readError(err) {
+        const raw = err && err.message ? String(err.message) : "Could not complete the eligibility check.";
+        return raw || "Could not complete the eligibility check.";
+      }
+
+      function csvCell(v) {
+        const s = String(v === null || v === undefined ? "" : v);
+        return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }
+
+      function formatCell(v) {
+        if (v === null || v === undefined) return "";
+        if (typeof v === "number") return Number.isInteger(v) ? String(v) : String(v.toFixed(1));
+        return String(v);
+      }
+
+      function fileStamp(prefix, ext) {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(
+          d.getHours()
+        )}${pad(d.getMinutes())}`;
+        return `${prefix}_${stamp}.${ext}`;
+      }
+
+      function downloadBlob(content, mime, filename) {
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function viewLabel(view) {
+        if (view === "eligible") return "Eligible";
+        if (view === "ineligible") return "Missing";
+        if (view === "uncheckable") return "Uncheckable";
+        return "All Programs";
+      }
+
+      function escapeHtml(v) {
+        return String(v || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeAttr(v) {
+        return escapeHtml(v);
+      }
+    </script>
+  </body>
+</html>

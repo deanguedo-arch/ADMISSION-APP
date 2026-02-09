@@ -87,3 +87,9 @@ Keep entries short and append-only.
   - Branding assets moved into repo under `Materials/`
 - Local blocker during setup attempt: this machine did not have `node`, `npm`, or `gh`, and no `~/.clasprc.json` existed. Next action:
   - `./tools/setup-appsscript-deploy.ps1 -ScriptId "<SCRIPT_ID>" -DeploymentId "<DEPLOYMENT_ID>"`
+## 2026-02-09 (Web App Implementation)
+- Added a shared eligibility engine in `apps_script/Code.gs` (`evaluateProgramsForStudent_`) so Sheet menu runs and web app runs use the same rules/output categories.
+- Added web app endpoints in `apps_script/Code.gs`: `doGet`, `getWebAppBootstrapData`, and `runWebEligibility`.
+- Added spreadsheet resolution helper in `apps_script/Code.gs` (`getAdmissionsSpreadsheet_`) with script property override key `ADMISSIONS_SHEET_ID` and fallback Sheet ID.
+- Added `apps_script/WebApp.html` staff UI with counselor-friendly grade entry, categorized results views (Eligible/Missing/Uncheckable/All), and CSV/PDF export actions.
+- Updated `README.md`, `docs/PROJECT_CONTEXT.md`, and `docs/USER_MANUAL.md` with web app usage and configuration notes.

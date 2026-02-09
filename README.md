@@ -90,6 +90,21 @@ The script writes:
 
 Output layout (left-to-right): Institution, Program, Credential, Min Avg, Student Avg, Avg Courses, Avg Used, Competitive Guidance, Missing, Notes.
 
+### C) Use the web app (staff form + CSV/PDF export)
+The same Apps Script project now serves a web UI from `apps_script/WebApp.html`.
+
+- Backend entrypoints are in `apps_script/Code.gs`:
+  - `doGet()` for page load
+  - `runWebEligibility(payload)` for checks
+- Uses the same eligibility engine as the sheet menu run.
+- Exports:
+  - CSV (all rows)
+  - PDF (current result view)
+
+Spreadsheet binding for web app calls:
+- By default, web app checks use Sheet ID `1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU`.
+- To override without code edits, set Apps Script property `ADMISSIONS_SHEET_ID`.
+
 ### Student template (compact input layout)
 If you want a compact `Student` tab with 5 manual elective slots, copy/paste:
 - `examples/student_template.tsv`

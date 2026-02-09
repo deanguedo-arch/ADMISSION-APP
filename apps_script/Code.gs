@@ -35,6 +35,20 @@ const MANUAL_GROUP_COL = 5; // E
 const MANUAL_ELECTIVE_WIDTH = 3; // D:F
 const STAFF_EDITABLE_SHEET_NAMES = ["Student", "Eligible", "Ineligible", "Uncheckable", "Results"];
 const MANAGED_INTERNAL_PROTECTION_DESC = "Admissions Checker: managed internal sheet protection";
+const ADMISSIONS_SHEET_ID_PROPERTY = "ADMISSIONS_SHEET_ID";
+const DEFAULT_ADMISSIONS_SHEET_ID = "1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU";
+const RESULTS_HEADER_ROW = [
+  "Institution",
+  "Program",
+  "Credential",
+  "Min Avg",
+  "Student Avg",
+  "Avg Courses",
+  "Avg Used",
+  "Competitive Guidance",
+  "Missing",
+  "Notes",
+];
 
 function onEdit(e) {
   autoFillManualElectiveGroupsFromEdit_(e);
@@ -103,7 +117,7 @@ function autoFillManualElectiveGroupRow_(sheet, row) {
 }
 
 function runEligibility() {
-  const ss = SpreadsheetApp.getActive();
+  const ss = getAdmissionsSpreadsheet_();
   const programsSheet = ss.getSheetByName("Programs");
   const studentSheet = ss.getSheetByName("Student");
   const resultsSheet = ss.getSheetByName("Results");
@@ -118,10 +132,6 @@ function runEligibility() {
   }
 
   const programsRange = programsSheet.getDataRange().getValues();
-  if (!programsRange || programsRange.length < 2) {
-    throw new Error("Programs tab is empty. Import/sync the dataset into the Programs tab first.");
-  }
-
   // Be forgiving: read from row 2 down (row 1 is usually headers).
   const studentRows = studentSheet.getRange(2, 1, Math.max(0, studentSheet.getLastRow() - 1), 2).getValues();
   const courseMap = buildCourseMap(studentRows);
@@ -129,33 +139,163 @@ function runEligibility() {
     .getRange(MANUAL_ELECTIVE_START_ROW, MANUAL_ELECTIVE_COL, MANUAL_ELECTIVE_SLOTS, MANUAL_ELECTIVE_WIDTH)
     .getValues();
   const manualElectives = buildElectives(electivesRows, { source: "manual", rowOffset: MANUAL_ELECTIVE_START_ROW });
-  const autoElectives = buildAutoElectivesFromCourseMap(courseMap);
-  const electives = mergeElectiveCandidates_(autoElectives, manualElectives);
 
   if (Object.keys(courseMap).length === 0 && manualElectives.length === 0) {
     const manualRange = `D${MANUAL_ELECTIVE_START_ROW}:F${MANUAL_ELECTIVE_START_ROW + MANUAL_ELECTIVE_SLOTS - 1}`;
     throw new Error(`No student data found. Enter Course+Mark in Student!A2:B and/or manual overrides in Student!${manualRange}.`);
   }
 
+  const evaluation = evaluateProgramsForStudent_({
+    programsRange,
+    courseMap,
+    manualElectives,
+    avgRules,
+    electiveRuleOverrides,
+  });
+
+  writeResultRowsToSheet_(resultsSheet, evaluation.finalOut);
+  writeResultRowsToSheet_(eligibleSheet, evaluation.eligibleRows);
+  writeResultRowsToSheet_(ineligibleSheet, evaluation.ineligibleRows);
+  writeResultRowsToSheet_(uncheckableSheet, evaluation.uncheckableRows);
+}
+
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile("WebApp")
+    .setTitle("Next Step Admissions Checker")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function getWebAppBootstrapData() {
+  return {
+    generatedAt: new Date().toISOString(),
+    namedCourseOptions: listNamedCourseOptions_(),
+    electiveCourseOptions: listElectiveCourseOptions_(),
+    manualElectiveSlots: MANUAL_ELECTIVE_SLOTS,
+    groups: ["A", "B", "C", "D"],
+  };
+}
+
+function runWebEligibility(payload) {
+  const ss = getAdmissionsSpreadsheet_();
+  const programsSheet = ss.getSheetByName("Programs");
+  if (!programsSheet) {
+    throw new Error("Admissions data is unavailable right now. Please contact support to check the Programs sheet.");
+  }
+
+  const programsRange = programsSheet.getDataRange().getValues();
+  if (!programsRange || programsRange.length < 2) {
+    throw new Error("Admissions data is empty. Refresh the Programs tab, then try again.");
+  }
+
+  const avgRules = readAvgRules(ss);
+  const electiveRuleOverrides = readElectiveRuleOverrides(ss);
+  const namedRows = sanitizeWebNamedCourses_(payload && payload.namedCourses);
+  const courseMap = buildCourseMap(namedRows);
+  const manualRows = sanitizeWebManualElectives_(payload && payload.manualElectives);
+  const manualElectives = buildElectives(manualRows, { source: "manual-web", rowOffset: 1 });
+
+  const evaluation = evaluateProgramsForStudent_({
+    programsRange,
+    courseMap,
+    manualElectives,
+    avgRules,
+    electiveRuleOverrides,
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    headers: RESULTS_HEADER_ROW.slice(),
+    summary: {
+      totalPrograms: Math.max(0, evaluation.finalOut.length - 1),
+      eligible: Math.max(0, evaluation.eligibleRows.length - 1),
+      missing: Math.max(0, evaluation.ineligibleRows.length - 1),
+      uncheckable: Math.max(0, evaluation.uncheckableRows.length - 1),
+    },
+    results: {
+      all: evaluation.finalOut.slice(1),
+      eligible: evaluation.eligibleRows.slice(1),
+      ineligible: evaluation.ineligibleRows.slice(1),
+      uncheckable: evaluation.uncheckableRows.slice(1),
+    },
+  };
+}
+
+function getAdmissionsSpreadsheet_() {
+  try {
+    const active = SpreadsheetApp.getActive();
+    if (active) return active;
+  } catch (err) {}
+
+  const configuredId = String(
+    PropertiesService.getScriptProperties().getProperty(ADMISSIONS_SHEET_ID_PROPERTY) || ""
+  ).trim();
+  const sheetId = configuredId || DEFAULT_ADMISSIONS_SHEET_ID;
+  if (!sheetId) {
+    throw new Error(
+      "Admissions sheet ID is not configured. Set Script Property ADMISSIONS_SHEET_ID or bind this script to the sheet."
+    );
+  }
+  return SpreadsheetApp.openById(sheetId);
+}
+
+function listNamedCourseOptions_() {
+  const alias = courseAliases();
+  const fromAlias = Object.keys(alias).map((k) => String(alias[k] || "").trim());
+  return unique(fromAlias.concat(listElectiveCourseOptions_()).filter(Boolean)).sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
+}
+
+function sanitizeWebNamedCourses_(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const out = [];
+  for (let i = 0; i < list.length && i < 80; i++) {
+    const item = list[i] || {};
+    const course = String(item.course || "").trim();
+    const mark = toNumber(item.mark);
+    if (!course || !isFinite(mark)) continue;
+    out.push([course, Math.max(0, Math.min(100, mark))]);
+  }
+  return out;
+}
+
+function sanitizeWebManualElectives_(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const out = [];
+  for (let i = 0; i < list.length && i < 25; i++) {
+    const item = list[i] || {};
+    const course = String(item.course || "").trim();
+    const mark = toNumber(item.mark);
+    if (!course || !isFinite(mark)) continue;
+    const group = String(item.group || "").trim().toUpperCase();
+    out.push([course, ["A", "B", "C", "D"].includes(group) ? group : "", Math.max(0, Math.min(100, mark))]);
+  }
+  return out;
+}
+
+function evaluateProgramsForStudent_(opts) {
+  const programsRange = (opts && opts.programsRange) || [];
+  const courseMap = (opts && opts.courseMap) || {};
+  const manualElectives = (opts && opts.manualElectives) || [];
+  const avgRules = (opts && opts.avgRules) || { byKey: {}, byInstitution: {} };
+  const electiveRuleOverrides = (opts && opts.electiveRuleOverrides) || { byKey: {}, byInstitution: {} };
+
+  if (!programsRange || programsRange.length < 2) {
+    throw new Error("Programs tab is empty. Import/sync the dataset into the Programs tab first.");
+  }
+  if (Object.keys(courseMap).length === 0 && manualElectives.length === 0) {
+    throw new Error("No student data found. Add at least one course mark.");
+  }
+
+  const autoElectives = buildAutoElectivesFromCourseMap(courseMap);
+  const electives = mergeElectiveCandidates_(autoElectives, manualElectives);
+
   const header = programsRange[0].map(String);
   const rows = programsRange.slice(1);
-
   const idx = indexHeader(header);
   requireProgramsColumns(idx);
 
-  const out = [];
-  out.push([
-    "Institution",
-    "Program",
-    "Credential",
-    "Min Avg",
-    "Student Avg",
-    "Avg Courses",
-    "Avg Used",
-    "Competitive Guidance",
-    "Missing",
-    "Notes",
-  ]);
+  const out = [RESULTS_HEADER_ROW.slice()];
 
   rows.forEach((r) => {
     const institution = getStr(r, idx, "Institution");
@@ -164,7 +304,6 @@ function runEligibility() {
     const status = getStr(r, idx, "Status");
 
     if (!institution || !program) return;
-    // Keep only active programs when status is provided.
     if (status && status.toLowerCase() !== "active") return;
 
     const reasons = [];
@@ -209,11 +348,6 @@ function runEligibility() {
 
     const avgMin = toNumber(getStr(r, idx, "Min_Avg_Final"));
     const avgTotalFromData = toNumber(getStr(r, idx, "Avg_Total"));
-    // Average rule:
-    // - If the program specifies an elective quantity (e.g., "Three"), average uses:
-    //   required named courses + that many electives.
-    // - Otherwise, use AvgRules overrides (per-program or per-institution wildcard). If still missing and the program
-    //   has a minimum average, fall back to 5 but mark as not fully checkable.
     const requiredMarks = collectRequiredMarks([englishEval, mathEval, socialEval, scienceEval]);
     const requiredSlots = countRequiredSlots([englishEval, mathEval, socialEval, scienceEval]);
     const assumedTarget = 5;
@@ -257,7 +391,6 @@ function runEligibility() {
           .map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${e.mark}`)
           .join(", ");
 
-        // Only compute "what do I need on the remaining electives?" once all required (named) slots are filled.
         const usedRequiredCount = (avg.usedRequired || []).length;
         const missingRequiredSlots = Math.max(0, requiredSlots - usedRequiredCount);
         let needHint = "";
@@ -267,7 +400,9 @@ function runEligibility() {
           const needAvg = remaining > 0 ? needTotal / remaining : NaN;
           if (isFinite(needAvg)) {
             const clamped = Math.max(0, needAvg);
-            needHint = `; to meet ${avgMin}, remaining elective(s) need avg >= ${clamped.toFixed(1)}` + (clamped > 100 ? " (not possible)" : "");
+            needHint =
+              `; to meet ${avgMin}, remaining elective(s) need avg >= ${clamped.toFixed(1)}` +
+              (clamped > 100 ? " (not possible)" : "");
           }
         }
 
@@ -297,7 +432,6 @@ function runEligibility() {
     ]);
   });
 
-  // Sort: Institution, Program, Credential
   const body = out.slice(1);
   body.sort((a, b) => {
     const i = String(a[0]).localeCompare(String(b[0]));
@@ -307,22 +441,16 @@ function runEligibility() {
     return String(a[2]).localeCompare(String(b[2]));
   });
 
-  const finalOut = [out[0]].concat(body);
-  resultsSheet.clearContents();
-  resultsSheet.getRange(1, 1, finalOut.length, finalOut[0].length).setValues(finalOut);
-  resultsSheet.setFrozenRows(1);
-  applyCompetitiveHighlight_(resultsSheet, finalOut);
-
-  // Split views
-  const eligibleRows = [out[0]].concat(
+  const finalOut = [RESULTS_HEADER_ROW.slice()].concat(body);
+  const eligibleRows = [RESULTS_HEADER_ROW.slice()].concat(
     body.filter((r) => {
       const missing = String(r[8] || "").trim();
       const notes = String(r[9] || "").trim();
       return missing === "" && !isUncheckable_(notes);
     })
   );
-  const ineligibleRows = [out[0]].concat(body.filter((r) => String(r[8] || "").trim() !== ""));
-  const uncheckableRows = [out[0]].concat(
+  const ineligibleRows = [RESULTS_HEADER_ROW.slice()].concat(body.filter((r) => String(r[8] || "").trim() !== ""));
+  const uncheckableRows = [RESULTS_HEADER_ROW.slice()].concat(
     body.filter((r) => {
       const missing = String(r[8] || "").trim();
       const notes = String(r[9] || "").trim();
@@ -330,20 +458,20 @@ function runEligibility() {
     })
   );
 
-  eligibleSheet.clearContents();
-  eligibleSheet.getRange(1, 1, eligibleRows.length, eligibleRows[0].length).setValues(eligibleRows);
-  eligibleSheet.setFrozenRows(1);
-  applyCompetitiveHighlight_(eligibleSheet, eligibleRows);
+  return {
+    finalOut,
+    eligibleRows,
+    ineligibleRows,
+    uncheckableRows,
+  };
+}
 
-  ineligibleSheet.clearContents();
-  ineligibleSheet.getRange(1, 1, ineligibleRows.length, ineligibleRows[0].length).setValues(ineligibleRows);
-  ineligibleSheet.setFrozenRows(1);
-  applyCompetitiveHighlight_(ineligibleSheet, ineligibleRows);
-
-  uncheckableSheet.clearContents();
-  uncheckableSheet.getRange(1, 1, uncheckableRows.length, uncheckableRows[0].length).setValues(uncheckableRows);
-  uncheckableSheet.setFrozenRows(1);
-  applyCompetitiveHighlight_(uncheckableSheet, uncheckableRows);
+function writeResultRowsToSheet_(sheet, rows) {
+  const safeRows = rows && rows.length ? rows : [RESULTS_HEADER_ROW.slice()];
+  sheet.clearContents();
+  sheet.getRange(1, 1, safeRows.length, safeRows[0].length).setValues(safeRows);
+  sheet.setFrozenRows(1);
+  applyCompetitiveHighlight_(sheet, safeRows);
 }
 
 function indexHeader(header) {
