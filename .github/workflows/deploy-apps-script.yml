@@ -1,0 +1,67 @@
+name: Deploy Apps Script Web App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps_script/**"
+      - ".github/workflows/deploy-apps-script.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-apps-script-webapp
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      APPS_SCRIPT_ID: ${{ secrets.APPS_SCRIPT_ID || vars.APPS_SCRIPT_ID }}
+      APPS_SCRIPT_DEPLOYMENT_ID: ${{ secrets.APPS_SCRIPT_DEPLOYMENT_ID || vars.APPS_SCRIPT_DEPLOYMENT_ID }}
+      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install clasp
+        run: npm install --global @google/clasp
+
+      - name: Validate required secrets
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "Missing secret: CLASPRC_JSON"
+            exit 1
+          fi
+          if [ -z "$APPS_SCRIPT_ID" ]; then
+            echo "Missing secret/variable: APPS_SCRIPT_ID"
+            exit 1
+          fi
+          if [ -z "$APPS_SCRIPT_DEPLOYMENT_ID" ]; then
+            echo "Missing secret/variable: APPS_SCRIPT_DEPLOYMENT_ID"
+            exit 1
+          fi
+
+      - name: Write clasp auth and project config
+        run: |
+          printf "%s" "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          cat > .clasp.json <<EOF
+          {
+            "scriptId": "$APPS_SCRIPT_ID",
+            "rootDir": "apps_script"
+          }
+          EOF
+
+      - name: Push Apps Script files
+        run: clasp push --force
+
+      - name: Update web app deployment
+        run: clasp deploy --deploymentId "$APPS_SCRIPT_DEPLOYMENT_ID" --description "CI ${GITHUB_SHA}"

@@ -5,3 +5,5 @@
 /config/sheets_sync.json
 __pycache__/
 *.pyc
+.clasp.json
+.clasprc.json

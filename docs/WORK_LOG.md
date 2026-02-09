@@ -69,3 +69,21 @@ Keep entries short and append-only.
 - Added owner-only admin lockdown controls in apps_script/Code.gs (Admin: Apply Staff Lockdown, Admin: Show All Tabs) to protect + hide internal tabs while leaving Student, Results, Eligible, Ineligible, and Uncheckable visible/editable.
 - Updated docs/USER_MANUAL.md with rollout step: owner runs setup + lockdown once; staff then use only the five working tabs.
 - Documented lockdown controls in README.md and docs/PROJECT_CONTEXT.md for handoff clarity.
+
+## 2026-02-09 (Apps Script Auto-Deploy + Web App Prep)
+- Added Apps Script code auto-deploy workflow: `.github/workflows/deploy-apps-script.yml` (push `apps_script/**` on `main` -> `clasp push` + update existing deployment ID).
+- Added bootstrap helper `tools/setup-appsscript-deploy.ps1` to install local tooling (`node`, `npm`, `gh`, `clasp`), run `clasp login`, and set GitHub secrets (`CLASPRC_JSON`, `APPS_SCRIPT_ID`, `APPS_SCRIPT_DEPLOYMENT_ID`).
+- Added runbook `docs/APPS_SCRIPT_AUTODEPLOY.md` and linked it from `README.md`.
+- Updated `.gitignore` to ignore local clasp secrets/config (`.clasp.json`, `.clasprc.json`).
+- Captured production identifiers:
+  - Script ID: `1qDNsy2Agk3SwnuzAcjpUos69wfYfQJvfp_7SfqTDiG2X-5tKW93mTSlM`
+  - Deployment ID: `AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ`
+  - Web app URL: `https://script.google.com/macros/s/AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ/exec`
+  - Sheet ID: `1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU`
+- User decisions captured:
+  - Access mode: Anyone with link
+  - Admin: deanguedo@gmail.com
+  - Staff UX: counselor-friendly messages, no logs, allow CSV + PDF export
+  - Branding assets moved into repo under `Materials/`
+- Local blocker during setup attempt: this machine did not have `node`, `npm`, or `gh`, and no `~/.clasprc.json` existed. Next action:
+  - `./tools/setup-appsscript-deploy.ps1 -ScriptId "<SCRIPT_ID>" -DeploymentId "<DEPLOYMENT_ID>"`

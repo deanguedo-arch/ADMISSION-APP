@@ -48,3 +48,28 @@
 - Validation blocked locally: Python runtime is unavailable in this environment (`python`/`py` launcher missing), so fixture commands were not executed here.
 - Current uncommitted files after this phase: `pipeline/run.py`, `pipeline/enrichment_links.py`, `pipeline/check_enrichment_link_fixtures.py`, `pipeline/fixtures/enrichment_link_cases.json`, `pipeline/README.md`, `README.md`, `docs/WORK_LOG.md`.
 
+
+## 2026-02-09 (latest update: web app + auto-deploy prep)
+- Added `.github/workflows/deploy-apps-script.yml` to auto-deploy Apps Script changes from `apps_script/**` on `main`.
+- Added `tools/setup-appsscript-deploy.ps1` to bootstrap local deploy prerequisites and set GitHub secrets (`CLASPRC_JSON`, `APPS_SCRIPT_ID`, `APPS_SCRIPT_DEPLOYMENT_ID`).
+- Added docs: `docs/APPS_SCRIPT_AUTODEPLOY.md`.
+- Updated `.gitignore` to ignore `.clasp.json` and `.clasprc.json`.
+- Production identifiers confirmed:
+  - Script ID: `1qDNsy2Agk3SwnuzAcjpUos69wfYfQJvfp_7SfqTDiG2X-5tKW93mTSlM`
+  - Deployment ID: `AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ`
+  - Web app URL: `https://script.google.com/macros/s/AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ/exec`
+  - Sheet ID: `1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU`
+- Product/rollout decisions confirmed:
+  - Access mode: Anyone with link
+  - Admin: deanguedo@gmail.com
+  - No logging
+  - Counselor-friendly error text
+  - Export targets: CSV and PDF
+  - Branding assets moved into `Materials/`
+
+### Next step for the next agent
+1. Run local bootstrap once:
+   - `./tools/setup-appsscript-deploy.ps1 -ScriptId "1qDNsy2Agk3SwnuzAcjpUos69wfYfQJvfp_7SfqTDiG2X-5tKW93mTSlM" -DeploymentId "AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ"`
+2. Commit and push workflow/docs changes.
+3. Verify GitHub Action `Deploy Apps Script Web App` succeeds once.
+4. Continue with front-end web app implementation (same backend logic, staff-facing only).

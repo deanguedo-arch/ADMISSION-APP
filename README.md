@@ -133,6 +133,7 @@ Guardrails now included in local sync:
 GitHub automation setup:
 - `docs/GITHUB_AUTOMATION.md`
 - workflow file: `.github/workflows/sync-programs.yml`
+- Apps Script code auto-deploy: `docs/APPS_SCRIPT_AUTODEPLOY.md` (`.github/workflows/deploy-apps-script.yml`)
 
 ## Optional: program-specific average rules (recommended)
 Some programs have a minimum average but the dataset doesn't clearly specify how many courses that average is calculated from.
