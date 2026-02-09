@@ -34,6 +34,7 @@ Network scraping isn’t run from here (and programs change), but the pipeline s
 Institution nuance scaffold:
 - `pipeline/adapters/` contains NAIT, MacEwan, NorQuest, UAlberta, and generic adapters.
 - `pipeline/run.py` now records `avg_total_confidence`, `avg_total_rule`, and `avg_total_adapter`.
+- adapter regression fixtures: `python .\pipeline\check_avg_total_fixtures.py`
 
 Before expanding full automation, lock the current baseline:
 - `docs/V1_LOCK_CHECKLIST.md`

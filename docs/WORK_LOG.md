@@ -35,3 +35,5 @@ Keep entries short and append-only.
 - Added `docs/V1_LOCK_CHECKLIST.md` to freeze current Sheets/sync behavior before full scrape automation.
 - Added pipeline institution adapter scaffold in `pipeline/adapters/` (NAIT, MacEwan, NorQuest, UAlberta, generic fallback) and wired `pipeline/run.py` to use adapter routing.
 - Extended `pipeline/run.py` extract output with `avg_total_confidence`, `avg_total_rule`, and `avg_total_adapter`; updated `pipeline/README.md` and `README.md` accordingly.
+- Added Phase 2 adapter regression starter: `pipeline/check_avg_total_fixtures.py` + fixtures file `pipeline/fixtures/avg_total_cases.json`.
+- Documented fixture check command in `pipeline/README.md` and `README.md` so adapter rule updates can be validated quickly.

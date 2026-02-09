@@ -42,3 +42,15 @@ For the full pipeline spec, see `docs/PIPELINE.md`.
 - `avg_total_adapter`
 
 These fields make extraction behavior auditable before fully automated publishing.
+
+## Phase 2 starter: adapter regression fixtures
+Use fixture checks to lock extraction behavior before adding more scraping logic:
+
+```powershell
+python .\pipeline\check_avg_total_fixtures.py
+```
+
+Fixture cases live in:
+- `pipeline/fixtures/avg_total_cases.json`
+
+This gives a quick pass/fail signal whenever adapter rules change.

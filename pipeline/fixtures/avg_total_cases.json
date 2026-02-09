@@ -1,0 +1,65 @@
+[
+  {
+    "id": "nait-default-admission-average",
+    "institution": "NAIT",
+    "text": "Applicants are considered on admission average and program availability.",
+    "expected_avg_total": 5,
+    "min_confidence": "low",
+    "expected_rule_contains": "nait_default_five"
+  },
+  {
+    "id": "nait-five-30-level-subjects",
+    "institution": "NAIT",
+    "text": "Your admission average is calculated on five 30-level subjects.",
+    "expected_avg_total": 5,
+    "min_confidence": "high",
+    "expected_rule_contains": "five_30_level_subjects"
+  },
+  {
+    "id": "ualberta-five-required-grade12",
+    "institution": "University of Alberta",
+    "text": "Admission average is calculated using five required Grade 12 subjects.",
+    "expected_avg_total": 5,
+    "min_confidence": "high",
+    "expected_rule_contains": "five_required_grade12"
+  },
+  {
+    "id": "ualberta-default-admission-average",
+    "institution": "UALBERTA",
+    "text": "Competitive selection is based on your admission average.",
+    "expected_avg_total": 5,
+    "min_confidence": "low",
+    "expected_rule_contains": "ualberta_default_five"
+  },
+  {
+    "id": "macewan-five-acceptable-grade12",
+    "institution": "MacEwan University",
+    "text": "Selection is based on five acceptable Grade 12 subjects.",
+    "expected_avg_total": 5,
+    "min_confidence": "high",
+    "expected_rule_contains": "five_acceptable_grade12"
+  },
+  {
+    "id": "norquest-best-five",
+    "institution": "NorQuest College",
+    "text": "Your admission average is the average of the best five Grade 12 subjects.",
+    "expected_avg_total": 5,
+    "min_confidence": "high",
+    "expected_rule_contains": "best_five_average"
+  },
+  {
+    "id": "generic-average-of-four",
+    "institution": "Example Polytechnic",
+    "text": "Admission is based on an average of four subjects.",
+    "expected_avg_total": 4,
+    "min_confidence": "high",
+    "expected_rule_contains": "avg_of_four"
+  },
+  {
+    "id": "no-match",
+    "institution": "Example Polytechnic",
+    "text": "Applicants must submit transcripts and complete a personal statement.",
+    "expected_avg_total": null,
+    "min_confidence": "none"
+  }
+]
