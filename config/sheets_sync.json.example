@@ -1,0 +1,9 @@
+{
+  "webhook_url": "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec",
+  "sync_token": "YOUR_SYNC_TOKEN",
+  "sheet_name": "Programs",
+  "min_rows": 100,
+  "max_row_drop_percent": 35,
+  "baseline_path": "out/last_good_programs.csv",
+  "required_institutions": ["NAIT", "NorQuest", "MacEwan"]
+}

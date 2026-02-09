@@ -1,0 +1,30 @@
+# Where `Avg_Total` gets created (and how rescraping works)
+
+`Avg_Total` is **not** a Google Sheets concept. It must be produced by your **scrape/enrich/extract pipeline** and written into the dataset row for each program.
+
+## The exact place to compute it
+During extraction, after you have a program’s **enriched text corpus** (program page + followed admissions links), compute:
+
+- `Min_Avg_Final` (already in your schema)
+- `Competitive_Final` (already in your schema)
+- `Avg_Total` = how many course marks that minimum average is based on
+- (recommended audit) `Avg_Total_Snippet`, `Avg_Total_SourceUrl`
+
+Then write those values into the program’s structured output row and publish to `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`.
+
+Apps Script will automatically prefer `Avg_Total` from the dataset and only fall back to the `AvgRules` sheet when it’s missing.
+
+## Suggested pipeline artifacts (repeatable rescrape)
+Keep these outputs so you can rerun anytime and debug quickly:
+
+1. `pipeline_artifacts/index/programs.csv` (stable program list + URLs)
+2. `pipeline_artifacts/fetch/{program_id}/base.html` + `base.txt`
+3. `pipeline_artifacts/enrich/{program_id}/links.csv` + merged `enriched.txt`
+4. `pipeline_artifacts/extract/programs_structured.csv` (includes `Avg_Total`)
+5. `pipeline_artifacts/qa/report.md` (coverage + unknown rates + duplicates)
+
+## Why this is necessary
+Different institutions put “average based on X courses” in different places (often not on the base program page). Without enrichment + audit fields, you’ll keep guessing and maintaining `AvgRules` forever.
+
+For the full pipeline spec, see `docs/PIPELINE.md`.
+

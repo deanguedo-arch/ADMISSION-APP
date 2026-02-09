@@ -1,0 +1,6 @@
+/.venv/
+/pipeline_artifacts*/
+/out/
+/data/*.new
+/config/sheets_sync.json
+
