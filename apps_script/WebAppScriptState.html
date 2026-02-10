@@ -1,0 +1,53 @@
+﻿<script>
+
+      const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all", "shortlist"];
+      const DEFAULT_RESULT_SORT = "closest";
+
+      const state = {
+        boot: null,
+        result: null,
+        resultModel: null,
+        view: "eligible",
+        shortlist: {},
+        selectedProgramKey: "",
+        compareKeys: [],
+        resultFilters: {
+          query: "",
+          institution: "",
+          credential: "",
+          sort: DEFAULT_RESULT_SORT,
+        },
+        mockMode: false,
+        auth: {
+          idToken: "",
+          email: "",
+        },
+      };
+
+      const ui = {
+        stamp: document.getElementById("stamp"),
+        authLine: document.getElementById("authLine"),
+        googleSignIn: document.getElementById("googleSignIn"),
+        status: document.getElementById("status"),
+        namedBody: document.querySelector("#namedTable tbody"),
+        electiveBody: document.querySelector("#electiveTable tbody"),
+        runBtn: document.getElementById("runBtn"),
+        csvBtn: document.getElementById("csvBtn"),
+        pdfBtn: document.getElementById("pdfBtn"),
+        resultsWrap: document.getElementById("resultsWrap"),
+        rowsStamp: document.getElementById("rowsStamp"),
+        sumTotal: document.getElementById("sumTotal"),
+        sumEligible: document.getElementById("sumEligible"),
+        sumMissing: document.getElementById("sumMissing"),
+        sumUncheckable: document.getElementById("sumUncheckable"),
+        filterGroup: document.getElementById("filterGroup"),
+        resultSearch: document.getElementById("resultSearch"),
+        institutionFilter: document.getElementById("institutionFilter"),
+        credentialFilter: document.getElementById("credentialFilter"),
+        sortSelect: document.getElementById("sortSelect"),
+        clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        compareStrip: document.getElementById("compareStrip"),
+        detailsDrawer: document.getElementById("detailsDrawer"),
+      };
+</script>
+

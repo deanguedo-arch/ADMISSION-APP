@@ -29,7 +29,12 @@ Script: `tools/clean-master.ps1`
   - App shell + constants: `apps_script/Code.gs`
   - Web auth/input surface: `apps_script/WebAuth.gs`
   - Workbook/admin operations: `apps_script/WorkbookAdmin.gs`
-  - Eligibility domain engine: `apps_script/EligibilityEngine.gs`
+  - Eligibility orchestration/output: `apps_script/EligibilityEngine.gs`
+  - Program data/rules parsing: `apps_script/EligibilityProgramsData.gs`
+  - Subject requirement evaluation: `apps_script/EligibilitySubjects.gs`
+  - Elective/average selection: `apps_script/EligibilityElectives.gs`
+  - Shared helpers: `apps_script/EligibilityShared.gs`
+  - Web HTML include renderer: `apps_script/WebAppRender.gs`
 - Logic is intentionally **separate** from scraping. You should be able to change the dataset without rewriting the checker.
 
 ### 3) Scrape / enrich / extract pipeline (Python later)
@@ -82,7 +87,11 @@ This writes: `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
      - Column F: mark (number)
 4. Open Extensions -> Apps Script and load code:
    - One-file manual paste (recommended for quick migration): run `.\tools\export-appsscript-bundles.ps1 -Profile full -CopyToClipboard`, then paste into `Code.gs`.
-   - Full modular copy: add `apps_script/Code.gs`, `apps_script/WebAuth.gs`, `apps_script/WorkbookAdmin.gs`, `apps_script/EligibilityEngine.gs`, and `apps_script/WebApp.html`.
+   - Full modular copy: copy all admissions files from `apps_script/`:
+     - `Code.gs`, `WebAuth.gs`, `WorkbookAdmin.gs`
+     - `EligibilityEngine.gs`, `EligibilityProgramsData.gs`, `EligibilitySubjects.gs`, `EligibilityElectives.gs`, `EligibilityShared.gs`
+     - `WebAppRender.gs`
+     - `WebApp.html`, `WebAppStyles.html`, `WebAppBody.html`, `WebAppScriptState.html`, `WebAppScriptFunctions.html`, `WebAppScriptInit.html`
 5. Reload the sheet -> run **Admissions Checker -> One-Time Setup (Recommended)** once.
 6. Use **Admissions Checker -> Check Eligibility**.
 
@@ -101,7 +110,7 @@ The script writes:
 Output layout (left-to-right): Institution, Program, Credential, Min Avg, Student Avg, Avg Courses, Avg Used, Competitive Guidance, Missing, Notes.
 
 ### C) Use the web app (staff form + CSV/PDF export)
-The same Apps Script project serves a web UI from `apps_script/WebApp.html`.
+The same Apps Script project serves a web UI from `apps_script/WebApp.html` plus split `WebApp*.html` fragments.
 
 - Backend shell entrypoints are in `apps_script/Code.gs`:
   - `doGet()` for page load
@@ -109,7 +118,9 @@ The same Apps Script project serves a web UI from `apps_script/WebApp.html`.
   - `runWebEligibility(payload)` for checks
 - Entrypoint dependencies:
   - auth/request guards in `apps_script/WebAuth.gs`
-  - evaluation logic in `apps_script/EligibilityEngine.gs`
+  - HTML include rendering in `apps_script/WebAppRender.gs`
+  - evaluation orchestration in `apps_script/EligibilityEngine.gs`
+  - evaluation internals in `apps_script/EligibilityProgramsData.gs`, `apps_script/EligibilitySubjects.gs`, `apps_script/EligibilityElectives.gs`
 - Uses the same eligibility engine as the sheet menu run.
 - Exports:
   - CSV (all rows)

@@ -32,9 +32,14 @@ Google Sheets + Apps Script, plus a staff-facing Apps Script web app.
 - Shell: `apps_script/Code.gs`
 - Web auth/input: `apps_script/WebAuth.gs`
 - Workbook/admin: `apps_script/WorkbookAdmin.gs`
-- Eligibility engine: `apps_script/EligibilityEngine.gs`
+- Eligibility orchestration/output: `apps_script/EligibilityEngine.gs`
+- Program data/rules parsing: `apps_script/EligibilityProgramsData.gs`
+- Subject evaluation: `apps_script/EligibilitySubjects.gs`
+- Elective/average selection: `apps_script/EligibilityElectives.gs`
+- Shared helpers: `apps_script/EligibilityShared.gs`
+- Web include renderer: `apps_script/WebAppRender.gs`
 - Menu: **Admissions Checker -> Check Eligibility**
-- Web app entrypoint: `doGet()` + `apps_script/WebApp.html`
+- Web app entrypoint: `doGet()` + `apps_script/WebApp.html` + `WebApp*.html` fragments
 - Web app backend call: `runWebEligibility(payload)` (same eligibility engine as sheet menu)
 - Admin menu: **Admissions Checker -> Admin: Apply Staff Lockdown** hides/protects internal tabs; keeps `Student`, `Results`, `Eligible`, `Ineligible`, `Uncheckable` visible/editable.
 - Computes averages per program using:

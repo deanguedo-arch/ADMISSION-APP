@@ -60,6 +60,12 @@ jobs:
           }
           EOF
 
+      - name: Validate web app surface
+        run: pwsh -File ./tools/validate-webapp-surface.ps1
+
+      - name: Validate Apps Script structure
+        run: pwsh -File ./tools/validate-apps-script-structure.ps1
+
       - name: Push Apps Script files
         run: clasp push --force
 

@@ -1,0 +1,1603 @@
+﻿<script>
+function boot() {
+        resetForm();
+        state.mockMode = isMockMode();
+        if (state.mockMode) {
+          bootMockMode();
+          return;
+        }
+        if (!isAppsScriptContext()) {
+          setStatus(
+            "This page is ready. Use Apps Script /dev for real backend, or run local server with ?mock=1 for UI preview.",
+            true
+          );
+          ui.stamp.textContent = "Standalone preview (no backend)";
+          ui.authLine.textContent = "Not connected to Apps Script backend.";
+          return;
+        }
+        loadPublicBootstrap();
+      }
+
+      function loadPublicBootstrap() {
+        setStatus("Loading sign-in settings...");
+        google.script.run
+          .withSuccessHandler(handleBootstrapResponse)
+          .withFailureHandler((err) => {
+            setStatus(readError(err), true);
+            ui.stamp.textContent = "Load failed";
+            ui.authLine.textContent = "Sign-in check failed.";
+          })
+          .getWebAppBootstrapData({});
+      }
+
+      function loadSecureBootstrap() {
+        if (!state.auth.idToken) {
+          setStatus("Sign in with your school account to continue.", true);
+          return;
+        }
+        setStatus("Verifying sign-in...");
+        google.script.run
+          .withSuccessHandler(handleBootstrapResponse)
+          .withFailureHandler((err) => {
+            setStatus(readError(err), true);
+            ui.authLine.textContent = "Sign-in failed. Try again.";
+          })
+          .getWebAppBootstrapData({ idToken: state.auth.idToken });
+      }
+
+      function handleBootstrapResponse(data) {
+        const boot = data || {};
+        if (boot.requiresAuth) {
+          const auth = boot.auth || {};
+          ui.authLine.textContent = `Sign in with your ${auth.allowedDomainSuffix || "@eips.ca"} account.`;
+          initializeGoogleSignIn(auth.googleClientId || "");
+          ui.stamp.textContent = "Awaiting sign-in";
+          setStatus("Sign in to load course options.");
+          return;
+        }
+
+        state.boot = boot;
+        state.auth.email = String((boot.auth && boot.auth.email) || "").trim().toLowerCase();
+        bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
+        bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
+        seedRows();
+        const stamp = (state.boot.generatedAt || "").replace("T", " ").replace("Z", " UTC");
+        ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
+        ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
+        setStatus("Ready.");
+      }
+
+      function initializeGoogleSignIn(clientId) {
+        if (!clientId) {
+          setStatus(
+            "Web app auth is not configured. Set Script Property WEBAPP_GOOGLE_CLIENT_ID in Apps Script.",
+            true
+          );
+          return;
+        }
+        if (!(window.google && google.accounts && google.accounts.id)) {
+          setStatus("Google sign-in script did not load. Refresh and try again.", true);
+          return;
+        }
+        ui.googleSignIn.innerHTML = "";
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: onGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        google.accounts.id.renderButton(ui.googleSignIn, {
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          text: "signin_with",
+          logo_alignment: "left",
+        });
+      }
+
+      function onGoogleCredential(response) {
+        const token = String((response && response.credential) || "").trim();
+        if (!token) {
+          setStatus("Google sign-in did not return a token. Try again.", true);
+          return;
+        }
+        state.auth.idToken = token;
+        loadSecureBootstrap();
+      }
+
+      function seedRows() {
+        if (ui.namedBody.children.length === 0) {
+          for (let i = 0; i < 8; i++) addNamedRow();
+        }
+        if (ui.electiveBody.children.length === 0) {
+          const slots = Number(state.boot && state.boot.manualElectiveSlots) || 5;
+          for (let i = 0; i < slots; i++) addElectiveRow();
+        }
+      }
+
+      function resetForm() {
+        ui.namedBody.innerHTML = "";
+        ui.electiveBody.innerHTML = "";
+        for (let i = 0; i < 8; i++) addNamedRow();
+        for (let i = 0; i < 5; i++) addElectiveRow();
+        state.result = null;
+        state.resultModel = null;
+        state.view = "eligible";
+        state.shortlist = {};
+        state.selectedProgramKey = "";
+        state.compareKeys = [];
+        state.resultFilters.query = "";
+        state.resultFilters.institution = "";
+        state.resultFilters.credential = "";
+        state.resultFilters.sort = DEFAULT_RESULT_SORT;
+        ui.csvBtn.disabled = true;
+        ui.pdfBtn.disabled = true;
+        syncResultControls();
+        populateResultFilterOptions();
+        updateSummary({ totalPrograms: 0, eligible: 0, missing: 0, uncheckable: 0 });
+        renderResults();
+        renderCompareStrip();
+        renderDetailsDrawer();
+        setStatus("");
+        syncFilterButtons();
+      }
+
+      function addNamedRow(seed) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" list="namedCourses" placeholder="English 30-1" value="${escapeAttr(
+            seed && seed.course
+          )}" /></td>
+          <td><input type="number" min="0" max="100" step="0.1" placeholder="%" value="${escapeAttr(
+            seed && seed.mark
+          )}" /></td>
+          <td><button class="btn btn-subtle" type="button">x</button></td>
+        `;
+        tr.querySelector("button").addEventListener("click", () => {
+          tr.remove();
+        });
+        ui.namedBody.appendChild(tr);
+      }
+
+      function addElectiveRow(seed) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" list="electiveCourses" placeholder="Art 30" value="${escapeAttr(
+            seed && seed.course
+          )}" /></td>
+          <td>
+            <select>
+              <option value="">Auto</option>
+              <option value="A"${seed && seed.group === "A" ? " selected" : ""}>A</option>
+              <option value="B"${seed && seed.group === "B" ? " selected" : ""}>B</option>
+              <option value="C"${seed && seed.group === "C" ? " selected" : ""}>C</option>
+              <option value="D"${seed && seed.group === "D" ? " selected" : ""}>D</option>
+            </select>
+          </td>
+          <td><input type="number" min="0" max="100" step="0.1" placeholder="%" value="${escapeAttr(
+            seed && seed.mark
+          )}" /></td>
+          <td><button class="btn btn-subtle" type="button">x</button></td>
+        `;
+        tr.querySelector("button").addEventListener("click", () => {
+          tr.remove();
+        });
+        ui.electiveBody.appendChild(tr);
+      }
+
+      function collectPayload() {
+        const namedCourses = Array.from(ui.namedBody.querySelectorAll("tr"))
+          .map((tr) => {
+            const cells = tr.querySelectorAll("td");
+            const course = (cells[0].querySelector("input").value || "").trim();
+            const markRaw = (cells[1].querySelector("input").value || "").trim();
+            const mark = markRaw === "" ? NaN : Number(markRaw);
+            return { course, mark };
+          })
+          .filter((x) => x.course && Number.isFinite(x.mark));
+
+        const manualElectives = Array.from(ui.electiveBody.querySelectorAll("tr"))
+          .map((tr) => {
+            const cells = tr.querySelectorAll("td");
+            const course = (cells[0].querySelector("input").value || "").trim();
+            const group = (cells[1].querySelector("select").value || "").trim().toUpperCase();
+            const markRaw = (cells[2].querySelector("input").value || "").trim();
+            const mark = markRaw === "" ? NaN : Number(markRaw);
+            return { course, group, mark };
+          })
+          .filter((x) => x.course && Number.isFinite(x.mark));
+
+        return {
+          auth: { idToken: state.auth.idToken || "" },
+          namedCourses,
+          manualElectives,
+        };
+      }
+
+      function runCheck() {
+        const payload = collectPayload();
+        if (!payload.namedCourses.length && !payload.manualElectives.length) {
+          setStatus("Enter at least one course and mark before running the check.", true);
+          return;
+        }
+        if (state.mockMode) {
+          runMockCheck(payload);
+          return;
+        }
+        if (!isAppsScriptContext()) {
+          setStatus("Open this page using the deployed Apps Script web app URL to run checks.", true);
+          return;
+        }
+        if (!payload.auth.idToken) {
+          setStatus("Sign in with your school account first.", true);
+          return;
+        }
+
+        setBusy(true);
+        setStatus("Checking admissions rules...");
+        google.script.run
+          .withSuccessHandler((data) => {
+            applyResultPayload(data || null);
+            setStatus("Check complete.");
+            setBusy(false);
+          })
+          .withFailureHandler((err) => {
+            setStatus(readError(err), true);
+            setBusy(false);
+          })
+          .runWebEligibility(payload);
+      }
+
+      function runMockCheck(payload) {
+        setBusy(true);
+        setStatus("Running local mock check...");
+        setTimeout(() => {
+          applyResultPayload(buildMockResult(payload));
+          setBusy(false);
+          setStatus("Mock check complete.");
+        }, 250);
+      }
+
+      function applyResultPayload(result) {
+        state.result = result || null;
+        state.resultModel = buildResultModel(state.result);
+        if (RESULT_VIEWS.indexOf(state.view) < 0) state.view = "eligible";
+        trimShortlistToCurrentModel();
+        trimCompareToCurrentModel();
+        if (state.selectedProgramKey && !(state.resultModel && state.resultModel.rowsByKey && state.resultModel.rowsByKey[state.selectedProgramKey])) {
+          state.selectedProgramKey = "";
+        }
+        syncResultControls();
+        populateResultFilterOptions();
+        if (state.view === "shortlist" && countShortlistRows() === 0) {
+          state.view = "eligible";
+        }
+        ui.csvBtn.disabled = !state.result;
+        ui.pdfBtn.disabled = !state.result;
+        updateSummary((state.result && state.result.summary) || {});
+        syncFilterButtons();
+        renderResults();
+        renderCompareStrip();
+        renderDetailsDrawer();
+      }
+
+      function buildMockResult(payload) {
+        const headers = [
+          "Institution",
+          "Program",
+          "Credential",
+          "Min Avg",
+          "Student Avg",
+          "Avg Courses",
+          "Avg Used",
+          "Competitive Guidance",
+          "Missing",
+          "Notes",
+        ];
+        const totalInputs = (payload.namedCourses || []).length + (payload.manualElectives || []).length;
+        const avg =
+          totalInputs > 0
+            ? (payload.namedCourses || [])
+                .concat(payload.manualElectives || [])
+                .reduce((sum, r) => sum + Number(r.mark || 0), 0) / totalInputs
+            : 0;
+        const studentAvg = Number(avg.toFixed(1));
+        const eligibleRow = [
+          "MacEwan",
+          "Bachelor of Arts Undeclared",
+          "Degree",
+          70,
+          studentAvg,
+          5,
+          "English 30-1=82, Math 30-2=76",
+          "",
+          "",
+          "",
+        ];
+        const missingRow = [
+          "NAIT",
+          "Business Administration Diploma",
+          "Diploma",
+          70,
+          "",
+          5,
+          "English 30-1=82",
+          "",
+          "Need 1 more elective mark(s) for average",
+          "",
+        ];
+        const uncheckableRow = [
+          "UAlberta",
+          "Bachelor of Music",
+          "Degree",
+          75,
+          studentAvg,
+          5,
+          "English 30-1=82, Math 30-2=76",
+          "",
+          "",
+          "Other requirements: audition",
+        ];
+        const k1 = "mock_macewan_ba";
+        const k2 = "mock_nait_business";
+        const k3 = "mock_ualberta_music";
+        return {
+          generatedAt: new Date().toISOString(),
+          headers,
+          meta: {
+            generatedAt: new Date().toISOString(),
+            datasetRows: 3,
+            activeProgramsEvaluated: 3,
+            rowKeyVersion: "v1",
+          },
+          summary: {
+            totalPrograms: 3,
+            eligible: 1,
+            missing: 1,
+            uncheckable: 1,
+          },
+          rowKeysByView: {
+            all: [k1, k2, k3],
+            eligible: [k1],
+            ineligible: [k2],
+            uncheckable: [k3],
+          },
+          detailsByKey: {
+            [k1]: {
+              institution: "MacEwan",
+              program: "Bachelor of Arts Undeclared",
+              credential: "Degree",
+              requirements: [
+                { label: "English", status: "met", requirement: "English 30-1 OR English 30-2", matched: "English 30-1=82", issues: [] },
+              ],
+              average: { min: 70, student: studentAvg, totalCourses: 5, usedCourses: 5, complete: true, meetsMinimum: true, neededElectivesForAverage: 0 },
+              electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
+              missingReasons: [],
+              notes: [],
+              advisories: [],
+            },
+            [k2]: {
+              institution: "NAIT",
+              program: "Business Administration Diploma",
+              credential: "Diploma",
+              requirements: [],
+              average: { min: 70, student: "", totalCourses: 5, usedCourses: 1, complete: false, meetsMinimum: false, neededElectivesForAverage: 1 },
+              electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
+              missingReasons: ["Need 1 more elective mark(s) for average"],
+              notes: [],
+              advisories: [],
+            },
+            [k3]: {
+              institution: "UAlberta",
+              program: "Bachelor of Music",
+              credential: "Degree",
+              requirements: [],
+              average: { min: 75, student: studentAvg, totalCourses: 5, usedCourses: 5, complete: true, meetsMinimum: true, neededElectivesForAverage: 0 },
+              electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
+              missingReasons: [],
+              notes: [],
+              advisories: ["Other requirements: audition"],
+            },
+          },
+          results: {
+            all: [eligibleRow, missingRow, uncheckableRow],
+            eligible: [eligibleRow],
+            ineligible: [missingRow],
+            uncheckable: [uncheckableRow],
+          },
+        };
+      }
+
+      function bootMockMode() {
+        state.boot = {
+          generatedAt: new Date().toISOString(),
+          namedCourseOptions: [
+            "English 30-1",
+            "Math 30-2",
+            "Biology 30",
+            "Chemistry 30",
+            "Social Studies 30-1",
+          ],
+          electiveCourseOptions: ["Art 30", "Drama 30", "Physics 30", "Computer Science Advanced CTS"],
+          manualElectiveSlots: 5,
+        };
+        bindDatalist("namedCourses", state.boot.namedCourseOptions);
+        bindDatalist("electiveCourses", state.boot.electiveCourseOptions);
+        seedRows();
+        ui.stamp.textContent = "Mock mode";
+        ui.authLine.textContent = "Local preview mode (no real student data is sent).";
+        setStatus("Mock mode enabled. UI changes can be tested locally.");
+      }
+
+      function updateSummary(summary) {
+        ui.sumTotal.textContent = Number(summary.totalPrograms || 0);
+        ui.sumEligible.textContent = Number(summary.eligible || 0);
+        ui.sumMissing.textContent = Number(summary.missing || 0);
+        ui.sumUncheckable.textContent = Number(summary.uncheckable || 0);
+      }
+
+      function onFilterClick(e) {
+        const btn = e.target && e.target.closest("button[data-view]");
+        if (!btn) return;
+        const nextView = String(btn.dataset.view || "eligible").trim();
+        if (RESULT_VIEWS.indexOf(nextView) < 0) return;
+        if (nextView === "shortlist" && countShortlistRows() === 0) {
+          state.view = "shortlist";
+          syncFilterButtons();
+          renderResults();
+          setStatus("Shortlist is empty. Pin programs from any view to add them.");
+          return;
+        }
+        state.view = nextView;
+        syncFilterButtons();
+        renderResults();
+      }
+
+      function onResultControlChange() {
+        state.resultFilters.query = String(ui.resultSearch.value || "").trim();
+        state.resultFilters.institution = String(ui.institutionFilter.value || "").trim();
+        state.resultFilters.credential = String(ui.credentialFilter.value || "").trim();
+        state.resultFilters.sort = String(ui.sortSelect.value || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        renderResults();
+      }
+
+      function clearResultFilters() {
+        state.resultFilters.query = "";
+        state.resultFilters.institution = "";
+        state.resultFilters.credential = "";
+        state.resultFilters.sort = DEFAULT_RESULT_SORT;
+        syncResultControls();
+        renderResults();
+      }
+
+      function syncResultControls() {
+        ui.resultSearch.value = state.resultFilters.query || "";
+        ui.institutionFilter.value = state.resultFilters.institution || "";
+        ui.credentialFilter.value = state.resultFilters.credential || "";
+        ui.sortSelect.value = state.resultFilters.sort || DEFAULT_RESULT_SORT;
+        ui.clearResultFiltersBtn.disabled =
+          !state.resultFilters.query &&
+          !state.resultFilters.institution &&
+          !state.resultFilters.credential &&
+          (state.resultFilters.sort || DEFAULT_RESULT_SORT) === DEFAULT_RESULT_SORT;
+      }
+
+      function syncFilterButtons() {
+        const all = ui.filterGroup.querySelectorAll("button[data-view]");
+        all.forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.view === state.view);
+        });
+      }
+
+      function populateResultFilterOptions() {
+        const rows = state.resultModel && state.resultModel.rows ? state.resultModel.rows : [];
+        const institutions = uniqueStrings(
+          rows.map((r) => String(r.institution || "").trim()).filter((x) => x)
+        ).sort((a, b) => a.localeCompare(b));
+        const credentials = uniqueStrings(
+          rows.map((r) => String(r.credential || "").trim()).filter((x) => x)
+        ).sort((a, b) => a.localeCompare(b));
+
+        renderSelectOptions(ui.institutionFilter, "All Institutions", institutions, state.resultFilters.institution);
+        if (state.resultFilters.institution && institutions.indexOf(state.resultFilters.institution) < 0) {
+          state.resultFilters.institution = "";
+        }
+        renderSelectOptions(ui.credentialFilter, "All Credentials", credentials, state.resultFilters.credential);
+        if (state.resultFilters.credential && credentials.indexOf(state.resultFilters.credential) < 0) {
+          state.resultFilters.credential = "";
+        }
+        syncResultControls();
+      }
+
+      function renderSelectOptions(select, emptyLabel, options, selectedValue) {
+        const selected = String(selectedValue || "").trim();
+        const html =
+          `<option value="">${escapeHtml(emptyLabel)}</option>` +
+          (options || [])
+            .map((opt) => {
+              const value = String(opt || "").trim();
+              const selectedAttr = value === selected ? ' selected="selected"' : "";
+              return `<option value="${escapeAttr(value)}"${selectedAttr}>${escapeHtml(value)}</option>`;
+            })
+            .join("");
+        select.innerHTML = html;
+      }
+
+      function onResultsWrapClick(e) {
+        const pinBtn = e.target && e.target.closest("button[data-pin-key]");
+        if (pinBtn) {
+          const key = String(pinBtn.getAttribute("data-pin-key") || "").trim();
+          if (!key) return;
+          toggleShortlistKey(key);
+          if (state.view === "shortlist" && countShortlistRows() === 0) {
+            state.view = "eligible";
+            syncFilterButtons();
+            setStatus("Shortlist is empty. Showing Eligible view.");
+          }
+          renderResults();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const compareBtn = e.target && e.target.closest("button[data-compare-key]");
+        if (compareBtn) {
+          const key = String(compareBtn.getAttribute("data-compare-key") || "").trim();
+          if (!key) return;
+          toggleCompareKey(key);
+          renderResults();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const detailBtn = e.target && e.target.closest("button[data-detail-key]");
+        if (detailBtn) {
+          const key = String(detailBtn.getAttribute("data-detail-key") || "").trim();
+          selectProgramKey(key);
+          renderResults();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const rowEl = e.target && e.target.closest("tr[data-row-key]");
+        if (!rowEl) return;
+        selectProgramKey(String(rowEl.getAttribute("data-row-key") || "").trim());
+        renderResults();
+        renderDetailsDrawer();
+      }
+
+      function toggleShortlistKey(key) {
+        const k = String(key || "").trim();
+        if (!k) return;
+        if (state.shortlist[k]) {
+          delete state.shortlist[k];
+          return;
+        }
+        state.shortlist[k] = true;
+      }
+
+      function countShortlistRows() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) return 0;
+        return Object.keys(state.shortlist).filter((k) => !!model.rowsByKey[k]).length;
+      }
+
+      function trimShortlistToCurrentModel() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          state.shortlist = {};
+          return;
+        }
+        Object.keys(state.shortlist).forEach((k) => {
+          if (!model.rowsByKey[k]) delete state.shortlist[k];
+        });
+      }
+
+      function selectProgramKey(key) {
+        const k = String(key || "").trim();
+        if (!k) {
+          state.selectedProgramKey = "";
+          return;
+        }
+        if (!(state.resultModel && state.resultModel.rowsByKey && state.resultModel.rowsByKey[k])) return;
+        state.selectedProgramKey = k;
+      }
+
+      function toggleCompareKey(key) {
+        const k = String(key || "").trim();
+        if (!k) return;
+        const idx = state.compareKeys.indexOf(k);
+        if (idx >= 0) {
+          state.compareKeys.splice(idx, 1);
+          return;
+        }
+        if (state.compareKeys.length >= 3) {
+          setStatus("Compare prep supports up to 3 programs. Remove one to add another.", true);
+          return;
+        }
+        state.compareKeys.push(k);
+      }
+
+      function trimCompareToCurrentModel() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          state.compareKeys = [];
+          return;
+        }
+        state.compareKeys = state.compareKeys.filter((k) => !!model.rowsByKey[k]);
+      }
+
+      function onCompareStripClick(e) {
+        const removeBtn = e.target && e.target.closest("button[data-compare-remove]");
+        if (removeBtn) {
+          const key = String(removeBtn.getAttribute("data-compare-remove") || "").trim();
+          if (!key) return;
+          state.compareKeys = state.compareKeys.filter((k) => k !== key);
+          renderResults();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const clearBtn = e.target && e.target.closest("button[data-compare-clear]");
+        if (!clearBtn) return;
+        state.compareKeys = [];
+        renderResults();
+        renderCompareStrip();
+        renderDetailsDrawer();
+      }
+
+      function renderResults() {
+        if (!state.result || !state.resultModel) {
+          ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
+          ui.rowsStamp.textContent = "No results yet";
+          syncResultControls();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const headers = state.resultModel.headers || [];
+        const viewRows = getRowsForView(state.view);
+        const filteredRows = sortRows(filterRows(viewRows), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const viewCount = viewRows.length;
+        const shownCount = filteredRows.length;
+        ui.rowsStamp.textContent = shownCount === viewCount ? `${shownCount} rows` : `${shownCount} of ${viewCount} rows`;
+
+        if (!filteredRows.length) {
+          const emptyMsg =
+            viewCount === 0 ? "No rows in this category." : "No rows match the current filters. Clear filters to widen results.";
+          ui.resultsWrap.innerHTML = `<div class="empty">${escapeHtml(emptyMsg)}</div>`;
+          syncResultControls();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const headHtml =
+          `<tr><th style="width: 190px">Actions</th>${headers
+            .map((h) => `<th>${escapeHtml(String(h))}</th>`)
+            .join("")}</tr>`;
+        const bodyHtml = filteredRows
+          .map((row) => {
+            const isPinned = !!state.shortlist[row.key];
+            const isSelected = row.key === state.selectedProgramKey;
+            const isCompared = state.compareKeys.indexOf(row.key) >= 0;
+            const pinClass = isPinned ? "pin-btn active" : "pin-btn";
+            const compareClass = isCompared ? "action-btn active" : "action-btn";
+            const viewClass = isSelected ? "action-btn active" : "action-btn";
+            const trClasses = []
+              .concat(isPinned ? ["row-pinned"] : [])
+              .concat(isSelected ? ["row-selected"] : [])
+              .join(" ");
+            const trClass = trClasses ? ` class="${trClasses}"` : "";
+            const pinLabel = isPinned ? "Pinned" : "Pin";
+            const compareLabel = isCompared ? "Compared" : "Compare";
+            const viewLabel = isSelected ? "Viewing" : "View";
+            return `<tr${trClass} data-row-key="${escapeAttr(row.key)}"><td><div class="row-actions"><button class="${pinClass}" type="button" data-pin-key="${escapeAttr(
+              row.key
+            )}">${pinLabel}</button><button class="${compareClass}" type="button" data-compare-key="${escapeAttr(
+              row.key
+            )}">${compareLabel}</button><button class="${viewClass}" type="button" data-detail-key="${escapeAttr(
+              row.key
+            )}">${viewLabel}</button></div></td>${row.cells
+              .map((c) => `<td>${escapeHtml(formatCell(c))}</td>`)
+              .join("")}</tr>`;
+          })
+          .join("");
+        ui.resultsWrap.innerHTML = `<table><thead>${headHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+        syncResultControls();
+        renderCompareStrip();
+        renderDetailsDrawer();
+      }
+
+      function renderCompareStrip() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          ui.compareStrip.innerHTML = `<div class="ghost">Compare prep: add up to 3 programs while triaging.</div>`;
+          return;
+        }
+
+        const selected = state.compareKeys.map((k) => model.rowsByKey[k]).filter(Boolean);
+        if (!selected.length) {
+          ui.compareStrip.innerHTML = `<div class="ghost">Compare prep: add up to 3 programs while triaging.</div>`;
+          return;
+        }
+
+        const chips = selected
+          .map((row) => {
+            const label = `${row.program} (${row.institution})`;
+            return `<button class="compare-chip" type="button" data-compare-remove="${escapeAttr(
+              row.key
+            )}" title="Remove">${escapeHtml(label)}</button>`;
+          })
+          .join("");
+        ui.compareStrip.innerHTML = `
+          <div class="compare-header">
+            <strong>Compare Prep (${selected.length}/3)</strong>
+            <button class="action-btn" type="button" data-compare-clear="1">Clear</button>
+          </div>
+          <div class="compare-chips">${chips}</div>
+          <div class="ghost">Selection is ready for side-by-side compare mode.</div>
+        `;
+      }
+
+      function renderDetailsDrawer() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program row to inspect requirements and next steps.</div>`;
+          return;
+        }
+
+        const compareRows = getCompareRows_();
+        if (compareRows.length >= 2) {
+          renderCompareDrawer_(compareRows);
+          return;
+        }
+
+        let row = state.selectedProgramKey && model.rowsByKey[state.selectedProgramKey]
+          ? model.rowsByKey[state.selectedProgramKey]
+          : null;
+        if (!row && compareRows.length === 1) row = compareRows[0];
+
+        if (!row) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program row to inspect requirements and next steps.</div>`;
+          return;
+        }
+
+        renderSingleProgramDetails_(row);
+      }
+
+      function renderCompareDrawer_(rows) {
+        const items = (rows || []).map((row) => ({
+          row,
+          detail: getProgramDetailsForRow(row),
+        }));
+        if (items.length < 2) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Select at least 2 programs to compare side by side.</div>`;
+          return;
+        }
+
+        const requirementLabels = uniqueStrings(
+          items
+            .map((item) => (Array.isArray(item.detail.requirements) ? item.detail.requirements : []))
+            .reduce((acc, list) => acc.concat(list), [])
+            .map((req) => String((req && req.label) || "").trim())
+            .filter(Boolean)
+        );
+
+        const requirementMaps = items.map((item) => {
+          const map = {};
+          (Array.isArray(item.detail.requirements) ? item.detail.requirements : []).forEach((req) => {
+            const label = String((req && req.label) || "").trim();
+            if (!label) return;
+            map[label] = formatRequirementForCompare_(req);
+          });
+          return map;
+        });
+
+        const rowHtml = [];
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Institution",
+            items.map((item) => String(item.detail.institution || item.row.institution || "").trim() || "N/A")
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Credential",
+            items.map((item) => String(item.detail.credential || item.row.credential || "").trim() || "N/A")
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Min Avg",
+            items.map((item) => formatMaybeValue_(item.detail.average && item.detail.average.min))
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Student Avg",
+            items.map((item) => formatMaybeValue_(item.detail.average && item.detail.average.student))
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Courses Used",
+            items.map((item) => {
+              const avg = item.detail.average || {};
+              const used = formatMaybeValue_(avg.usedCourses, "0");
+              const total = formatMaybeValue_(avg.totalCourses);
+              return `${used}/${total}`;
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Meets Average Minimum",
+            items.map((item) => {
+              const v = item.detail.average && item.detail.average.meetsMinimum;
+              if (v === null || v === undefined) return "N/A";
+              return v ? "Yes" : "No";
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Missing Reasons",
+            items.map((item) => {
+              const list = Array.isArray(item.detail.missingReasons) ? item.detail.missingReasons : [];
+              return list.length ? list.join(" | ") : "None";
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Competitive Guidance",
+            items.map((item) => String(item.detail.competitiveGuidance || "").trim() || "None")
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Advisories",
+            items.map((item) => {
+              const list = Array.isArray(item.detail.advisories) ? item.detail.advisories : [];
+              return list.length ? list.join(" | ") : "None";
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Elective Rules",
+            items.map((item) => {
+              const electives = item.detail.electives || {};
+              const groups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups.join("/") : "";
+              const rule = String(electives.ruleSummary || "").trim();
+              if (!groups && !rule) return "None";
+              return [groups ? `Groups: ${groups}` : "", rule ? `Rules: ${rule}` : ""].filter(Boolean).join(" | ");
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Selected Electives",
+            items.map((item) => {
+              const electives = item.detail.electives || {};
+              const selected = Array.isArray(electives.selected) ? electives.selected : [];
+              if (!selected.length) return "None";
+              return selected
+                .map((e) => `${e.group || ""}${e.name ? ` (${e.name})` : ""}=${formatMaybeValue_(e.mark)}`)
+                .join(", ");
+            })
+          )
+        );
+
+        requirementLabels.forEach((label) => {
+          rowHtml.push(
+            renderCompareDataRow_(
+              `${label} Requirement`,
+              requirementMaps.map((reqMap) => reqMap[label] || "N/A")
+            )
+          );
+        });
+
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Notes",
+            items.map((item) => {
+              const list = Array.isArray(item.detail.notes) ? item.detail.notes : [];
+              return list.length ? list.join(" | ") : "None";
+            })
+          )
+        );
+
+        const headerCells = items
+          .map((item) => {
+            const programName = String(item.detail.program || item.row.program || "").trim() || "Program";
+            const sub = String(item.detail.institution || item.row.institution || "").trim() || "";
+            return `<th><div class="compare-program"><strong>${escapeHtml(programName)}</strong><span>${escapeHtml(
+              sub
+            )}</span></div></th>`;
+          })
+          .join("");
+
+        ui.detailsDrawer.innerHTML = `
+          <div class="detail-head">
+            <h3 class="detail-title">Program Compare</h3>
+            <p class="detail-sub">Side-by-side view for ${items.length} selected programs.</p>
+          </div>
+          <div class="compare-table-wrap">
+            <table class="compare-table">
+              <thead>
+                <tr><th class="field-col">Field</th>${headerCells}</tr>
+              </thead>
+              <tbody>${rowHtml.join("")}</tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function renderCompareDataRow_(label, values) {
+        const cells = (values || [])
+          .map((value) => {
+            const hasValue = !(value === null || value === undefined || value === "");
+            return `<td>${escapeHtml(hasValue ? String(value) : "N/A")}</td>`;
+          })
+          .join("");
+        return `<tr><th class="field-col">${escapeHtml(label)}</th>${cells}</tr>`;
+      }
+
+      function formatRequirementForCompare_(req) {
+        if (!req || typeof req !== "object") return "N/A";
+        const status = normalizeReqStatus(req.status);
+        const parts = [statusLabel(status)];
+        if (req.minMark !== "" && req.minMark !== null && req.minMark !== undefined) {
+          parts.push(`min ${formatCell(req.minMark)}`);
+        }
+        if (req.matched) parts.push(`matched: ${req.matched}`);
+        const issues = Array.isArray(req.issues) ? req.issues.filter(Boolean) : [];
+        if (issues.length) parts.push(issues.join(" | "));
+        return parts.join("; ");
+      }
+
+      function formatMaybeValue_(value, fallback) {
+        const hasValue = !(value === null || value === undefined || value === "");
+        if (!hasValue) return fallback || "N/A";
+        const text = formatCell(value);
+        return text === "" ? (fallback || "N/A") : text;
+      }
+
+      function getCompareRows_() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) return [];
+        return state.compareKeys.map((k) => model.rowsByKey[k]).filter(Boolean);
+      }
+
+      function renderSingleProgramDetails_(row) {
+        const detail = getProgramDetailsForRow(row);
+        const missing = (Array.isArray(detail.missingReasons) ? detail.missingReasons : []).filter(Boolean);
+        const notes = (Array.isArray(detail.notes) ? detail.notes : []).filter(Boolean);
+        const advisories = (Array.isArray(detail.advisories) ? detail.advisories : []).filter(Boolean);
+        const requirementLines = (Array.isArray(detail.requirements) ? detail.requirements : [])
+          .map((req) => {
+            const status = normalizeReqStatus(req.status);
+            const issues = (Array.isArray(req.issues) ? req.issues : []).filter(Boolean);
+            return `<li><div class="requirement-line"><span class="req-label">${escapeHtml(
+              req.label || ""
+            )}</span><span class="req-status ${escapeAttr(status)}">${escapeHtml(
+              statusLabel(status)
+            )}</span><span class="req-meta">${escapeHtml(req.requirement || "")}${
+              req.minMark !== "" ? ` (min ${escapeHtml(formatCell(req.minMark))})` : ""
+            }${req.matched ? `; matched: ${escapeHtml(req.matched)}` : ""}</span>${
+              issues.length ? `<span class="req-meta">${escapeHtml(issues.join(" | "))}</span>` : ""
+            }</div></li>`;
+          })
+          .join("");
+
+        const missingHtml = missing.length
+          ? `<ul class="detail-list">${missing.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+          : `<p class="ghost">No missing items from marks-based checks.</p>`;
+        const notesHtml = notes.length
+          ? `<ul class="detail-list">${notes.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+          : `<p class="ghost">No extra notes.</p>`;
+        const advisoryHtml = advisories.length
+          ? `<ul class="detail-list">${advisories.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+          : `<p class="ghost">No additional advisory flags.</p>`;
+
+        const avg = detail.average || {};
+        const electives = detail.electives || {};
+        const avgMinText = avg.min === "" || avg.min === null || avg.min === undefined ? "N/A" : escapeHtml(formatCell(avg.min));
+        const avgStudentText =
+          avg.student === "" || avg.student === null || avg.student === undefined ? "N/A" : escapeHtml(formatCell(avg.student));
+        const avgTotalText =
+          avg.totalCourses === "" || avg.totalCourses === null || avg.totalCourses === undefined
+            ? "N/A"
+            : escapeHtml(formatCell(avg.totalCourses));
+        const avgUsedText = escapeHtml(formatCell(avg.usedCourses || 0));
+        const allowedGroups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups : [];
+        const selectedElectives = Array.isArray(electives.selected) ? electives.selected : [];
+        ui.detailsDrawer.innerHTML = `
+          <div class="detail-head">
+            <h3 class="detail-title">${escapeHtml(detail.program || row.program || "")}</h3>
+            <p class="detail-sub">${escapeHtml(detail.institution || row.institution || "")} | ${escapeHtml(
+              detail.credential || row.credential || ""
+            )}</p>
+          </div>
+          <div class="detail-grid">
+            <div class="detail-block">
+              <h4>Missing / Next Steps</h4>
+              ${missingHtml}
+            </div>
+            <div class="detail-block">
+              <h4>Average Snapshot</h4>
+              <ul class="detail-list">
+                <li>Min Avg: ${avgMinText}</li>
+                <li>Student Avg: ${avgStudentText}</li>
+                <li>Courses used: ${avgUsedText}/${avgTotalText}</li>
+                <li>Complete: ${avg.complete ? "Yes" : "No"}</li>
+                <li>Meets minimum: ${avg.meetsMinimum === null ? "N/A" : avg.meetsMinimum ? "Yes" : "No"}</li>
+                <li>Electives needed for avg: ${escapeHtml(formatCell(avg.neededElectivesForAverage || 0))}</li>
+              </ul>
+            </div>
+            <div class="detail-block">
+              <h4>Requirements</h4>
+              ${
+                requirementLines
+                  ? `<ul class="detail-list">${requirementLines}</ul>`
+                  : `<p class="ghost">Requirement details are unavailable for this row.</p>`
+              }
+            </div>
+            <div class="detail-block">
+              <h4>Elective Rules</h4>
+              <ul class="detail-list">
+                <li>Allowed groups: ${escapeHtml((allowedGroups.join("/") || "A/B/C/D"))}</li>
+                <li>Rule summary: ${escapeHtml(electives.ruleSummary || "None")}</li>
+                <li>Selected electives: ${
+                  selectedElectives.length
+                    ? escapeHtml(
+                        selectedElectives
+                          .map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${formatCell(e.mark)}`)
+                          .join(", ")
+                      )
+                    : "None"
+                }</li>
+              </ul>
+            </div>
+            <div class="detail-block">
+              <h4>Advisories</h4>
+              ${advisoryHtml}
+            </div>
+            <div class="detail-block">
+              <h4>Notes</h4>
+              ${notesHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      function getProgramDetailsForRow(row) {
+        const model = state.resultModel || {};
+        const map = model.detailsByKey && typeof model.detailsByKey === "object" ? model.detailsByKey : {};
+        const fromBackend = row && row.key && map[row.key] ? map[row.key] : null;
+        if (fromBackend && typeof fromBackend === "object") return fromBackend;
+
+        return {
+          institution: row.institution || "",
+          program: row.program || "",
+          credential: row.credential || "",
+          requirements: [],
+          average: {
+            min: row.minAvg,
+            student: row.studentAvg,
+            totalCourses: toFiniteNumber(row.cells[5]),
+            usedCourses: NaN,
+            complete: false,
+            meetsMinimum: null,
+            neededElectivesForAverage: parseMissingElectiveCount(row.missing || ""),
+          },
+          electives: { allowedGroups: [], ruleSummary: "", selected: [] },
+          missingReasons: splitPipedText(row.missing),
+          notes: splitPipedText(row.notes),
+          advisories: [],
+        };
+      }
+
+      function splitPipedText(text) {
+        return String(text || "")
+          .split("|")
+          .map((x) => x.trim())
+          .filter(Boolean);
+      }
+
+      function normalizeReqStatus(status) {
+        const s = String(status || "").trim().toLowerCase();
+        if (s === "met" || s === "low_mark" || s === "missing" || s === "unknown" || s === "assessment") return s;
+        return "unknown";
+      }
+
+      function statusLabel(status) {
+        if (status === "met") return "Met";
+        if (status === "low_mark") return "Low Mark";
+        if (status === "missing") return "Missing";
+        if (status === "assessment") return "Assessment";
+        return "Unknown";
+      }
+
+      function getRowsForView(view) {
+        const model = state.resultModel;
+        if (!model || !model.keysByView || !model.rowsByKey) return [];
+        if (view === "shortlist") {
+          return (model.keysByView.all || [])
+            .filter((k) => !!state.shortlist[k])
+            .map((k) => model.rowsByKey[k])
+            .filter(Boolean);
+        }
+        const safeView = RESULT_VIEWS.indexOf(view) >= 0 ? view : "all";
+        const keys = model.keysByView[safeView] || [];
+        return keys.map((k) => model.rowsByKey[k]).filter(Boolean);
+      }
+
+      function filterRows(rows) {
+        const query = String(state.resultFilters.query || "").trim().toLowerCase();
+        const institution = String(state.resultFilters.institution || "").trim();
+        const credential = String(state.resultFilters.credential || "").trim();
+        return (rows || []).filter((row) => {
+          if (institution && row.institution !== institution) return false;
+          if (credential && row.credential !== credential) return false;
+          if (!query) return true;
+          const terms = query.split(/\s+/).filter(Boolean);
+          if (!terms.length) return true;
+          const haystack = String(row.searchText || "").toLowerCase();
+          return terms.every((term) => haystack.indexOf(term) >= 0);
+        });
+      }
+
+      function sortRows(rows, sortKey) {
+        const safeSort = String(sortKey || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        const list = (rows || []).slice();
+        list.sort((a, b) => compareRowsBySort(a, b, safeSort));
+        return list;
+      }
+
+      function compareRowsBySort(a, b, sortKey) {
+        if (sortKey === "min_avg_asc") {
+          const cmp = compareNumbersNullable(a.minAvg, b.minAvg, true);
+          return cmp !== 0 ? cmp : compareInstitutionProgram(a, b);
+        }
+        if (sortKey === "min_avg_desc") {
+          const cmp = compareNumbersNullable(a.minAvg, b.minAvg, false);
+          return cmp !== 0 ? cmp : compareInstitutionProgram(a, b);
+        }
+        if (sortKey === "institution_program") {
+          return compareInstitutionProgram(a, b);
+        }
+        if (sortKey === "program_az") {
+          const p = String(a.program || "").localeCompare(String(b.program || ""));
+          if (p !== 0) return p;
+          return compareInstitutionProgram(a, b);
+        }
+        return compareClosestRows(a, b);
+      }
+
+      function compareClosestRows(a, b) {
+        const aUncheckablePenalty = a.viewFlags && a.viewFlags.uncheckable ? 1 : 0;
+        const bUncheckablePenalty = b.viewFlags && b.viewFlags.uncheckable ? 1 : 0;
+
+        if (a.issueCount !== b.issueCount) return a.issueCount - b.issueCount;
+        if (aUncheckablePenalty !== bUncheckablePenalty) return aUncheckablePenalty - bUncheckablePenalty;
+        if (a.avgGap !== b.avgGap) return a.avgGap - b.avgGap;
+        if (a.electiveGap !== b.electiveGap) return a.electiveGap - b.electiveGap;
+        return compareInstitutionProgram(a, b);
+      }
+
+      function compareInstitutionProgram(a, b) {
+        const i = String(a.institution || "").localeCompare(String(b.institution || ""));
+        if (i !== 0) return i;
+        const p = String(a.program || "").localeCompare(String(b.program || ""));
+        if (p !== 0) return p;
+        return String(a.credential || "").localeCompare(String(b.credential || ""));
+      }
+
+      function compareNumbersNullable(a, b, ascending) {
+        const aNum = Number.isFinite(a);
+        const bNum = Number.isFinite(b);
+        if (aNum && bNum) return ascending ? a - b : b - a;
+        if (aNum) return -1;
+        if (bNum) return 1;
+        return 0;
+      }
+
+      function exportCsv() {
+        if (!state.result || !state.resultModel) return;
+        const visible = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const rows = [state.resultModel.headers || []].concat(visible.map((r) => r.cells));
+        const csv = rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+        downloadBlob(csv, "text/csv;charset=utf-8", fileStamp(`admissions_${viewSlug(state.view)}`, "csv"));
+      }
+
+      function exportPdf() {
+        if (!state.result || !state.resultModel) return;
+        const headers = state.resultModel.headers || [];
+        const rows = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT).map(
+          (r) => r.cells
+        );
+        const label = viewLabel(state.view);
+        const generated = (state.result.generatedAt || "").replace("T", " ").replace("Z", " UTC");
+        const html = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Admissions ${escapeHtml(label)}</title>
+    <style>
+      body { font-family: "Open Sans", sans-serif; margin: 24px; color: #505155; }
+      h1 { margin: 0 0 4px; font-family: "Rubik", sans-serif; font-size: 20px; color: #127956; }
+      p { margin: 0 0 14px; color: #1e634c; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      th, td { border: 1px solid #d6e5df; padding: 5px; text-align: left; vertical-align: top; }
+      th { background: #f1f7f4; color: #1e634c; }
+      @media print { body { margin: 8mm; } }
+    </style>
+  </head>
+  <body>
+    <h1>Next Step Admissions Checker</h1>
+    <p>${escapeHtml(label)} | ${escapeHtml(generated)}</p>
+    <table>
+      <thead><tr>${headers.map((h) => `<th>${escapeHtml(String(h))}</th>`).join("")}</tr></thead>
+      <tbody>${rows
+        .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(formatCell(c))}</td>`).join("")}</tr>`)
+        .join("")}</tbody>
+    </table>
+  </body>
+</html>`;
+        const w = window.open("", "_blank");
+        if (!w) {
+          setStatus("Popup was blocked. Allow popups to export PDF.", true);
+          return;
+        }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => {
+          w.print();
+        }, 250);
+      }
+
+      function buildResultModel(result) {
+        if (!result || typeof result !== "object") return null;
+        const headers = Array.isArray(result.headers) ? result.headers.map((x) => String(x || "")) : [];
+        const headerIndex = buildHeaderIndex(headers);
+        const results = result.results && typeof result.results === "object" ? result.results : {};
+        const rawDetailsByKey =
+          result.detailsByKey && typeof result.detailsByKey === "object" ? result.detailsByKey : {};
+
+        let allRowsRaw = Array.isArray(results.all) ? results.all : [];
+        if (!allRowsRaw.length) {
+          allRowsRaw = []
+            .concat(Array.isArray(results.eligible) ? results.eligible : [])
+            .concat(Array.isArray(results.ineligible) ? results.ineligible : [])
+            .concat(Array.isArray(results.uncheckable) ? results.uncheckable : []);
+        }
+
+        const providedViewKeys =
+          result.rowKeysByView && typeof result.rowKeysByView === "object" ? result.rowKeysByView : {};
+        const providedAllKeys = Array.isArray(providedViewKeys.all) ? providedViewKeys.all : [];
+        const usedKeys = {};
+        const rows = allRowsRaw.map((cells, i) => {
+          const rowCells = Array.isArray(cells) ? cells.slice() : [];
+          const providedKey = sanitizeProgramKey(providedAllKeys[i]);
+          const fallbackKey = makeProgramKey(rowCells, i);
+          const key = claimUniqueKey(providedKey || fallbackKey, usedKeys);
+          return buildResultRow({
+            key,
+            cells: rowCells,
+            headerIndex,
+          });
+        });
+
+        const rowsByKey = {};
+        rows.forEach((row) => {
+          rowsByKey[row.key] = row;
+        });
+
+        const detailsByKey = {};
+        Object.keys(rawDetailsByKey).forEach((k) => {
+          const key = sanitizeProgramKey(k);
+          if (!key || !rowsByKey[key]) return;
+          detailsByKey[key] = rawDetailsByKey[k];
+        });
+
+        const keysByView = {
+          all: rows.map((r) => r.key),
+          eligible: [],
+          ineligible: [],
+          uncheckable: [],
+        };
+
+        ["eligible", "ineligible", "uncheckable"].forEach((view) => {
+          const providedKeys = Array.isArray(providedViewKeys[view]) ? providedViewKeys[view] : [];
+          const validProvided = uniqueStrings(
+            providedKeys.map((k) => sanitizeProgramKey(k)).filter((k) => k && rowsByKey[k])
+          );
+          if (validProvided.length) {
+            keysByView[view] = validProvided;
+            return;
+          }
+
+          const viewRowsRaw = Array.isArray(results[view]) ? results[view] : [];
+          keysByView[view] = deriveViewKeysFromRows(rows, viewRowsRaw);
+        });
+
+        Object.keys(keysByView).forEach((view) => {
+          (keysByView[view] || []).forEach((key) => {
+            if (!rowsByKey[key]) return;
+            rowsByKey[key].viewFlags[view] = true;
+          });
+        });
+
+        return {
+          headers,
+          headerIndex,
+          rows,
+          rowsByKey,
+          keysByView,
+          detailsByKey,
+          meta: result.meta && typeof result.meta === "object" ? result.meta : {},
+        };
+      }
+
+      function buildResultRow(opts) {
+        const key = String((opts && opts.key) || "").trim();
+        const cells = (opts && opts.cells) || [];
+        const headerIndex = (opts && opts.headerIndex) || {};
+        const institution = String(getHeaderValue(cells, headerIndex, "Institution") || "").trim();
+        const program = String(getHeaderValue(cells, headerIndex, "Program") || "").trim();
+        const credential = String(getHeaderValue(cells, headerIndex, "Credential") || "").trim();
+        const minAvg = toFiniteNumber(getHeaderValue(cells, headerIndex, "Min Avg"));
+        const studentAvg = toFiniteNumber(getHeaderValue(cells, headerIndex, "Student Avg"));
+        const missing = String(getHeaderValue(cells, headerIndex, "Missing") || "").trim();
+        const notes = String(getHeaderValue(cells, headerIndex, "Notes") || "").trim();
+        const issueCount = countMissingIssues(missing);
+        const avgGap = parseAverageGap(missing, minAvg, studentAvg);
+        const electiveGap = parseMissingElectiveCount(missing);
+        return {
+          key,
+          cells: cells.slice(),
+          institution,
+          program,
+          credential,
+          minAvg,
+          studentAvg,
+          missing,
+          notes,
+          issueCount,
+          avgGap,
+          electiveGap,
+          searchText: `${institution} ${program} ${credential} ${missing} ${notes}`.toLowerCase(),
+          viewFlags: {},
+        };
+      }
+
+      function deriveViewKeysFromRows(allRows, viewRowsRaw) {
+        const queues = {};
+        (allRows || []).forEach((row) => {
+          const signature = rowSignature(row.cells);
+          if (!queues[signature]) queues[signature] = [];
+          queues[signature].push(row.key);
+        });
+
+        const out = [];
+        (viewRowsRaw || []).forEach((cells) => {
+          const signature = rowSignature(Array.isArray(cells) ? cells : []);
+          const queue = queues[signature];
+          if (!queue || !queue.length) return;
+          out.push(queue.shift());
+        });
+        return out;
+      }
+
+      function rowSignature(cells) {
+        return (cells || []).map((x) => String(x === null || x === undefined ? "" : x)).join("\u001f");
+      }
+
+      function buildHeaderIndex(headers) {
+        const idx = {};
+        (headers || []).forEach((h, i) => {
+          const key = String(h || "").trim().toLowerCase();
+          if (key && idx[key] === undefined) idx[key] = i;
+        });
+        return idx;
+      }
+
+      function getHeaderValue(cells, headerIndex, name) {
+        const key = String(name || "").trim().toLowerCase();
+        const idx = headerIndex[key];
+        if (idx === undefined) return "";
+        return cells[idx];
+      }
+
+      function toFiniteNumber(value) {
+        if (value === null || value === undefined) return NaN;
+        const num = Number(String(value).trim());
+        return Number.isFinite(num) ? num : NaN;
+      }
+
+      function countMissingIssues(missingText) {
+        const text = String(missingText || "").trim();
+        if (!text) return 0;
+        const parts = text.split("|").map((x) => x.trim()).filter(Boolean);
+        return parts.length || 1;
+      }
+
+      function parseAverageGap(missingText, minAvg, studentAvg) {
+        const text = String(missingText || "");
+        const match = text.match(/(\d+(?:\.\d+)?)\s*<\s*(\d+(?:\.\d+)?)/);
+        if (match) {
+          const left = Number(match[1]);
+          const right = Number(match[2]);
+          if (Number.isFinite(left) && Number.isFinite(right)) return Math.max(0, right - left);
+        }
+        if (Number.isFinite(minAvg) && Number.isFinite(studentAvg)) return Math.max(0, minAvg - studentAvg);
+        return 0;
+      }
+
+      function parseMissingElectiveCount(missingText) {
+        const text = String(missingText || "");
+        const match = text.match(/Need\s+(\d+)\s+more\s+elective/i);
+        if (!match) return 0;
+        const count = Number(match[1]);
+        return Number.isFinite(count) ? Math.max(0, count) : 0;
+      }
+
+      function makeProgramKey(cells, index) {
+        const inst = slugPart(cells[0]);
+        const program = slugPart(cells[1]);
+        const credential = slugPart(cells[2]);
+        const parts = [inst, program, credential].filter(Boolean);
+        const stem = parts.length ? parts.join("_") : `row_${index + 1}`;
+        const hash = simpleHash(rowSignature(Array.isArray(cells) ? cells : []));
+        return `${stem}_${hash.toString(36)}`;
+      }
+
+      function sanitizeProgramKey(key) {
+        const safe = String(key || "").trim().replace(/[^a-zA-Z0-9._-]/g, "_");
+        return safe || "";
+      }
+
+      function claimUniqueKey(baseKey, used) {
+        const base = sanitizeProgramKey(baseKey) || "row_key";
+        if (!used[base]) {
+          used[base] = 1;
+          return base;
+        }
+        const n = used[base] + 1;
+        used[base] = n;
+        return `${base}_${n}`;
+      }
+
+      function slugPart(value) {
+        return String(value || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 60);
+      }
+
+      function simpleHash(text) {
+        const input = String(text || "");
+        let hash = 2166136261;
+        for (let i = 0; i < input.length; i++) {
+          hash ^= input.charCodeAt(i);
+          hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+        }
+        return hash >>> 0;
+      }
+
+      function uniqueStrings(values) {
+        const seen = {};
+        const out = [];
+        (values || []).forEach((value) => {
+          const key = String(value || "");
+          if (!key || seen[key]) return;
+          seen[key] = true;
+          out.push(key);
+        });
+        return out;
+      }
+
+      function viewSlug(view) {
+        return String(view || "all")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "") || "all";
+      }
+
+      function isMockMode() {
+        const params = new URLSearchParams(window.location.search || "");
+        return params.get("mock") === "1";
+      }
+
+      function isAppsScriptContext() {
+        return !!(window.google && google.script && google.script.run);
+      }
+
+      function bindDatalist(id, options) {
+        const list = document.getElementById(id);
+        const safeOptions = Array.isArray(options) ? options : [];
+        list.innerHTML = safeOptions
+          .map((opt) => `<option value="${escapeAttr(String(opt || "").trim())}"></option>`)
+          .join("");
+      }
+
+      function setBusy(isBusy) {
+        ui.runBtn.disabled = !!isBusy;
+        ui.runBtn.textContent = isBusy ? "Checking..." : "Check Eligibility";
+      }
+
+      function setStatus(message, isError) {
+        ui.status.textContent = message || "";
+        ui.status.classList.toggle("error", !!isError);
+      }
+
+      function readError(err) {
+        const raw = err && err.message ? String(err.message) : "Could not complete the eligibility check.";
+        return raw || "Could not complete the eligibility check.";
+      }
+
+      function csvCell(v) {
+        const s = String(v === null || v === undefined ? "" : v);
+        return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }
+
+      function formatCell(v) {
+        if (v === null || v === undefined) return "";
+        if (typeof v === "number") return Number.isInteger(v) ? String(v) : String(v.toFixed(1));
+        return String(v);
+      }
+
+      function fileStamp(prefix, ext) {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(
+          d.getHours()
+        )}${pad(d.getMinutes())}`;
+        return `${prefix}_${stamp}.${ext}`;
+      }
+
+      function downloadBlob(content, mime, filename) {
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function viewLabel(view) {
+        if (view === "eligible") return "Eligible";
+        if (view === "ineligible") return "Missing";
+        if (view === "uncheckable") return "Uncheckable";
+        if (view === "shortlist") return "Shortlist";
+        return "All Programs";
+      }
+
+      function escapeHtml(v) {
+        return String(v || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeAttr(v) {
+        return escapeHtml(v);
+      }
+</script>
+

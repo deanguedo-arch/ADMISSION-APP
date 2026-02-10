@@ -1,40 +1,59 @@
 # Apps Script Architecture Map
 
-This project now uses a layered Apps Script layout to keep edits localized and reduce context load.
+This project uses layered Apps Script modules so edits stay localized and context stays small.
 
 ## File ownership
 
 - `apps_script/Code.gs`
-  - App shell only: menu/web entrypoints, constants, and high-level orchestration.
-  - Keep this file thin.
+  - Thin app shell only: menu/web entrypoints, constants, top-level orchestration.
 - `apps_script/WebAuth.gs`
-  - Web app auth, request sanitization, and web-input normalization.
+  - Web auth, request sanitization, and web input normalization.
 - `apps_script/WorkbookAdmin.gs`
-  - Workbook setup, admin sheet protection/hide logic, and setup notifications.
+  - Workbook setup, admin tab protection/hide logic, and setup notifications.
 - `apps_script/EligibilityEngine.gs`
-  - Admissions evaluation domain logic, parsing, matching, averages, and output shaping.
+  - Eligibility orchestration and output shaping (`results`, row keys, details payload).
+- `apps_script/EligibilityProgramsData.gs`
+  - Program dataset parsing, header/index helpers, rule parsing, `AvgRules`/`ElectiveRules` readers.
+- `apps_script/EligibilitySubjects.gs`
+  - Course normalization, aliases, subject/science requirement evaluation.
+- `apps_script/EligibilityElectives.gs`
+  - Elective mapping/grouping, elective rule application, average/elective selection.
+- `apps_script/EligibilityShared.gs`
+  - Shared low-level helpers (for example `unique_`, `title_`).
+- `apps_script/WebAppRender.gs`
+  - HTML include resolver for web app fragments.
+- `apps_script/WebApp.html`
+  - Web shell document with include markers only.
+- `apps_script/WebAppStyles.html`
+- `apps_script/WebAppBody.html`
+- `apps_script/WebAppScriptState.html`
+- `apps_script/WebAppScriptFunctions.html`
+- `apps_script/WebAppScriptInit.html`
+  - Split web fragments consumed by `WebAppRender.gs`.
 - `apps_script/SyncPrograms.gs`
   - Standalone sync webhook surface.
 
 ## Dependency direction
 
-- Shell (`Code.gs`) may call everything.
-- Web auth/admin modules call shared domain helpers in `EligibilityEngine.gs` as needed.
-- Domain helpers in `EligibilityEngine.gs` must not depend on UI/web rendering assets.
-- `SyncPrograms.gs` stays isolated from admissions-web logic.
+- `Code.gs` may call every module.
+- `WebAuth.gs` and `WorkbookAdmin.gs` may call domain helpers.
+- `EligibilityEngine.gs` may call `EligibilityProgramsData.gs`, `EligibilitySubjects.gs`, `EligibilityElectives.gs`, `EligibilityShared.gs`.
+- `EligibilityProgramsData.gs`, `EligibilitySubjects.gs`, and `EligibilityElectives.gs` must not depend on web UI rendering files.
+- Web fragments (`WebApp*.html`) are static assets and should not define server-side behavior.
+- `SyncPrograms.gs` remains isolated from admissions web/sheet logic.
 
 ## Guardrails
 
-- Validate callable web surface:
+- Web callable surface validation:
   - `.\tools\validate-webapp-surface.ps1`
-- Validate module boundaries:
+- Module/file ownership validation:
   - `.\tools\validate-apps-script-structure.ps1`
-- For manual single-file copy/paste exports:
+- Manual single-file export bundles:
   - `.\tools\export-appsscript-bundles.ps1 -Profile full|sheet-only|sync-only`
 
-## Refactor rule
+## Refactor rules
 
-When moving code between files:
-- keep function names and signatures stable first,
-- run both validation scripts,
-- avoid mixing behavior changes into structural commits.
+- Move structure first, behavior second.
+- Keep function signatures stable while moving seams.
+- Run both validators after each seam.
+- Avoid mixing behavioral changes into structural commits.

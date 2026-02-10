@@ -32,6 +32,25 @@ const mime = {
   ".ico": "image/x-icon",
 };
 
+function readHtmlWithIncludes(filePath, stack = []) {
+  const full = path.resolve(filePath);
+  if (!full.startsWith(root)) {
+    throw new Error(`Include outside root is not allowed: ${filePath}`);
+  }
+  if (stack.includes(full)) {
+    throw new Error(`Include cycle detected: ${full}`);
+  }
+
+  const raw = fs.readFileSync(full, "utf8");
+  return raw.replace(/<!--\s*@include:([A-Za-z0-9_]+)\s*-->/g, (_, name) => {
+    const includePath = path.join(root, `${String(name || "").trim()}.html`);
+    if (!fs.existsSync(includePath)) {
+      throw new Error(`Missing include file: ${includePath}`);
+    }
+    return readHtmlWithIncludes(includePath, stack.concat(full));
+  });
+}
+
 function safeResolve(urlPath) {
   const clean = decodeURIComponent((urlPath || "/").split("?")[0]);
   const rel = clean === "/" ? "/WebApp.html" : clean;
@@ -53,21 +72,34 @@ const server = http.createServer((req, res) => {
     target = path.join(target, "WebApp.html");
   }
 
-  fs.readFile(target, (err, data) => {
-    if (err) {
-      res.statusCode = 404;
-      res.end("Not found");
+  const ext = path.extname(target).toLowerCase();
+  try {
+    if (ext === ".html") {
+      const html = readHtmlWithIncludes(target, []);
+      res.setHeader("Content-Type", mime[ext] || "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store");
+      res.end(html);
       return;
     }
-    const ext = path.extname(target).toLowerCase();
-    res.setHeader("Content-Type", mime[ext] || "application/octet-stream");
-    res.setHeader("Cache-Control", "no-store");
-    res.end(data);
-  });
+
+    fs.readFile(target, (err, data) => {
+      if (err) {
+        res.statusCode = 404;
+        res.end("Not found");
+        return;
+      }
+      res.setHeader("Content-Type", mime[ext] || "application/octet-stream");
+      res.setHeader("Cache-Control", "no-store");
+      res.end(data);
+    });
+  } catch (err) {
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.end(String((err && err.message) || "Server error"));
+  }
 });
 
 server.listen(port, () => {
   console.log(`Static preview server running on http://localhost:${port}/WebApp.html?mock=1`);
   console.log(`Serving files from: ${root}`);
 });
-

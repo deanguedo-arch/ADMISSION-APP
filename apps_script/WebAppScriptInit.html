@@ -1,0 +1,19 @@
+﻿<script>
+boot();
+
+      document.getElementById("addNamedBtn").addEventListener("click", () => addNamedRow());
+      document.getElementById("addElectiveBtn").addEventListener("click", () => addElectiveRow());
+      document.getElementById("runBtn").addEventListener("click", runCheck);
+      document.getElementById("csvBtn").addEventListener("click", exportCsv);
+      document.getElementById("pdfBtn").addEventListener("click", exportPdf);
+      document.getElementById("resetBtn").addEventListener("click", resetForm);
+      ui.filterGroup.addEventListener("click", onFilterClick);
+      ui.resultsWrap.addEventListener("click", onResultsWrapClick);
+      ui.resultSearch.addEventListener("input", onResultControlChange);
+      ui.institutionFilter.addEventListener("change", onResultControlChange);
+      ui.credentialFilter.addEventListener("change", onResultControlChange);
+      ui.sortSelect.addEventListener("change", onResultControlChange);
+      ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
+      ui.compareStrip.addEventListener("click", onCompareStripClick);
+</script>
+

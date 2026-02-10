@@ -70,6 +70,35 @@ function Write-StaticResponse {
   $response.OutputStream.Write($bytes, 0, $bytes.Length)
 }
 
+function Resolve-HtmlIncludes {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Root,
+    [string[]]$Stack = @()
+  )
+
+  $fullPath = [System.IO.Path]::GetFullPath($Path)
+  if (-not $fullPath.StartsWith($Root, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Include path is outside root: $Path"
+  }
+  if ($Stack -contains $fullPath) {
+    throw "Include cycle detected at: $fullPath"
+  }
+  if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+    throw "Include file not found: $fullPath"
+  }
+
+  $raw = Get-Content -LiteralPath $fullPath -Raw -Encoding UTF8
+  $nextStack = @($Stack + $fullPath)
+  $rx = [regex]'<!--\s*@include:([A-Za-z0-9_]+)\s*-->'
+  return $rx.Replace($raw, {
+    param($m)
+    $name = [string]$m.Groups[1].Value
+    $includePath = Join-Path $Root ($name + ".html")
+    return Resolve-HtmlIncludes -Path $includePath -Root $Root -Stack $nextStack
+  })
+}
+
 function Start-PowerShellStaticServer {
   param(
     [Parameter(Mandatory = $true)][string]$Root,
@@ -121,7 +150,13 @@ function Start-PowerShellStaticServer {
           continue
         }
 
-        $bytes = [System.IO.File]::ReadAllBytes($fullPath)
+        $ext = [System.IO.Path]::GetExtension($fullPath).ToLowerInvariant()
+        if ($ext -eq ".html") {
+          $html = Resolve-HtmlIncludes -Path $fullPath -Root $rootFull
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes($html)
+        } else {
+          $bytes = [System.IO.File]::ReadAllBytes($fullPath)
+        }
         $response = $context.Response
         $response.StatusCode = 200
         $response.ContentType = Get-ContentTypeForPath -Path $fullPath

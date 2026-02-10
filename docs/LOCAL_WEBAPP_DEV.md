@@ -56,10 +56,17 @@ This runs latest saved script code without creating a new version each edit.
 
 ## Edit loop
 
-1. Edit `apps_script/WebApp.html` (and/or `apps_script/Code.gs`).
-2. Save.
-3. Refresh the local tab (`?mock=1`) or `/dev` tab.
-4. Repeat.
+1. Edit web shell/fragments:
+   - `apps_script/WebApp.html`
+   - `apps_script/WebAppStyles.html`
+   - `apps_script/WebAppBody.html`
+   - `apps_script/WebAppScriptState.html`
+   - `apps_script/WebAppScriptFunctions.html`
+   - `apps_script/WebAppScriptInit.html`
+2. Edit Apps Script modules as needed (for example `apps_script/Code.gs` or `apps_script/Eligibility*.gs`).
+3. Save.
+4. Refresh the local tab (`?mock=1`) or `/dev` tab.
+5. Repeat.
 
 ## Real backend check
 

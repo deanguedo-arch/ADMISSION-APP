@@ -176,7 +176,7 @@ function runEligibility_() {
 }
 
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile("WebApp")
+  return HtmlService.createHtmlOutput(renderWebAppHtml_())
     .setTitle("Next Step Admissions Checker")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

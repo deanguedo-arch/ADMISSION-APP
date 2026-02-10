@@ -11,7 +11,7 @@ Stabilize the staff-ready web app MVP and modularize Apps Script for low-risk ma
 - [ ] Slice 3: Web UI MVP upgrades (paste parser, search/filter/sort, details drawer, star)
 - [ ] Slice 4: Export + performance + lightweight audit (iframe PDF, caching, audit sheet)
 - [ ] Slice 5: QA + release verification
-- [ ] Slice 6: Apps Script structural modularization + guardrails
+- [x] Slice 6: Apps Script structural modularization + guardrails
 
 ## Working Rules
 - Keep changes surgical; no unrelated refactors.
@@ -23,3 +23,4 @@ Stabilize the staff-ready web app MVP and modularize Apps Script for low-risk ma
 - [x] 2026-02-10: Added decision/slice/QA docs + validation scaffold to reduce future passes.
 - [x] 2026-02-10: Completed security slice (DOMAIN manifest, `@eips.ca` gate, request throttling, minimized callable server surface).
 - [x] 2026-02-10: Switched to personal-deploy security model (`ANYONE` + Google ID token domain validation), strict payload key allowlists, and local `?mock=1` web UI preview workflow.
+- [x] 2026-02-10: Completed structural modularization seam 2 (split eligibility engine by responsibility; split web app HTML into include fragments; added include-aware rendering + structure guardrail updates).

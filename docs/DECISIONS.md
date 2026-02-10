@@ -46,6 +46,15 @@ This file is the stable decision source for future sessions. Update it only when
   - Keep `apps_script/Code.gs` as the thin shell (entrypoints + constants + orchestration).
   - Keep auth/input sanitation in `apps_script/WebAuth.gs`.
   - Keep workbook/admin operations in `apps_script/WorkbookAdmin.gs`.
-  - Keep admissions domain logic in `apps_script/EligibilityEngine.gs`.
+  - Keep admissions orchestration/output in `apps_script/EligibilityEngine.gs`.
+  - Keep admissions internals split by responsibility:
+    - `apps_script/EligibilityProgramsData.gs`
+    - `apps_script/EligibilitySubjects.gs`
+    - `apps_script/EligibilityElectives.gs`
+    - `apps_script/EligibilityShared.gs`
+  - Keep web rendering split into shell + include fragments:
+    - `apps_script/WebApp.html`
+    - `apps_script/WebAppRender.gs`
+    - `apps_script/WebAppStyles.html`, `apps_script/WebAppBody.html`, `apps_script/WebAppScriptState.html`, `apps_script/WebAppScriptFunctions.html`, `apps_script/WebAppScriptInit.html`
   - Keep sync webhook logic isolated in `apps_script/SyncPrograms.gs`.
   - Enforce structure drift checks with `tools/validate-apps-script-structure.ps1`.

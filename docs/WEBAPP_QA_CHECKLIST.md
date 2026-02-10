@@ -4,9 +4,11 @@ Run this before each production push affecting `apps_script/`.
 
 ## 1) Preflight
 - [ ] Run `.\tools\validate-webapp-surface.ps1`
+- [ ] Run `.\tools\validate-apps-script-structure.ps1`
 - [ ] Confirm `apps_script/appsscript.json` has:
   - [ ] `webapp.access = ANYONE`
   - [ ] `timeZone = America/Edmonton`
+- [ ] If `WebApp*.html` changed, verify local preview loads with `?mock=1`.
 
 ## 2) Security
 - [ ] Domain user can load deployed web app.

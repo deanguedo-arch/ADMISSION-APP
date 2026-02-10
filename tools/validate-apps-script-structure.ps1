@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$AppsScriptDir = "apps_script",
   [switch]$WarnOnly
 )
@@ -41,6 +41,11 @@ $expectedByFile = @{
     "runWebEligibility",
     "getAdmissionsSpreadsheet_"
   )
+  "WebAppRender.gs" = @(
+    "renderWebAppHtml_",
+    "readWebAppHtmlFile_",
+    "resolveWebAppHtmlIncludes_"
+  )
   "WebAuth.gs" = @(
     "getWebAppClientConfig_",
     "getWebAppAllowedGoogleClientIds_",
@@ -72,6 +77,83 @@ $expectedByFile = @{
     "setupElectiveRulesTemplate_",
     "notifyStudentSetupComplete_"
   )
+  "EligibilityEngine.gs" = @(
+    "evaluateProgramsForStudent_",
+    "makeProgramKey_",
+    "slugProgramKeyPart_",
+    "claimProgramKey_",
+    "summarizeEvalForWebDetails_",
+    "classifyEvalIssuesForWeb_",
+    "buildProgramDetailsForWeb_",
+    "writeResultRowsToSheet_",
+    "normalizeCompetitive_",
+    "buildNotes_",
+    "boolCmp_",
+    "applyCompetitiveHighlight_",
+    "isUncheckable_",
+    "formatAvgUsed_",
+    "appendDatasetNotes_"
+  )
+  "EligibilityProgramsData.gs" = @(
+    "indexHeader_",
+    "normHeaderKey_",
+    "requireProgramsColumns_",
+    "readAvgRules_",
+    "readElectiveRuleOverrides_",
+    "resolveElectiveRuleOverrideText_",
+    "combineRuleText_",
+    "resolveAvgTotal_",
+    "getStr_",
+    "unifyEnglishReq_",
+    "unifyEnglishMin_",
+    "toNumber_",
+    "canonKey_",
+    "parseElectiveQty_",
+    "parseAllowedGroups_",
+    "parseElectiveRules_",
+    "formatElectiveRuleSummary_",
+    "parseCountToken_",
+    "parseGroupsFromText_",
+    "splitByAnd_",
+    "parseScienceRequirementText_"
+  )
+  "EligibilitySubjects.gs" = @(
+    "buildCourseMap_",
+    "courseAliases_",
+    "evalSubject_",
+    "evalScience_",
+    "appendEval_",
+    "buildScienceReq_",
+    "parseAlternatives_",
+    "normalizeRequirementToCourses_",
+    "bestMarkWithEquivalencies_",
+    "expandEquivalencies_",
+    "extractCourseCodes_",
+    "collectRequiredMarks_",
+    "countRequiredSlots_"
+  )
+  "EligibilityElectives.gs" = @(
+    "buildElectives_",
+    "listElectiveCourseOptions_",
+    "buildAutoElectivesFromCourseMap_",
+    "mergeElectiveCandidates_",
+    "normalizeCourseKey_",
+    "formatCourseName_",
+    "electiveGroupsForCourseKey_",
+    "isLikelyLanguageCourse_",
+    "isSeniorHighAdmissionLevel_",
+    "isExcludedFromGroupDFallback_",
+    "isLikelyGroupDAdmissionSubject_",
+    "courseGroupMap_",
+    "runElectiveRuleSelfTest_",
+    "computeStudentAverage_",
+    "selectBestElectives_",
+    "pickBestElectiveSet_"
+  )
+  "EligibilityShared.gs" = @(
+    "title_",
+    "unique_"
+  )
 }
 
 foreach ($fileName in $expectedByFile.Keys) {
@@ -93,29 +175,38 @@ foreach ($fileName in $expectedByFile.Keys) {
   if ($extra.Count -gt 0) {
     Add-Issue("$fileName contains unexpected functions: $($extra -join ', ')")
   }
+
+  if ($fileName -ne "Code.gs") {
+    $publicFns = @($actual | Where-Object { -not $_.EndsWith("_") })
+    if ($publicFns.Count -gt 0) {
+      Add-Issue("$fileName should not expose public top-level functions: $($publicFns -join ', ')")
+    }
+  }
 }
 
-$engineFile = Join-Path $AppsScriptDir "EligibilityEngine.gs"
-if (-not (Test-Path -LiteralPath $engineFile)) {
-  Add-Issue("Missing expected module file: EligibilityEngine.gs")
-} else {
-  $engineFns = Get-TopLevelFunctions -path $engineFile
-  $engineRequired = @(
-    "evaluateProgramsForStudent_",
-    "readAvgRules_",
-    "readElectiveRuleOverrides_",
-    "buildCourseMap_",
-    "computeStudentAverage_",
-    "parseElectiveRules_"
-  )
-  $engineMissing = @($engineRequired | Where-Object { $engineFns -notcontains $_ })
-  if ($engineMissing.Count -gt 0) {
-    Add-Issue("EligibilityEngine.gs missing required core functions: $($engineMissing -join ', ')")
+$requiredHtml = @(
+  "WebApp.html",
+  "WebAppStyles.html",
+  "WebAppBody.html",
+  "WebAppScriptState.html",
+  "WebAppScriptFunctions.html",
+  "WebAppScriptInit.html"
+)
+foreach ($htmlFile in $requiredHtml) {
+  $p = Join-Path $AppsScriptDir $htmlFile
+  if (-not (Test-Path -LiteralPath $p -PathType Leaf)) {
+    Add-Issue("Missing expected web app HTML fragment: $htmlFile")
   }
+}
 
-  $enginePublic = @($engineFns | Where-Object { -not $_.EndsWith("_") })
-  if ($enginePublic.Count -gt 0) {
-    Add-Issue("EligibilityEngine.gs should not expose public top-level functions: $($enginePublic -join ', ')")
+$webAppMainPath = Join-Path $AppsScriptDir "WebApp.html"
+if (Test-Path -LiteralPath $webAppMainPath -PathType Leaf) {
+  $webAppMain = Get-Content -LiteralPath $webAppMainPath -Raw
+  $includeNames = @("WebAppStyles", "WebAppBody", "WebAppScriptState", "WebAppScriptFunctions", "WebAppScriptInit")
+  foreach ($name in $includeNames) {
+    if ($webAppMain -notmatch [regex]::Escape("<!-- @include:$name -->")) {
+      Add-Issue("WebApp.html missing include marker for $name")
+    }
   }
 }
 
@@ -136,6 +227,6 @@ if ($issues.Count -gt 0) {
 Write-Host ""
 Write-Host "validate-apps-script-structure: PASS" -ForegroundColor Green
 Write-Host (" - Apps Script dir: " + $AppsScriptDir)
-Write-Host (" - Checked shell modules: " + (($expectedByFile.Keys | Sort-Object) -join ", "))
-Write-Host " - Checked EligibilityEngine core function set and public surface"
+Write-Host (" - Checked module files: " + (($expectedByFile.Keys | Sort-Object) -join ", "))
+Write-Host (" - Checked web app fragments: " + ($requiredHtml -join ", "))
 exit 0

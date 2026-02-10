@@ -36,6 +36,11 @@ Deploy runs on:
 - push to `main` affecting `apps_script/**`
 - manual `workflow_dispatch`
 
+## CI guardrails in deploy workflow
+Before `clasp push`, CI runs:
+- `tools/validate-webapp-surface.ps1`
+- `tools/validate-apps-script-structure.ps1`
+
 ## Notes
 - Deployment URL stays the same (workflow updates existing deployment ID).
 - Data refresh is still separate (`REFRESH_ALL.cmd` / `SYNC_ALL.cmd`).
