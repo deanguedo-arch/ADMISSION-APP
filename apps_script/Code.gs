@@ -53,6 +53,11 @@ const WEBAPP_MAX_ID_TOKEN_LENGTH = 4096;
 const WEBAPP_RATE_LIMIT_MIN_INTERVAL_MS = 2000;
 const WEBAPP_RATE_LIMIT_WINDOW_SECONDS = 60;
 const WEBAPP_RATE_LIMIT_MAX_PER_WINDOW = 30;
+const WEBAPP_RESULT_CACHE_SECONDS = 180;
+const WEBAPP_RESULT_CACHE_MAX_CHARS = 95000;
+const WEBAPP_DATASET_STAMP_VERSION = "v1";
+const WEBAPP_AUDIT_SHEET_NAME = "WebAudit";
+const WEBAPP_AUDIT_MAX_DATA_ROWS = 2000;
 const RESULTS_HEADER_ROW = [
   "Institution",
   "Program",
@@ -243,6 +248,157 @@ function runWebEligibility(payload) {
   const courseMap = buildCourseMap_(namedRows);
   const manualRows = sanitizeWebManualElectives_(request.manualElectives);
   const manualElectives = buildElectives_(manualRows, { source: "manual-web", rowOffset: 1 });
+  const digestToken_ = (value, prefix, length) => {
+    const src = String(value || "");
+    const digest = Utilities.base64EncodeWebSafe(
+      Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, src)
+    )
+      .replace(/=+$/g, "")
+      .toLowerCase();
+    const size = Math.max(8, Number(length) || 20);
+    return `${prefix}${digest.slice(0, size)}`;
+  };
+  const datasetStamp = digestToken_(
+    JSON.stringify({
+      programsRange,
+      avgRules,
+      electiveRuleOverrides,
+    }),
+    `${WEBAPP_DATASET_STAMP_VERSION}_`,
+    24
+  );
+  const requestStamp = digestToken_(
+    JSON.stringify({
+      namedRows,
+      manualRows,
+    }),
+    "r_",
+    24
+  );
+  const cacheKey = `WEBAPP_RUN_${datasetStamp}_${requestStamp}`;
+  const cache = CacheService.getScriptCache();
+  const decodeCachePayload_ = (raw) => {
+    if (!raw) return null;
+    const outer = JSON.parse(String(raw || "{}"));
+    if (!outer || typeof outer !== "object") return null;
+    if (outer.encoding === "json") {
+      return JSON.parse(String(outer.payload || "{}"));
+    }
+    if (outer.encoding === "gzip-base64") {
+      const bytes = Utilities.base64DecodeWebSafe(String(outer.payload || ""));
+      const json = Utilities.ungzip(Utilities.newBlob(bytes)).getDataAsString("utf-8");
+      return JSON.parse(String(json || "{}"));
+    }
+    return null;
+  };
+  const encodeCachePayload_ = (obj) => {
+    const json = JSON.stringify(obj || {});
+    if (!json) return "";
+    const plain = JSON.stringify({ encoding: "json", payload: json });
+    if (plain.length <= WEBAPP_RESULT_CACHE_MAX_CHARS) {
+      return plain;
+    }
+    const zipped = Utilities.gzip(Utilities.newBlob(json, "application/json", "web-result"));
+    const b64 = Utilities.base64EncodeWebSafe(zipped.getBytes());
+    if (!b64) return "";
+    const packed = JSON.stringify({ encoding: "gzip-base64", payload: b64 });
+    return packed.length <= WEBAPP_RESULT_CACHE_MAX_CHARS ? packed : "";
+  };
+  const appendAuditEntry_ = (opts) => {
+    try {
+      const payloadObj = opts && typeof opts === "object" ? opts : {};
+      const summary = payloadObj.summary && typeof payloadObj.summary === "object" ? payloadObj.summary : {};
+      const identityRaw = String(
+        (payloadObj.identity && (payloadObj.identity.key || payloadObj.identity.email || payloadObj.identity.tempKey)) ||
+          "unknown"
+      )
+        .trim()
+        .toLowerCase();
+      const identityKey = digestToken_(identityRaw || "unknown", "sha256:", 24);
+      const sheet = ss.getSheetByName(WEBAPP_AUDIT_SHEET_NAME) || ss.insertSheet(WEBAPP_AUDIT_SHEET_NAME);
+      const header = [
+        "Timestamp_UTC",
+        "Identity_Key",
+        "Total_Programs",
+        "Eligible",
+        "Missing",
+        "Uncheckable",
+        "Cache_Hit",
+        "Dataset_Stamp",
+      ];
+
+      if (sheet.getLastRow() < 1) {
+        sheet.getRange(1, 1, 1, header.length).setValues([header]);
+        sheet.setFrozenRows(1);
+      }
+
+      sheet.appendRow([
+        new Date().toISOString(),
+        identityKey,
+        Math.max(0, Number(summary.totalPrograms || 0)),
+        Math.max(0, Number(summary.eligible || 0)),
+        Math.max(0, Number(summary.missing || 0)),
+        Math.max(0, Number(summary.uncheckable || 0)),
+        payloadObj.cacheHit ? "yes" : "no",
+        String(payloadObj.datasetStamp || ""),
+      ]);
+
+      const dataRows = Math.max(0, sheet.getLastRow() - 1);
+      if (dataRows > WEBAPP_AUDIT_MAX_DATA_ROWS) {
+        sheet.deleteRows(2, dataRows - WEBAPP_AUDIT_MAX_DATA_ROWS);
+      }
+    } catch (err) {
+      Logger.log(`Web audit entry skipped: ${String(err && err.message ? err.message : err)}`);
+    }
+  };
+
+  const cachedRaw = cache.get(cacheKey);
+  if (cachedRaw) {
+    try {
+      const cached = decodeCachePayload_(cachedRaw);
+      if (cached && typeof cached === "object") {
+        const cachedMeta = cached.meta && typeof cached.meta === "object" ? cached.meta : {};
+        const cachedRowKeys = cached.rowKeysByView && typeof cached.rowKeysByView === "object" ? cached.rowKeysByView : {};
+        const responseFromCache = {
+          generatedAt: String(cached.generatedAt || new Date().toISOString()),
+          headers: Array.isArray(cached.headers) ? cached.headers.slice() : RESULTS_HEADER_ROW.slice(),
+          meta: Object.assign({}, cachedMeta, {
+            datasetRows: Math.max(0, programsRange.length - 1),
+            activeProgramsEvaluated: Math.max(0, ((cachedRowKeys.all && cachedRowKeys.all.length) || 0)),
+            rowKeyVersion: String(cachedMeta.rowKeyVersion || "v1"),
+            datasetStamp,
+            datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
+            cacheHit: true,
+          }),
+          summary: Object.assign({}, cached.summary || {}),
+          rowKeysByView: {
+            all: Array.isArray(cachedRowKeys.all) ? cachedRowKeys.all.slice() : [],
+            eligible: Array.isArray(cachedRowKeys.eligible) ? cachedRowKeys.eligible.slice() : [],
+            ineligible: Array.isArray(cachedRowKeys.ineligible) ? cachedRowKeys.ineligible.slice() : [],
+            uncheckable: Array.isArray(cachedRowKeys.uncheckable) ? cachedRowKeys.uncheckable.slice() : [],
+          },
+          detailsByKey: copyWebDetailsByKey_(cached.detailsByKey || {}),
+          results: {
+            all: Array.isArray(cached.results && cached.results.all) ? cached.results.all.slice() : [],
+            eligible: Array.isArray(cached.results && cached.results.eligible) ? cached.results.eligible.slice() : [],
+            ineligible: Array.isArray(cached.results && cached.results.ineligible) ? cached.results.ineligible.slice() : [],
+            uncheckable: Array.isArray(cached.results && cached.results.uncheckable)
+              ? cached.results.uncheckable.slice()
+              : [],
+          },
+        };
+        appendAuditEntry_({
+          identity,
+          summary: responseFromCache.summary,
+          cacheHit: true,
+          datasetStamp,
+        });
+        return responseFromCache;
+      }
+    } catch (err) {
+      Logger.log(`Web result cache parse skipped: ${String(err && err.message ? err.message : err)}`);
+    }
+  }
 
   const evaluation = evaluateProgramsForStudent_({
     programsRange,
@@ -253,8 +409,7 @@ function runWebEligibility(payload) {
   });
 
   const generatedAt = new Date().toISOString();
-
-  return {
+  const response = {
     generatedAt,
     headers: RESULTS_HEADER_ROW.slice(),
     meta: {
@@ -262,6 +417,9 @@ function runWebEligibility(payload) {
       datasetRows: Math.max(0, programsRange.length - 1),
       activeProgramsEvaluated: Math.max(0, (evaluation.rowKeysByView && evaluation.rowKeysByView.all || []).length),
       rowKeyVersion: "v1",
+      datasetStamp,
+      datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
+      cacheHit: false,
     },
     summary: {
       totalPrograms: Math.max(0, evaluation.finalOut.length - 1),
@@ -283,6 +441,24 @@ function runWebEligibility(payload) {
       uncheckable: evaluation.uncheckableRows.slice(1),
     },
   };
+
+  try {
+    const encoded = encodeCachePayload_(response);
+    if (encoded) {
+      cache.put(cacheKey, encoded, WEBAPP_RESULT_CACHE_SECONDS);
+    }
+  } catch (err) {
+    Logger.log(`Web result cache write skipped: ${String(err && err.message ? err.message : err)}`);
+  }
+
+  appendAuditEntry_({
+    identity,
+    summary: response.summary,
+    cacheHit: false,
+    datasetStamp,
+  });
+
+  return response;
 }
 
 function getAdmissionsSpreadsheet_() {
