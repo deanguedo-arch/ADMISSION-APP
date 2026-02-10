@@ -190,3 +190,15 @@ Keep entries short and append-only.
   - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
   - `tools/export-appsscript-bundles.ps1 -Profile all`: generated successfully (`full`, `sheet-only`, `sync-only`).
+## 2026-02-10 (Web App Stabilization + Release Preflight)
+- Fixed web results-table squish/readability issues in `apps_script/WebAppStyles.html`.
+- Hardened local preview startup in `tools/start-webapp-preview.ps1`:
+  - Added bindability checks before selecting fallback ports.
+  - Expanded fallback scan range.
+  - Added ephemeral-port fallback when a contiguous blocked range exists.
+  - Improved occupied-port error messaging and actionable hints.
+- Ran release preflight checks:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS
+  - `tools/start-webapp-preview.ps1 -Port 5500 -Mode powershell`: startup PASS (auto-selected alternate port when requested port was reserved by `System (PID 4)`).
+- Updated session-planning docs to current state: `docs/SPRINT_SLICE.md`, `docs/SESSION_HANDOFF.md`.

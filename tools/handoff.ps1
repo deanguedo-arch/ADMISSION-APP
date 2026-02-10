@@ -30,17 +30,19 @@ $content = @'
 ## Read these first
 - `docs/PROJECT_CONTEXT.md`
 - `docs/WORK_LOG.md`
+- `docs/SPRINT_SLICE.md`
 
-## What exists
-- Canonical dataset: `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
-- Apps Script checker: `apps_script/Code.gs`
-- Pipeline scaffold: `pipeline/run.py`
-- Index cleaner: `pipeline/build_index.py` -> `pipeline/program_index.cleaned.csv`
+## Current state
+- Branch: `main`
+- Modular Apps Script layout is active (shell + domain/web/admin modules).
+- Guardrails to run first:
+  - `tools/validate-webapp-surface.ps1`
+  - `tools/validate-apps-script-structure.ps1`
 
 ## Immediate next steps
-1. Generate cleaned index: `.\.venv\Scripts\python.exe .\pipeline\build_index.py`
-2. Run pipeline on a small slice: `.\.venv\Scripts\python.exe .\pipeline\run.py --index pipeline/program_index.cleaned.csv --limit 20 --institution NAIT`
-3. Use extracted `avg_total_candidates.csv` to populate dataset `Avg_Total` (then `AvgRules` becomes temporary only).
+1. Commit and push current working changes on `main`.
+2. Run local/deployed smoke checks from `docs/WEBAPP_QA_CHECKLIST.md`.
+3. Pick the next lane from `docs/SPRINT_SLICE.md` and keep scope narrow.
 
 ## Recent work log (tail)
 

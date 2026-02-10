@@ -1,34 +1,24 @@
-﻿# Session Handoff (2026-02-10 13:47)
+﻿# Session Handoff (2026-02-10 14:17)
 
 ## Read these first
 - `docs/PROJECT_CONTEXT.md`
 - `docs/WORK_LOG.md`
+- `docs/SPRINT_SLICE.md`
 
-## What exists
-- Canonical dataset: `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
-- Apps Script checker: `apps_script/Code.gs`
-- Pipeline scaffold: `pipeline/run.py`
-- Index cleaner: `pipeline/build_index.py` -> `pipeline/program_index.cleaned.csv`
+## Current state
+- Branch: `main`
+- Modular Apps Script layout is active (shell + domain/web/admin modules).
+- Guardrails to run first:
+  - `tools/validate-webapp-surface.ps1`
+  - `tools/validate-apps-script-structure.ps1`
 
 ## Immediate next steps
-1. Generate cleaned index: `.\.venv\Scripts\python.exe .\pipeline\build_index.py`
-2. Run pipeline on a small slice: `.\.venv\Scripts\python.exe .\pipeline\run.py --index pipeline/program_index.cleaned.csv --limit 20 --institution NAIT`
-3. Use extracted `avg_total_candidates.csv` to populate dataset `Avg_Total` (then `AvgRules` becomes temporary only).
+1. Commit and push current working changes on `main`.
+2. Run local/deployed smoke checks from `docs/WEBAPP_QA_CHECKLIST.md`.
+3. Pick the next lane from `docs/SPRINT_SLICE.md` and keep scope narrow.
 
 ## Recent work log (tail)
 
-- Added architecture map `docs/APPS_SCRIPT_ARCHITECTURE.md`.
-- Updated references in `README.md`, `docs/PROJECT_CONTEXT.md`, `docs/DECISIONS.md`, and `docs/SPRINT_SLICE.md`.
-- Validation run results:
-  - `tools/validate-webapp-surface.ps1`: PASS
-  - `tools/validate-apps-script-structure.ps1`: PASS
-  - `tools/export-appsscript-bundles.ps1 -Profile sheet-only`: generated successfully and excluded web-only functions.
-## 2026-02-10 (Apps Script Modularization Seam 2 + CI Guardrails)
-- Split web UI monolith into include fragments:
-  - `apps_script/WebApp.html` (shell include map)
-  - `apps_script/WebAppStyles.html`
-  - `apps_script/WebAppBody.html`
-  - `apps_script/WebAppScriptState.html`
   - `apps_script/WebAppScriptFunctions.html`
   - `apps_script/WebAppScriptInit.html`
 - Added include renderer `apps_script/WebAppRender.gs` and updated `doGet()` in `apps_script/Code.gs` to serve rendered HTML content.
@@ -47,4 +37,16 @@
   - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
   - `tools/export-appsscript-bundles.ps1 -Profile all`: generated successfully (`full`, `sheet-only`, `sync-only`).
+## 2026-02-10 (Web App Stabilization + Release Preflight)
+- Fixed web results-table squish/readability issues in `apps_script/WebAppStyles.html`.
+- Hardened local preview startup in `tools/start-webapp-preview.ps1`:
+  - Added bindability checks before selecting fallback ports.
+  - Expanded fallback scan range.
+  - Added ephemeral-port fallback when a contiguous blocked range exists.
+  - Improved occupied-port error messaging and actionable hints.
+- Ran release preflight checks:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS
+  - `tools/start-webapp-preview.ps1 -Port 5500 -Mode powershell`: startup PASS (auto-selected alternate port when requested port was reserved by `System (PID 4)`).
+- Updated session-planning docs to current state: `docs/SPRINT_SLICE.md`, `docs/SESSION_HANDOFF.md`.
 
