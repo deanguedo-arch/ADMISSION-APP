@@ -93,3 +93,16 @@ Keep entries short and append-only.
 - Added spreadsheet resolution helper in `apps_script/Code.gs` (`getAdmissionsSpreadsheet_`) with script property override key `ADMISSIONS_SHEET_ID` and fallback Sheet ID.
 - Added `apps_script/WebApp.html` staff UI with counselor-friendly grade entry, categorized results views (Eligible/Missing/Uncheckable/All), and CSV/PDF export actions.
 - Updated `README.md`, `docs/PROJECT_CONTEXT.md`, and `docs/USER_MANUAL.md` with web app usage and configuration notes.
+## 2026-02-10 (Execution Efficiency Scaffold)
+- Added `docs/DECISIONS.md` to lock security/access/workflow decisions for future sessions.
+- Added `docs/SPRINT_SLICE.md` to track current objective and small delivery slices.
+- Added `docs/WEBAPP_QA_CHECKLIST.md` as the web app release checklist.
+- Added guardrail script `tools/validate-webapp-surface.ps1` (manifest + callable-surface + domain suffix checks).
+- Updated `AGENTS.md` and `docs/PROJECT_CONTEXT.md` to include new controls as first-read/session workflow items.
+- Ran `validate-webapp-surface.ps1 -WarnOnly` to capture baseline gaps before security hardening.
+## 2026-02-10 (Web App Security Slice)
+- Updated manifest `apps_script/appsscript.json`: `webapp.access` -> `DOMAIN`, `timeZone` -> `America/Edmonton`.
+- Hardened web endpoint guards in `apps_script/Code.gs`: added `assertDomainUser_()` for `@eips.ca` and `assertWebRateLimit_()` (2s minimum interval, 30/min).
+- Reduced callable server surface by renaming non-web top-level functions in `apps_script/Code.gs` to underscore-suffixed private functions.
+- Updated sheet menu callbacks to call private function names (`runEligibility_`, `setupWorkbookForStaff_`, etc.).
+- Ran `tools/validate-webapp-surface.ps1` in strict mode: PASS.

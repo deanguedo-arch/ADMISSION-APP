@@ -94,3 +94,9 @@ Then start a new chat and paste the contents of `docs/SESSION_HANDOFF.md`.
 ## Coworker handoff
 For non-technical users, use:
 - `docs/USER_MANUAL.md`
+
+## Engineering controls
+- Stable decisions: `docs/DECISIONS.md`
+- Active build slice: `docs/SPRINT_SLICE.md`
+- Web app QA gate: `docs/WEBAPP_QA_CHECKLIST.md`
+- Guardrail script: `tools/validate-webapp-surface.ps1`

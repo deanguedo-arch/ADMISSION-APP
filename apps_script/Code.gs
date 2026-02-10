@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Alberta Admissions Checker (MVP)
  *
  * Expected tabs:
@@ -15,13 +15,13 @@ function onOpen() {
   try {
     SpreadsheetApp.getUi()
       .createMenu("Admissions Checker")
-      .addItem("Check Eligibility", "runEligibility")
-      .addItem("One-Time Setup (Recommended)", "setupWorkbookForStaff")
-      .addItem("Setup Student Elective Dropdowns", "setupStudentElectiveInputs")
-      .addItem("Setup ElectiveRules Template", "setupElectiveRulesTemplate")
+      .addItem("Check Eligibility", "runEligibility_")
+      .addItem("One-Time Setup (Recommended)", "setupWorkbookForStaff_")
+      .addItem("Setup Student Elective Dropdowns", "setupStudentElectiveInputs_")
+      .addItem("Setup ElectiveRules Template", "setupElectiveRulesTemplate_")
       .addSeparator()
-      .addItem("Admin: Apply Staff Lockdown", "applyStaffLockdown")
-      .addItem("Admin: Show All Tabs", "adminShowAllTabs")
+      .addItem("Admin: Apply Staff Lockdown", "applyStaffLockdown_")
+      .addItem("Admin: Show All Tabs", "adminShowAllTabs_")
       .addToUi();
   } catch (err) {
     Logger.log("onOpen skipped: Spreadsheet UI is not available in this execution context.");
@@ -37,6 +37,10 @@ const STAFF_EDITABLE_SHEET_NAMES = ["Student", "Eligible", "Ineligible", "Unchec
 const MANAGED_INTERNAL_PROTECTION_DESC = "Admissions Checker: managed internal sheet protection";
 const ADMISSIONS_SHEET_ID_PROPERTY = "ADMISSIONS_SHEET_ID";
 const DEFAULT_ADMISSIONS_SHEET_ID = "1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU";
+const WEBAPP_ALLOWED_DOMAIN_SUFFIX = "@eips.ca";
+const WEBAPP_RATE_LIMIT_MIN_INTERVAL_MS = 2000;
+const WEBAPP_RATE_LIMIT_WINDOW_SECONDS = 60;
+const WEBAPP_RATE_LIMIT_MAX_PER_WINDOW = 30;
 const RESULTS_HEADER_ROW = [
   "Institution",
   "Program",
@@ -92,7 +96,7 @@ function autoFillManualElectiveGroupRow_(sheet, row) {
   }
 
   const key = normalizeCourseKey_(courseLabel);
-  const groups = unique(
+  const groups = unique_(
     (electiveGroupsForCourseKey_(key) || [])
       .map((g) => String(g || "").trim().toUpperCase())
       .filter((g) => ["A", "B", "C", "D"].includes(g))
@@ -116,7 +120,7 @@ function autoFillManualElectiveGroupRow_(sheet, row) {
   );
 }
 
-function runEligibility() {
+function runEligibility_() {
   const ss = getAdmissionsSpreadsheet_();
   const programsSheet = ss.getSheetByName("Programs");
   const studentSheet = ss.getSheetByName("Student");
@@ -124,8 +128,8 @@ function runEligibility() {
   const eligibleSheet = ss.getSheetByName("Eligible") || ss.insertSheet("Eligible");
   const ineligibleSheet = ss.getSheetByName("Ineligible") || ss.insertSheet("Ineligible");
   const uncheckableSheet = ss.getSheetByName("Uncheckable") || ss.insertSheet("Uncheckable");
-  const avgRules = readAvgRules(ss);
-  const electiveRuleOverrides = readElectiveRuleOverrides(ss);
+  const avgRules = readAvgRules_(ss);
+  const electiveRuleOverrides = readElectiveRuleOverrides_(ss);
 
   if (!programsSheet || !studentSheet || !resultsSheet) {
     throw new Error("Missing one of: Programs, Student, Results sheets");
@@ -134,11 +138,11 @@ function runEligibility() {
   const programsRange = programsSheet.getDataRange().getValues();
   // Be forgiving: read from row 2 down (row 1 is usually headers).
   const studentRows = studentSheet.getRange(2, 1, Math.max(0, studentSheet.getLastRow() - 1), 2).getValues();
-  const courseMap = buildCourseMap(studentRows);
+  const courseMap = buildCourseMap_(studentRows);
   const electivesRows = studentSheet
     .getRange(MANUAL_ELECTIVE_START_ROW, MANUAL_ELECTIVE_COL, MANUAL_ELECTIVE_SLOTS, MANUAL_ELECTIVE_WIDTH)
     .getValues();
-  const manualElectives = buildElectives(electivesRows, { source: "manual", rowOffset: MANUAL_ELECTIVE_START_ROW });
+  const manualElectives = buildElectives_(electivesRows, { source: "manual", rowOffset: MANUAL_ELECTIVE_START_ROW });
 
   if (Object.keys(courseMap).length === 0 && manualElectives.length === 0) {
     const manualRange = `D${MANUAL_ELECTIVE_START_ROW}:F${MANUAL_ELECTIVE_START_ROW + MANUAL_ELECTIVE_SLOTS - 1}`;
@@ -160,12 +164,23 @@ function runEligibility() {
 }
 
 function doGet(e) {
+  try {
+    assertDomainUser_();
+  } catch (err) {
+    const message = sanitizeWebMessage_(err && err.message);
+    return HtmlService.createHtmlOutput(
+      `<h3>Access denied</h3><p>${message}</p><p>Use an approved ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} account.</p>`
+    ).setTitle("Admissions Checker: Access Denied");
+  }
   return HtmlService.createHtmlOutputFromFile("WebApp")
     .setTitle("Next Step Admissions Checker")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function getWebAppBootstrapData() {
+  const identity = assertDomainUser_();
+  assertWebRateLimit_(identity, "bootstrap");
+
   return {
     generatedAt: new Date().toISOString(),
     namedCourseOptions: listNamedCourseOptions_(),
@@ -176,6 +191,9 @@ function getWebAppBootstrapData() {
 }
 
 function runWebEligibility(payload) {
+  const identity = assertDomainUser_();
+  assertWebRateLimit_(identity, "run");
+
   const ss = getAdmissionsSpreadsheet_();
   const programsSheet = ss.getSheetByName("Programs");
   if (!programsSheet) {
@@ -187,12 +205,12 @@ function runWebEligibility(payload) {
     throw new Error("Admissions data is empty. Refresh the Programs tab, then try again.");
   }
 
-  const avgRules = readAvgRules(ss);
-  const electiveRuleOverrides = readElectiveRuleOverrides(ss);
+  const avgRules = readAvgRules_(ss);
+  const electiveRuleOverrides = readElectiveRuleOverrides_(ss);
   const namedRows = sanitizeWebNamedCourses_(payload && payload.namedCourses);
-  const courseMap = buildCourseMap(namedRows);
+  const courseMap = buildCourseMap_(namedRows);
   const manualRows = sanitizeWebManualElectives_(payload && payload.manualElectives);
-  const manualElectives = buildElectives(manualRows, { source: "manual-web", rowOffset: 1 });
+  const manualElectives = buildElectives_(manualRows, { source: "manual-web", rowOffset: 1 });
 
   const evaluation = evaluateProgramsForStudent_({
     programsRange,
@@ -238,10 +256,73 @@ function getAdmissionsSpreadsheet_() {
   return SpreadsheetApp.openById(sheetId);
 }
 
+function assertDomainUser_() {
+  let email = "";
+  let tempKey = "";
+  try {
+    email = String((Session.getActiveUser() && Session.getActiveUser().getEmail()) || "")
+      .trim()
+      .toLowerCase();
+  } catch (err) {}
+  try {
+    tempKey = String(Session.getTemporaryActiveUserKey() || "").trim();
+  } catch (err) {}
+
+  if (email && !email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
+    throw new Error(`Access is restricted to ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} users.`);
+  }
+  if (!email && !tempKey) {
+    throw new Error("Could not verify your session identity. Sign in with your school account and retry.");
+  }
+
+  return {
+    email,
+    tempKey,
+    key: email || `temp:${tempKey}`,
+  };
+}
+
+function assertWebRateLimit_(identity, action) {
+  const cache = CacheService.getScriptCache();
+  const safeKey = String((identity && identity.key) || "unknown").replace(/[^a-zA-Z0-9@._-]/g, "_");
+  const keyBase = `WEBAPP_RL_${safeKey}`;
+  const now = Date.now();
+
+  const intervalKey = `${keyBase}_LAST`;
+  const lastAt = toNumber_(cache.get(intervalKey));
+  if (isFinite(lastAt) && now - lastAt < WEBAPP_RATE_LIMIT_MIN_INTERVAL_MS) {
+    throw new Error("Please wait 2 seconds before trying again.");
+  }
+  cache.put(intervalKey, String(now), 120);
+
+  const windowKey = `${keyBase}_WINDOW`;
+  const countKey = `${keyBase}_COUNT`;
+  let windowStart = toNumber_(cache.get(windowKey));
+  let count = toNumber_(cache.get(countKey));
+
+  if (!isFinite(windowStart) || now - windowStart >= WEBAPP_RATE_LIMIT_WINDOW_SECONDS * 1000) {
+    windowStart = now;
+    count = 0;
+  }
+  count = (isFinite(count) ? count : 0) + 1;
+
+  cache.put(windowKey, String(windowStart), WEBAPP_RATE_LIMIT_WINDOW_SECONDS + 30);
+  cache.put(countKey, String(count), WEBAPP_RATE_LIMIT_WINDOW_SECONDS + 30);
+
+  if (count > WEBAPP_RATE_LIMIT_MAX_PER_WINDOW) {
+    throw new Error("Too many requests. Please wait about a minute and try again.");
+  }
+}
+
+function sanitizeWebMessage_(msg) {
+  const text = String(msg || "Access blocked.");
+  return text.replace(/[<>&]/g, "");
+}
+
 function listNamedCourseOptions_() {
-  const alias = courseAliases();
+  const alias = courseAliases_();
   const fromAlias = Object.keys(alias).map((k) => String(alias[k] || "").trim());
-  return unique(fromAlias.concat(listElectiveCourseOptions_()).filter(Boolean)).sort((a, b) =>
+  return unique_(fromAlias.concat(listElectiveCourseOptions_()).filter(Boolean)).sort((a, b) =>
     String(a).localeCompare(String(b))
   );
 }
@@ -252,7 +333,7 @@ function sanitizeWebNamedCourses_(rows) {
   for (let i = 0; i < list.length && i < 80; i++) {
     const item = list[i] || {};
     const course = String(item.course || "").trim();
-    const mark = toNumber(item.mark);
+    const mark = toNumber_(item.mark);
     if (!course || !isFinite(mark)) continue;
     out.push([course, Math.max(0, Math.min(100, mark))]);
   }
@@ -265,7 +346,7 @@ function sanitizeWebManualElectives_(rows) {
   for (let i = 0; i < list.length && i < 25; i++) {
     const item = list[i] || {};
     const course = String(item.course || "").trim();
-    const mark = toNumber(item.mark);
+    const mark = toNumber_(item.mark);
     if (!course || !isFinite(mark)) continue;
     const group = String(item.group || "").trim().toUpperCase();
     out.push([course, ["A", "B", "C", "D"].includes(group) ? group : "", Math.max(0, Math.min(100, mark))]);
@@ -287,21 +368,21 @@ function evaluateProgramsForStudent_(opts) {
     throw new Error("No student data found. Add at least one course mark.");
   }
 
-  const autoElectives = buildAutoElectivesFromCourseMap(courseMap);
+  const autoElectives = buildAutoElectivesFromCourseMap_(courseMap);
   const electives = mergeElectiveCandidates_(autoElectives, manualElectives);
 
   const header = programsRange[0].map(String);
   const rows = programsRange.slice(1);
-  const idx = indexHeader(header);
-  requireProgramsColumns(idx);
+  const idx = indexHeader_(header);
+  requireProgramsColumns_(idx);
 
   const out = [RESULTS_HEADER_ROW.slice()];
 
   rows.forEach((r) => {
-    const institution = getStr(r, idx, "Institution");
-    const program = getStr(r, idx, "Program");
-    const credential = getStr(r, idx, "Credential_Type");
-    const status = getStr(r, idx, "Status");
+    const institution = getStr_(r, idx, "Institution");
+    const program = getStr_(r, idx, "Program");
+    const credential = getStr_(r, idx, "Credential_Type");
+    const status = getStr_(r, idx, "Status");
 
     if (!institution || !program) return;
     if (status && status.toLowerCase() !== "active") return;
@@ -310,48 +391,48 @@ function evaluateProgramsForStudent_(opts) {
     const notes = [];
     const advisories = [];
 
-    const requirementType = getStr(r, idx, "Requirement_Type");
+    const requirementType = getStr_(r, idx, "Requirement_Type");
     const requirementTypeOverride = resolveElectiveRuleOverrideText_(
       electiveRuleOverrides,
       institution,
       program
     );
     const requirementTypeEffective = combineRuleText_(requirementType, requirementTypeOverride);
-    const competitiveGuidance = normalizeCompetitive(getStr(r, idx, "Competitive_Final"));
+    const competitiveGuidance = normalizeCompetitive_(getStr_(r, idx, "Competitive_Final"));
     appendDatasetNotes_(requirementTypeEffective, notes, advisories);
 
-    const englishReq = unifyEnglishReq(r, idx);
-    const englishMin = toNumber(unifyEnglishMin(r, idx));
-    const englishEval = evalSubject(courseMap, "english", englishReq, englishMin);
-    appendEval(englishEval, "English", reasons, notes, advisories);
+    const englishReq = unifyEnglishReq_(r, idx);
+    const englishMin = toNumber_(unifyEnglishMin_(r, idx));
+    const englishEval = evalSubject_(courseMap, "english", englishReq, englishMin);
+    appendEval_(englishEval, "English", reasons, notes, advisories);
 
-    const mathReq = getStr(r, idx, "Math_Req");
-    const mathMin = toNumber(getStr(r, idx, "Math_Min"));
-    const mathEval = evalSubject(courseMap, "math", mathReq, mathMin);
-    appendEval(mathEval, "Math", reasons, notes, advisories);
+    const mathReq = getStr_(r, idx, "Math_Req");
+    const mathMin = toNumber_(getStr_(r, idx, "Math_Min"));
+    const mathEval = evalSubject_(courseMap, "math", mathReq, mathMin);
+    appendEval_(mathEval, "Math", reasons, notes, advisories);
 
-    const socialReq = getStr(r, idx, "Social_Req");
-    const socialMin = toNumber(getStr(r, idx, "Social_Min"));
-    const socialEval = evalSubject(courseMap, "social", socialReq, socialMin);
-    appendEval(socialEval, "Social Studies", reasons, notes, advisories);
+    const socialReq = getStr_(r, idx, "Social_Req");
+    const socialMin = toNumber_(getStr_(r, idx, "Social_Min"));
+    const socialEval = evalSubject_(courseMap, "social", socialReq, socialMin);
+    appendEval_(socialEval, "Social Studies", reasons, notes, advisories);
 
-    const sciMin = toNumber(getStr(r, idx, "Science_Min"));
-    const scienceReq = buildScienceReq(r, idx);
-    const scienceEval = evalScience(courseMap, scienceReq, sciMin);
-    appendEval(scienceEval, "Science", reasons, notes, advisories);
+    const sciMin = toNumber_(getStr_(r, idx, "Science_Min"));
+    const scienceReq = buildScienceReq_(r, idx);
+    const scienceEval = evalScience_(courseMap, scienceReq, sciMin);
+    appendEval_(scienceEval, "Science", reasons, notes, advisories);
 
-    const electiveQty = getStr(r, idx, "Elective_Qty");
-    const electiveNeedParsed = parseElectiveQty(electiveQty);
-    const electivePool = getStr(r, idx, "Elective_Pool");
-    const allowedGroups = parseAllowedGroups(electivePool);
+    const electiveQty = getStr_(r, idx, "Elective_Qty");
+    const electiveNeedParsed = parseElectiveQty_(electiveQty);
+    const electivePool = getStr_(r, idx, "Elective_Pool");
+    const allowedGroups = parseAllowedGroups_(electivePool);
     const electiveRules = parseElectiveRules_(requirementTypeEffective);
 
-    const avgMin = toNumber(getStr(r, idx, "Min_Avg_Final"));
-    const avgTotalFromData = toNumber(getStr(r, idx, "Avg_Total"));
-    const requiredMarks = collectRequiredMarks([englishEval, mathEval, socialEval, scienceEval]);
-    const requiredSlots = countRequiredSlots([englishEval, mathEval, socialEval, scienceEval]);
+    const avgMin = toNumber_(getStr_(r, idx, "Min_Avg_Final"));
+    const avgTotalFromData = toNumber_(getStr_(r, idx, "Avg_Total"));
+    const requiredMarks = collectRequiredMarks_([englishEval, mathEval, socialEval, scienceEval]);
+    const requiredSlots = countRequiredSlots_([englishEval, mathEval, socialEval, scienceEval]);
     const assumedTarget = 5;
-    const avgTotal = resolveAvgTotal({
+    const avgTotal = resolveAvgTotal_({
       institution,
       program,
       avgMin,
@@ -365,7 +446,7 @@ function evaluateProgramsForStudent_(opts) {
 
     const electiveNeededForAvg = Math.max(0, avgTotal - requiredSlots);
 
-    const avg = computeStudentAverage({
+    const avg = computeStudentAverage_({
       requiredItems: requiredMarks,
       electives,
       allowedGroups,
@@ -474,10 +555,10 @@ function writeResultRowsToSheet_(sheet, rows) {
   applyCompetitiveHighlight_(sheet, safeRows);
 }
 
-function indexHeader(header) {
+function indexHeader_(header) {
   const idx = {};
   header.forEach((h, i) => {
-    const key = normHeaderKey(h);
+    const key = normHeaderKey_(h);
     if (!key) return;
     // Keep the first occurrence.
     if (idx[key] === undefined) idx[key] = i;
@@ -485,14 +566,14 @@ function indexHeader(header) {
   return idx;
 }
 
-function normHeaderKey(h) {
+function normHeaderKey_(h) {
   return String(h || "")
     .replace(/^\uFEFF/, "") // BOM
     .trim()
     .toLowerCase();
 }
 
-function requireProgramsColumns(idx) {
+function requireProgramsColumns_(idx) {
   const required = ["institution", "program", "credential_type", "status"];
   const missing = required.filter((k) => idx[k] === undefined);
   if (missing.length) {
@@ -504,7 +585,7 @@ function requireProgramsColumns(idx) {
   }
 }
 
-function readAvgRules(ss) {
+function readAvgRules_(ss) {
   const sheet = ss.getSheetByName("AvgRules");
   if (!sheet) return { byKey: {}, byInstitution: {} };
   const values = sheet.getDataRange().getValues();
@@ -512,7 +593,7 @@ function readAvgRules(ss) {
 
   const header = values[0].map((x) => String(x || "").trim());
   const idx = {};
-  header.forEach((h, i) => (idx[normHeaderKey(h)] = i));
+  header.forEach((h, i) => (idx[normHeaderKey_(h)] = i));
 
   const byKey = {};
   const byInstitution = {};
@@ -521,7 +602,7 @@ function readAvgRules(ss) {
     const row = values[i];
     const institution = String(row[idx["institution"]] || "").trim();
     const program = String(row[idx["program"]] || "").trim();
-    const avgTotal = toNumber(row[idx["avg_total"]]);
+    const avgTotal = toNumber_(row[idx["avg_total"]]);
     if (!institution || !isFinite(avgTotal) || avgTotal <= 0) continue;
 
     if (program === "*" || !program) {
@@ -534,7 +615,7 @@ function readAvgRules(ss) {
   return { byKey, byInstitution };
 }
 
-function readElectiveRuleOverrides(ss) {
+function readElectiveRuleOverrides_(ss) {
   const sheet = ss.getSheetByName("ElectiveRules");
   if (!sheet) return { byKey: {}, byInstitution: {} };
 
@@ -543,7 +624,7 @@ function readElectiveRuleOverrides(ss) {
 
   const header = values[0].map((x) => String(x || "").trim());
   const idx = {};
-  header.forEach((h, i) => (idx[normHeaderKey(h)] = i));
+  header.forEach((h, i) => (idx[normHeaderKey_(h)] = i));
 
   const institutionCol = idx["institution"];
   const programCol = idx["program"];
@@ -586,7 +667,7 @@ function resolveElectiveRuleOverrideText_(overrides, institution, program) {
   if (overrides.byKey && overrides.byKey[key]) {
     parts.push(...overrides.byKey[key]);
   }
-  return unique(parts.map((x) => String(x || "").trim()).filter(Boolean)).join("; ");
+  return unique_(parts.map((x) => String(x || "").trim()).filter(Boolean)).join("; ");
 }
 
 function combineRuleText_(baseText, overrideText) {
@@ -596,7 +677,7 @@ function combineRuleText_(baseText, overrideText) {
   return a || b || "";
 }
 
-function resolveAvgTotal(opts) {
+function resolveAvgTotal_(opts) {
   const {
     institution,
     program,
@@ -647,29 +728,29 @@ function resolveAvgTotal(opts) {
   return 0;
 }
 
-function getStr(row, idx, col) {
-  const i = idx[normHeaderKey(col)];
+function getStr_(row, idx, col) {
+  const i = idx[normHeaderKey_(col)];
   if (i === undefined) return "";
   const v = row[i];
   if (v === null || v === undefined) return "";
   return String(v).trim();
 }
 
-function unifyEnglishReq(row, idx) {
-  const a = getStr(row, idx, "English_Req");
+function unifyEnglishReq_(row, idx) {
+  const a = getStr_(row, idx, "English_Req");
   if (a) return a;
-  const b = getStr(row, idx, "Eng_Req");
+  const b = getStr_(row, idx, "Eng_Req");
   return b;
 }
 
-function unifyEnglishMin(row, idx) {
-  const a = getStr(row, idx, "English_Min");
+function unifyEnglishMin_(row, idx) {
+  const a = getStr_(row, idx, "English_Min");
   if (a) return a;
-  const b = getStr(row, idx, "Eng_Min");
+  const b = getStr_(row, idx, "Eng_Min");
   return b;
 }
 
-function toNumber(v) {
+function toNumber_(v) {
   if (v === null || v === undefined) return NaN;
   const s = String(v).trim();
   if (!s) return NaN;
@@ -677,7 +758,7 @@ function toNumber(v) {
   return isFinite(n) ? n : NaN;
 }
 
-function canonKey(s) {
+function canonKey_(s) {
   return String(s || "")
     .trim()
     .toUpperCase()
@@ -685,21 +766,21 @@ function canonKey(s) {
     .replace(/\s+/g, " ");
 }
 
-function buildCourseMap(studentRows) {
+function buildCourseMap_(studentRows) {
   const map = {};
-  const alias = courseAliases();
+  const alias = courseAliases_();
   studentRows.forEach(([course, mark]) => {
     const c = String(course || "").trim();
-    const m = toNumber(mark);
+    const m = toNumber_(mark);
     if (!c || !isFinite(m)) return;
-    const k0 = canonKey(c);
+    const k0 = canonKey_(c);
     const k = alias[k0] || k0;
     map[k] = m;
   });
   return map;
 }
 
-function courseAliases() {
+function courseAliases_() {
   // Map student-entered course strings to canonical keys.
   const pairs = [
     ["ENGLISH LANGUAGE ARTS 30-1", "ENGLISH 30-1"],
@@ -782,21 +863,21 @@ function courseAliases() {
   return map;
 }
 
-function evalSubject(courseMap, subject, reqText, minMark) {
+function evalSubject_(courseMap, subject, reqText, minMark) {
   const t = String(reqText || "").trim();
   if (!t) return { kind: "none" };
   if (/^(See Degree|Refer to Degree)$/i.test(t)) return { kind: "unknown", reason: t };
   if (/(placement|assessment|test)/i.test(t)) return { kind: "assessment", reason: "assessment/placement mentioned" };
   if (/english language proficiency/i.test(t)) return { kind: "unknown", reason: "English language proficiency" };
-  if (/\bunspecified\b/i.test(t)) return { kind: "unknown", reason: `${title(subject)} requirement unspecified` };
+  if (/\bunspecified\b/i.test(t)) return { kind: "unknown", reason: `${title_(subject)} requirement unspecified` };
 
   // Support simple AND requirements like "Mathematics 30-1 and Mathematics 31".
   // Each AND-part can itself be an OR list (e.g., "30-1 or 30-2 and 31").
   const andParts = splitByAnd_(t);
   if (andParts.length > 1) {
     const parts = andParts.map((p) => {
-      const courses = normalizeRequirementToCourses(subject, p);
-      const best = bestMarkWithEquivalencies(courseMap, courses);
+      const courses = normalizeRequirementToCourses_(subject, p);
+      const best = bestMarkWithEquivalencies_(courseMap, courses);
       return { courses, best };
     });
     const out = { kind: "all", parts };
@@ -804,21 +885,21 @@ function evalSubject(courseMap, subject, reqText, minMark) {
     return out;
   }
 
-  const courses = normalizeRequirementToCourses(subject, t);
-  const best = bestMarkWithEquivalencies(courseMap, courses);
+  const courses = normalizeRequirementToCourses_(subject, t);
+  const best = bestMarkWithEquivalencies_(courseMap, courses);
   const out = { kind: "any", courses, best };
   if (isFinite(minMark) && minMark > 0) out.minMark = minMark;
   return out;
 }
 
-function evalScience(courseMap, scienceReq, minMark) {
+function evalScience_(courseMap, scienceReq, minMark) {
   if (!scienceReq || scienceReq.kind === "none") return { kind: "none" };
   if (scienceReq.kind === "unknown") return { kind: "unknown", reason: scienceReq.reason };
 
   if (scienceReq.kind === "all") {
     const courses = scienceReq.courses || [];
     const checks = courses.map((c) => {
-      const best = bestMarkWithEquivalencies(courseMap, [c]);
+      const best = bestMarkWithEquivalencies_(courseMap, [c]);
       if (!best) return { course: c, ok: false, reason: `Missing ${c}` };
       if (isFinite(minMark) && minMark > 0 && best.mark < minMark) {
         return { course: c, ok: false, reason: `${c} mark too low: ${best.mark} < ${minMark}`, mark: best.mark, key: best.key };
@@ -829,11 +910,11 @@ function evalScience(courseMap, scienceReq, minMark) {
   }
 
   if (scienceReq.kind === "all_plus_any") {
-    const allCourses = unique(scienceReq.allCourses || []);
-    const anyCourses = unique(scienceReq.anyCourses || []);
+    const allCourses = unique_(scienceReq.allCourses || []);
+    const anyCourses = unique_(scienceReq.anyCourses || []);
 
     const checksAll = allCourses.map((c) => {
-      const best = bestMarkWithEquivalencies(courseMap, [c]);
+      const best = bestMarkWithEquivalencies_(courseMap, [c]);
       if (!best) return { course: c, ok: false, reason: `Missing ${c}` };
       if (isFinite(minMark) && minMark > 0 && best.mark < minMark) {
         return { course: c, ok: false, reason: `${c} mark too low: ${best.mark} < ${minMark}`, mark: best.mark, key: best.key };
@@ -841,7 +922,7 @@ function evalScience(courseMap, scienceReq, minMark) {
       return { course: c, ok: true, mark: best.mark, key: best.key };
     });
 
-    const bestAny = bestMarkWithEquivalencies(courseMap, anyCourses);
+    const bestAny = bestMarkWithEquivalencies_(courseMap, anyCourses);
     let anyOk = true;
     let anyReason = "";
     if (!bestAny) {
@@ -865,12 +946,12 @@ function evalScience(courseMap, scienceReq, minMark) {
   }
 
   if (scienceReq.kind === "kof") {
-    const courses = unique(scienceReq.courses || []);
+    const courses = unique_(scienceReq.courses || []);
     const k = Math.max(0, Math.round(scienceReq.k || 0));
 
     const candidates = [];
     courses.forEach((c) => {
-      const best = bestMarkWithEquivalencies(courseMap, [c]);
+      const best = bestMarkWithEquivalencies_(courseMap, [c]);
       if (!best) return;
       if (isFinite(minMark) && minMark > 0 && best.mark < minMark) return;
       candidates.push({ course: c, mark: best.mark, key: best.key });
@@ -885,13 +966,13 @@ function evalScience(courseMap, scienceReq, minMark) {
 
   // Default: any-of list
   const courses = scienceReq.courses || [];
-  const best = bestMarkWithEquivalencies(courseMap, courses);
+  const best = bestMarkWithEquivalencies_(courseMap, courses);
   const out = { kind: "any", courses, best };
   if (isFinite(minMark) && minMark > 0) out.minMark = minMark;
   return out;
 }
 
-function appendEval(ev, label, reasons, notes, advisories) {
+function appendEval_(ev, label, reasons, notes, advisories) {
   if (!ev || ev.kind === "none") return;
   if (ev.kind === "unknown") {
     notes.push(`${label}: ${ev.reason}`);
@@ -955,7 +1036,7 @@ function appendEval(ev, label, reasons, notes, advisories) {
   }
 }
 
-function buildScienceReq(row, idx) {
+function buildScienceReq_(row, idx) {
   // Prefer NAIT-style flags when present.
   const flagPairs = [
     ["Bio_30_Req", "Biology 30"],
@@ -965,11 +1046,11 @@ function buildScienceReq(row, idx) {
   ];
   const flagCourses = [];
   flagPairs.forEach(([flag, course]) => {
-    const v = getStr(row, idx, flag);
+    const v = getStr_(row, idx, flag);
     if (/^yes$/i.test(v)) flagCourses.push(course);
   });
 
-  const t = getStr(row, idx, "Science_Req");
+  const t = getStr_(row, idx, "Science_Req");
   if (!t && !flagCourses.length) return { kind: "none" };
   if (!t && flagCourses.length) return { kind: "all", courses: flagCourses };
   if (/^(See Degree|Refer to Degree)$/i.test(t)) return { kind: "unknown", reason: t };
@@ -983,21 +1064,21 @@ function buildScienceReq(row, idx) {
   return parsed;
 }
 
-function parseAlternatives(subject, text) {
+function parseAlternatives_(subject, text) {
   const norm = String(text || "")
     .replace(/\//g, " or ")
     .replace(/\s+/g, " ")
     .trim();
 
   // If we have course codes, prefer extracting them.
-  const codes = extractCourseCodes(norm);
+  const codes = extractCourseCodes_(norm);
   if (codes.length) {
     const prefix =
       subject === "english" ? "English " :
       subject === "math" ? "Math " :
       subject === "social" ? "Social Studies " :
       "";
-    return unique(codes.map((c) => prefix + c));
+    return unique_(codes.map((c) => prefix + c));
   }
 
   const parts = norm.split(/\s+or\s+/i).map((x) => x.trim()).filter(Boolean);
@@ -1014,7 +1095,7 @@ function parseAlternatives(subject, text) {
   });
 }
 
-function normalizeRequirementToCourses(subject, rawText) {
+function normalizeRequirementToCourses_(subject, rawText) {
   const t = String(rawText || "").trim();
   if (!t) return [];
 
@@ -1031,20 +1112,20 @@ function normalizeRequirementToCourses(subject, rawText) {
     }
   }
 
-  const courses = parseAlternatives(subject, t);
+  const courses = parseAlternatives_(subject, t);
   // Handle Math 31-style requirements (no dash).
   if (subject === "math" && /(?:math|mathematics)\s*31\b/i.test(t)) {
     courses.push("Math 31");
   }
-  return unique(courses);
+  return unique_(courses);
 }
 
-function bestMarkWithEquivalencies(courseMap, courses) {
+function bestMarkWithEquivalencies_(courseMap, courses) {
   let best = null;
   courses.forEach((c) => {
-    const alias = courseAliases();
-    const keys = expandEquivalencies(c).map((x) => {
-      const k0 = canonKey(x);
+    const alias = courseAliases_();
+    const keys = expandEquivalencies_(c).map((x) => {
+      const k0 = canonKey_(x);
       return alias[k0] || k0;
     });
     keys.forEach((k, i) => {
@@ -1057,11 +1138,11 @@ function bestMarkWithEquivalencies(courseMap, courses) {
   return best;
 }
 
-function expandEquivalencies(course) {
+function expandEquivalencies_(course) {
   const s = String(course || "").trim();
   if (!s) return [];
 
-  const t = canonKey(s);
+  const t = canonKey_(s);
   const m = /^(ENGLISH|MATH|SOCIAL STUDIES)\s+(20|30)-([12])$/.exec(t);
   if (!m) return [s];
 
@@ -1070,7 +1151,7 @@ function expandEquivalencies(course) {
   const stream = m[3]; // "1" or "2"
 
   const out = [];
-  const label = subj === "SOCIAL STUDIES" ? "Social Studies" : title(subj.toLowerCase());
+  const label = subj === "SOCIAL STUDIES" ? "Social Studies" : title_(subj.toLowerCase());
 
   // Exact requirement first.
   out.push(`${label} ${level}-${stream}`);
@@ -1084,19 +1165,19 @@ function expandEquivalencies(course) {
     if (stream === "2") out.push(`${label} 30-1`);
   }
 
-  return unique(out);
+  return unique_(out);
 }
 
-function extractCourseCodes(text) {
+function extractCourseCodes_(text) {
   const t = String(text || "").replace(/\//g, " ");
   const out = [];
   const re = /\b(\d{2}-[12])\b/g;
   let m;
   while ((m = re.exec(t))) out.push(m[1]);
-  return unique(out);
+  return unique_(out);
 }
 
-function unique(arr) {
+function unique_(arr) {
   const seen = {};
   const out = [];
   arr.forEach((x) => {
@@ -1108,12 +1189,12 @@ function unique(arr) {
   return out;
 }
 
-function buildElectives(rows, opts) {
+function buildElectives_(rows, opts) {
   const source = String((opts && opts.source) || "manual").trim().toLowerCase();
-  const rowOffset = Math.max(1, Math.round(toNumber((opts && opts.rowOffset) || 1) || 1));
+  const rowOffset = Math.max(1, Math.round(toNumber_((opts && opts.rowOffset) || 1) || 1));
   const electives = [];
   (rows || []).forEach(([name, group, mark], i) => {
-    const m = toNumber(mark);
+    const m = toNumber_(mark);
     if (!isFinite(m)) return;
 
     const label = String(name || "").trim();
@@ -1124,7 +1205,7 @@ function buildElectives(rows, opts) {
     else if (key) groups = electiveGroupsForCourseKey_(key);
     if (!groups.length) return;
 
-    groups = unique(groups.filter((g) => ["A", "B", "C", "D"].includes(String(g || "").toUpperCase())));
+    groups = unique_(groups.filter((g) => ["A", "B", "C", "D"].includes(String(g || "").toUpperCase())));
     if (!groups.length) return;
 
     groups.forEach((resolvedGroup) => {
@@ -1145,10 +1226,10 @@ function listElectiveCourseOptions_() {
   const options = Object.keys(courseGroupMap_())
     .map((k) => formatCourseName_(k))
     .filter(Boolean);
-  return unique(options).sort((a, b) => String(a).localeCompare(String(b)));
+  return unique_(options).sort((a, b) => String(a).localeCompare(String(b)));
 }
 
-function setupWorkbookForStaff(opts) {
+function setupWorkbookForStaff_(opts) {
   const ss = SpreadsheetApp.getActive();
   ensureSheet_(ss, "Programs");
   const studentSheet = ensureSheet_(ss, "Student");
@@ -1165,8 +1246,8 @@ function setupWorkbookForStaff(opts) {
     studentSheet.getRange(1, 1, 1, 2).setValues([["Course", "Mark"]]);
   }
 
-  const studentSetupMsg = setupStudentElectiveInputs({ quiet: true });
-  const rulesSetupMsg = setupElectiveRulesTemplate({ quiet: true });
+  const studentSetupMsg = setupStudentElectiveInputs_({ quiet: true });
+  const rulesSetupMsg = setupElectiveRulesTemplate_({ quiet: true });
   const message = `Workbook setup complete. ${studentSetupMsg} ${rulesSetupMsg} Enter marks in Student, then run Check Eligibility.`;
   if (!isQuietSetup_(opts)) notifyStudentSetupComplete_(ss, message);
   return message;
@@ -1250,10 +1331,10 @@ function ensureManagedSheetProtection_(sheet, ss) {
   }
 }
 
-function applyStaffLockdown() {
+function applyStaffLockdown_() {
   const ss = SpreadsheetApp.getActive();
   assertAdminRunner_(ss);
-  setupWorkbookForStaff({ quiet: true });
+  setupWorkbookForStaff_({ quiet: true });
 
   const studentSheet = ss.getSheetByName("Student");
   if (studentSheet) ss.setActiveSheet(studentSheet);
@@ -1282,7 +1363,7 @@ function applyStaffLockdown() {
   );
 }
 
-function adminShowAllTabs() {
+function adminShowAllTabs_() {
   const ss = SpreadsheetApp.getActive();
   assertAdminRunner_(ss);
   let shownCount = 0;
@@ -1294,7 +1375,7 @@ function adminShowAllTabs() {
   notifyStudentSetupComplete_(ss, `Shown ${shownCount} hidden tab(s).`);
 }
 
-function setupStudentElectiveInputs(opts) {
+function setupStudentElectiveInputs_(opts) {
   const ss = SpreadsheetApp.getActive();
   const studentSheet = ss.getSheetByName("Student");
   if (!studentSheet) throw new Error("Missing Student sheet.");
@@ -1327,7 +1408,7 @@ function setupStudentElectiveInputs(opts) {
   return message;
 }
 
-function setupElectiveRulesTemplate(opts) {
+function setupElectiveRulesTemplate_(opts) {
   const ss = SpreadsheetApp.getActive();
   const sheet = ss.getSheetByName("ElectiveRules") || ss.insertSheet("ElectiveRules");
 
@@ -1363,10 +1444,10 @@ function notifyStudentSetupComplete_(ss, message) {
   Logger.log(message);
 }
 
-function buildAutoElectivesFromCourseMap(courseMap) {
+function buildAutoElectivesFromCourseMap_(courseMap) {
   const out = [];
   Object.keys(courseMap || {}).forEach((courseKey) => {
-    const mark = toNumber(courseMap[courseKey]);
+    const mark = toNumber_(courseMap[courseKey]);
     if (!isFinite(mark)) return;
     const groups = electiveGroupsForCourseKey_(courseKey);
     if (!groups.length) return;
@@ -1390,7 +1471,7 @@ function mergeElectiveCandidates_(autoElectives, manualElectives) {
   all.forEach((item, idx) => {
     if (!item) return;
     const group = String(item.group || "").trim().toUpperCase();
-    const mark = toNumber(item.mark);
+    const mark = toNumber_(item.mark);
     if (!["A", "B", "C", "D"].includes(group)) return;
     if (!isFinite(mark)) return;
 
@@ -1417,8 +1498,8 @@ function mergeElectiveCandidates_(autoElectives, manualElectives) {
 }
 
 function normalizeCourseKey_(course) {
-  const k0 = canonKey(course);
-  const alias = courseAliases();
+  const k0 = canonKey_(course);
+  const alias = courseAliases_();
   return alias[k0] || k0;
 }
 
@@ -1455,7 +1536,7 @@ function electiveGroupsForCourseKey_(courseKey) {
   if (!key) return [];
 
   const map = courseGroupMap_();
-  if (map[key] && map[key].length) return unique(map[key]);
+  if (map[key] && map[key].length) return unique_(map[key]);
 
   const inferred = [];
   if (isLikelyLanguageCourse_(key)) inferred.push("A");
@@ -1472,7 +1553,7 @@ function electiveGroupsForCourseKey_(courseKey) {
     inferred.push("D");
   }
   if (!inferred.length && isLikelyGroupDAdmissionSubject_(key)) inferred.push("D");
-  return unique(inferred);
+  return unique_(inferred);
 }
 
 function isLikelyLanguageCourse_(key) {
@@ -1622,7 +1703,7 @@ function courseGroupMap_() {
   };
 }
 
-function parseElectiveQty(text) {
+function parseElectiveQty_(text) {
   const t = String(text || "").trim();
   if (!t) return null;
   if (/^(See Degree|Refer to Degree|Check Notes)$/i.test(t)) return null;
@@ -1645,11 +1726,11 @@ function parseElectiveQty(text) {
   return isFinite(n) ? n : null;
 }
 
-function parseAllowedGroups(poolText) {
+function parseAllowedGroups_(poolText) {
   const t = String(poolText || "").toUpperCase();
   const m = t.match(/\b[ABCD]\b/g);
   if (!m || !m.length) return ["A", "B", "C", "D"];
-  return unique(m);
+  return unique_(m);
 }
 
 function parseElectiveRules_(requirementTypeText) {
@@ -1722,7 +1803,7 @@ function parseElectiveRules_(requirementTypeText) {
   const markRe = /each\s+subject\s+must\s+be\s*>=?\s*(\d+)/i;
   const markMatch = markRe.exec(text);
   if (markMatch) {
-    const minMark = toNumber(markMatch[1]);
+    const minMark = toNumber_(markMatch[1]);
     if (isFinite(minMark)) rules.minMark = minMark;
   }
 
@@ -1788,15 +1869,15 @@ function parseCountToken_(token) {
     ten: 10,
   };
   if (map[t] !== undefined) return map[t];
-  return toNumber(t);
+  return toNumber_(t);
 }
 
 function parseGroupsFromText_(text) {
   const m = String(text || "").toUpperCase().match(/[ABCD]/g);
-  return m ? unique(m) : [];
+  return m ? unique_(m) : [];
 }
 
-function collectRequiredMarks(evals) {
+function collectRequiredMarks_(evals) {
   const out = [];
   const seen = {};
   const pushRequired = (label, mark, key) => {
@@ -1849,7 +1930,7 @@ function collectRequiredMarks(evals) {
   return out;
 }
 
-function countRequiredSlots(evals) {
+function countRequiredSlots_(evals) {
   let n = 0;
   (evals || []).forEach((ev) => {
     if (!ev) return;
@@ -1889,7 +1970,7 @@ function parseScienceRequirementText_(rawText) {
     .map((x) => x.trim())
     .filter(Boolean);
 
-  const courses = unique(
+  const courses = unique_(
     parts.map((p) => {
       const q = p.replace(/\s+/g, " ");
       if (/^Bio\s*30$/i.test(q)) return "Biology 30";
@@ -1907,7 +1988,7 @@ function parseScienceRequirementText_(rawText) {
   return { kind: "any", courses };
 }
 
-function computeStudentAverage(opts) {
+function computeStudentAverage_(opts) {
   const { requiredItems, electives, allowedGroups, electiveNeeded, totalNeeded, electiveRules } = opts;
 
   const reqItems = (requiredItems || [])
@@ -1942,7 +2023,7 @@ function computeStudentAverage(opts) {
 
   const selected = selectBestElectives_(
     usableElectives,
-    Math.max(0, Math.round(toNumber(electiveNeeded) || 0)),
+    Math.max(0, Math.round(toNumber_(electiveNeeded) || 0)),
     electiveRules
   );
 
@@ -1978,7 +2059,7 @@ function computeStudentAverage(opts) {
 }
 
 function selectBestElectives_(candidates, neededCount, rules) {
-  const needed = Math.max(0, Math.round(toNumber(neededCount) || 0));
+  const needed = Math.max(0, Math.round(toNumber_(neededCount) || 0));
   const sorted = (candidates || []).slice().sort((a, b) => b.mark - a.mark);
 
   if (needed === 0) return [];
@@ -1998,12 +2079,12 @@ function selectBestElectives_(candidates, neededCount, rules) {
 }
 
 function pickBestElectiveSet_(candidates, targetCount, rules) {
-  const target = Math.max(0, Math.round(toNumber(targetCount) || 0));
+  const target = Math.max(0, Math.round(toNumber_(targetCount) || 0));
   if (target === 0) return [];
 
   const maxByGroup = (rules && rules.maxByGroup) || {};
   const minFromSets = (rules && rules.minFromSets) || [];
-  if (minFromSets.some((r) => (toNumber(r.count) || 0) > target)) return null;
+  if (minFromSets.some((r) => (toNumber_(r.count) || 0) > target)) return null;
 
   let best = null;
   let bestSum = -Infinity;
@@ -2015,7 +2096,7 @@ function pickBestElectiveSet_(candidates, targetCount, rules) {
   const meetsMinGroupRules = () =>
     minFromSets.every((rule) => {
       const groups = rule.groups || [];
-      const minCount = Math.max(0, Math.round(toNumber(rule.count) || 0));
+      const minCount = Math.max(0, Math.round(toNumber_(rule.count) || 0));
       if (!groups.length || minCount === 0) return true;
       let count = 0;
       groups.forEach((g) => {
@@ -2025,7 +2106,7 @@ function pickBestElectiveSet_(candidates, targetCount, rules) {
       return count >= minCount;
     });
 
-  function dfs(index, sum) {
+  function dfs_(index, sum) {
     const needed = target - chosen.length;
     if (needed === 0) {
       if (!meetsMinGroupRules()) return;
@@ -2041,7 +2122,7 @@ function pickBestElectiveSet_(candidates, targetCount, rules) {
 
     const candidate = candidates[index];
     const group = String(candidate.group || "").toUpperCase();
-    const maxForGroup = toNumber(maxByGroup[group]);
+    const maxForGroup = toNumber_(maxByGroup[group]);
     const unitKey = candidate.key ? `KEY:${candidate.key}` : `SRC:${candidate.sourceKey}`;
 
     const canUseUnit = !usedUnits[unitKey];
@@ -2051,21 +2132,21 @@ function pickBestElectiveSet_(candidates, targetCount, rules) {
       chosen.push(candidate);
       usedUnits[unitKey] = true;
       groupCounts[group] = (groupCounts[group] || 0) + 1;
-      dfs(index + 1, sum + candidate.mark);
+      dfs_(index + 1, sum + candidate.mark);
       chosen.pop();
       groupCounts[group] = groupCounts[group] - 1;
       if (!groupCounts[group]) delete groupCounts[group];
       delete usedUnits[unitKey];
     }
 
-    dfs(index + 1, sum);
+    dfs_(index + 1, sum);
   }
 
-  dfs(0, 0);
+  dfs_(0, 0);
   return best;
 }
 
-function normalizeCompetitive(text) {
+function normalizeCompetitive_(text) {
   const t = String(text || "").trim();
   if (!t) return "";
   if (/^Minimum Only$/i.test(t)) return "";
@@ -2081,12 +2162,12 @@ function buildNotes_(notes, advisories) {
   return parts.join(" | ");
 }
 
-function title(s) {
+function title_(s) {
   const t = String(s || "");
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function boolCmp(a, b) {
+function boolCmp_(a, b) {
   const ax = a ? 1 : 0;
   const bx = b ? 1 : 0;
   return ax - bx;
@@ -2162,6 +2243,7 @@ function appendDatasetNotes_(requirementTypeText, notes, advisories) {
   ];
   const found = specialKeywords.filter((k) => lower.includes(k));
   if (found.length) {
-    advisories.push(`Other requirements: ${unique(found).join(", ")}`);
+    advisories.push(`Other requirements: ${unique_(found).join(", ")}`);
   }
 }
+
