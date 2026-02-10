@@ -1,5 +1,6 @@
 param(
   [int]$Port = 5173,
+  [bool]$AutoPort = $true,
   [ValidateSet("auto", "node", "powershell")]
   [string]$Mode = "auto"
 )
@@ -36,6 +37,60 @@ function Get-PortOwnerInfo {
     Pid = $ownerPid
     Name = $ownerName
   }
+}
+
+function Test-PortBindable {
+  param([int]$Port)
+
+  if ($Port -lt 1 -or $Port -gt 65535) { return $false }
+
+  $listener = $null
+  try {
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
+    $listener.Start()
+    return $true
+  } catch {
+    return $false
+  } finally {
+    if ($listener) {
+      try { $listener.Stop() } catch {}
+    }
+  }
+}
+
+function Get-EphemeralAvailablePort {
+  $listener = $null
+  try {
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    $listener.Start()
+    return ([int]([System.Net.IPEndPoint]$listener.LocalEndpoint).Port)
+  } catch {
+    return $null
+  } finally {
+    if ($listener) {
+      try { $listener.Stop() } catch {}
+    }
+  }
+}
+
+function Find-AvailablePort {
+  param(
+    [int]$StartPort,
+    [int]$MaxOffset = 2000
+  )
+
+  if ($StartPort -lt 1) { $StartPort = 1 }
+  if ($StartPort -gt 65535) { return $null }
+  $endPort = [Math]::Min(65535, $StartPort + [Math]::Max(0, $MaxOffset))
+
+  for ($candidate = $StartPort; $candidate -le $endPort; $candidate++) {
+    $owner = Get-PortOwnerInfo -Port $candidate
+    if (-not $owner -and (Test-PortBindable -Port $candidate)) {
+      return $candidate
+    }
+  }
+
+  return $null
 }
 
 function Get-ContentTypeForPath {
@@ -198,10 +253,23 @@ switch ($Mode.ToLowerInvariant()) {
   }
 }
 
- $portOwner = Get-PortOwnerInfo -Port $Port
- if ($portOwner) {
+$requestedPort = $Port
+$portOwner = Get-PortOwnerInfo -Port $Port
+if ($portOwner) {
   $ownerLabel = if ($portOwner.Name) { "$($portOwner.Name) (PID $($portOwner.Pid))" } else { "PID $($portOwner.Pid)" }
-  throw "Port $Port is already in use by $ownerLabel. Stop that process or run with a different port (for example: -Port 5200)."
+  $suggestedPort = Find-AvailablePort -StartPort ($Port + 1)
+  if (-not $suggestedPort -and $AutoPort) {
+    $suggestedPort = Get-EphemeralAvailablePort
+  }
+
+  if ($AutoPort -and $suggestedPort -and ($suggestedPort -ne $Port)) {
+    Write-Host ("Port {0} is in use by {1}. Auto-selecting free port {2}." -f $Port, $ownerLabel, $suggestedPort) -ForegroundColor Yellow
+    $Port = $suggestedPort
+  } else {
+    $hintPort = if ($suggestedPort) { $suggestedPort } else { $Port + 1 }
+    $extraHint = if ($AutoPort) { "No free replacement port was found automatically." } else { "Auto-port selection is disabled (use -AutoPort `$true to enable it)." }
+    throw "Port $Port is already in use by $ownerLabel. $extraHint Stop that process or run with a different port (for example: -Port $hintPort)."
+  }
 }
 
 if ($useNode) {
