@@ -237,3 +237,5 @@ Keep entries short and append-only.
   - Guardrails re-run: PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
   - Local preview startup smoke (`tools/start-webapp-preview.ps1 -Port 5510 -Mode powershell`): startup PASS (URL announced successfully).
   - Deployed domain-account checks remain environment-dependent and require interactive `/exec` validation with valid `@eips.ca` sign-in.
+- Committed and pushed:
+  - `91662f2 fix(webapp): finalize qa slice and release handoff`

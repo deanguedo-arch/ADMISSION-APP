@@ -1,4 +1,4 @@
-﻿# Session Handoff (2026-02-10 15:18)
+﻿# Session Handoff (2026-02-10 15:19)
 
 ## Read these first
 - `docs/PROJECT_CONTEXT.md`
@@ -19,8 +19,6 @@
 
 ## Recent work log (tail)
 
-- Verified guardrails after changes:
-  - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
 - Committed and pushed:
   - `4170d0f fix(webapp): use template includes for stable Apps Script rendering`
@@ -49,4 +47,6 @@
   - Guardrails re-run: PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
   - Local preview startup smoke (`tools/start-webapp-preview.ps1 -Port 5510 -Mode powershell`): startup PASS (URL announced successfully).
   - Deployed domain-account checks remain environment-dependent and require interactive `/exec` validation with valid `@eips.ca` sign-in.
+- Committed and pushed:
+  - `91662f2 fix(webapp): finalize qa slice and release handoff`
 
