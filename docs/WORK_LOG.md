@@ -202,3 +202,14 @@ Keep entries short and append-only.
   - `tools/validate-apps-script-structure.ps1`: PASS
   - `tools/start-webapp-preview.ps1 -Port 5500 -Mode powershell`: startup PASS (auto-selected alternate port when requested port was reserved by `System (PID 4)`).
 - Updated session-planning docs to current state: `docs/SPRINT_SLICE.md`, `docs/SESSION_HANDOFF.md`.
+## 2026-02-10 (Web App Include Render Recovery + Fresh-Chat Handoff)
+- Fixed deployed blank-page failure mode by switching web app composition to Apps Script template includes:
+  - `apps_script/Code.gs`: `doGet()` now evaluates `createTemplateFromFile("WebApp")`; added `includeHtml_()`.
+  - `apps_script/WebApp.html`: replaced comment include markers with `<?!= includeHtml_("..."); ?>`.
+- Updated `tools/validate-apps-script-structure.ps1` to accept both include styles (legacy marker and template include) and include the `includeHtml_` shell helper.
+- Verified guardrails after changes:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS
+- Committed and pushed:
+  - `4170d0f fix(webapp): use template includes for stable Apps Script rendering`
+- User confirmed deployed `/exec` now renders correctly after redeploy.
