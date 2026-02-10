@@ -1,7 +1,7 @@
 param(
   [string]$ManifestPath = "apps_script/appsscript.json",
   [string]$AppsScriptDir = "apps_script",
-  [string]$RequiredAccess = "DOMAIN",
+  [string]$RequiredAccess = "ANYONE",
   [string]$RequiredTimeZone = "America/Edmonton",
   [string]$RequiredDomainSuffix = "@eips.ca",
   [string[]]$AllowedPublicFunctions = @(

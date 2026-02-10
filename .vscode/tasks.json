@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "WebApp: Local Preview (Mock)",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${workspaceFolder}\\tools\\start-webapp-preview.ps1\"",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "WebApp: Local Preview (Mock, PowerShell only)",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${workspaceFolder}\\tools\\start-webapp-preview.ps1\" -Mode powershell",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

@@ -6,7 +6,7 @@ Use this file to keep each Codex session focused and low-pass.
 Harden and ship a staff-ready web app MVP without changing admissions rule intent.
 
 ## Slice Backlog
-- [x] Slice 1: Security lockdown (domain-only access, domain gate, rate limit, minimize callable functions)
+- [x] Slice 1: Security lockdown (signed-in access, token/domain gate, rate limit, minimize callable functions)
 - [ ] Slice 2: Backend response contract (`meta`, `detailsByKey`, `rowKeysByView`)
 - [ ] Slice 3: Web UI MVP upgrades (paste parser, search/filter/sort, details drawer, star)
 - [ ] Slice 4: Export + performance + lightweight audit (iframe PDF, caching, audit sheet)
@@ -21,3 +21,4 @@ Harden and ship a staff-ready web app MVP without changing admissions rule inten
 ## Done Log
 - [x] 2026-02-10: Added decision/slice/QA docs + validation scaffold to reduce future passes.
 - [x] 2026-02-10: Completed security slice (DOMAIN manifest, `@eips.ca` gate, request throttling, minimized callable server surface).
+- [x] 2026-02-10: Switched to personal-deploy security model (`ANYONE` + Google ID token domain validation), strict payload key allowlists, and local `?mock=1` web UI preview workflow.

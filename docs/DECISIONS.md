@@ -6,10 +6,11 @@ This file is the stable decision source for future sessions. Update it only when
 - Date: 2026-02-10
 - Status: Active
 - Decisions:
-  - Web app deployment access must be `DOMAIN` (not public).
+  - Web app deployment access is `ANYONE` (Google sign-in required; not anonymous).
   - Allowed identity domain is `@eips.ca`.
   - Non-domain users are not supported.
   - Web app remains `executeAs: USER_DEPLOYING` for now.
+  - Web access is enforced by Google ID token validation (audience allowlist + verified email + hosted domain).
   - Public web-callable backend surface is limited to:
     - `doGet`
     - `getWebAppBootstrapData`

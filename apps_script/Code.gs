@@ -38,6 +38,12 @@ const MANAGED_INTERNAL_PROTECTION_DESC = "Admissions Checker: managed internal s
 const ADMISSIONS_SHEET_ID_PROPERTY = "ADMISSIONS_SHEET_ID";
 const DEFAULT_ADMISSIONS_SHEET_ID = "1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU";
 const WEBAPP_ALLOWED_DOMAIN_SUFFIX = "@eips.ca";
+const WEBAPP_ALLOWED_DOMAIN = "eips.ca";
+const WEBAPP_GOOGLE_CLIENT_ID_PROPERTY = "WEBAPP_GOOGLE_CLIENT_ID";
+const WEBAPP_ALLOWED_GOOGLE_CLIENT_IDS_PROPERTY = "WEBAPP_ALLOWED_GOOGLE_CLIENT_IDS";
+const WEBAPP_GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token=";
+const WEBAPP_ID_TOKEN_CACHE_SECONDS = 300;
+const WEBAPP_MAX_ID_TOKEN_LENGTH = 4096;
 const WEBAPP_RATE_LIMIT_MIN_INTERVAL_MS = 2000;
 const WEBAPP_RATE_LIMIT_WINDOW_SECONDS = 60;
 const WEBAPP_RATE_LIMIT_MAX_PER_WINDOW = 30;
@@ -164,25 +170,37 @@ function runEligibility_() {
 }
 
 function doGet(e) {
-  try {
-    assertDomainUser_();
-  } catch (err) {
-    const message = sanitizeWebMessage_(err && err.message);
-    return HtmlService.createHtmlOutput(
-      `<h3>Access denied</h3><p>${message}</p><p>Use an approved ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} account.</p>`
-    ).setTitle("Admissions Checker: Access Denied");
-  }
   return HtmlService.createHtmlOutputFromFile("WebApp")
     .setTitle("Next Step Admissions Checker")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function getWebAppBootstrapData() {
-  const identity = assertDomainUser_();
+function getWebAppBootstrapData(authPayload) {
+  const clientConfig = getWebAppClientConfig_();
+  const auth = sanitizeWebAuthPayload_(authPayload);
+
+  if (!auth.idToken) {
+    return {
+      generatedAt: new Date().toISOString(),
+      requiresAuth: true,
+      auth: {
+        googleClientId: clientConfig.googleClientId,
+        allowedDomainSuffix: WEBAPP_ALLOWED_DOMAIN_SUFFIX,
+      },
+    };
+  }
+
+  const identity = assertAuthorizedWebUser_(auth);
   assertWebRateLimit_(identity, "bootstrap");
 
   return {
     generatedAt: new Date().toISOString(),
+    requiresAuth: false,
+    auth: {
+      email: identity.email || "",
+      googleClientId: clientConfig.googleClientId,
+      allowedDomainSuffix: WEBAPP_ALLOWED_DOMAIN_SUFFIX,
+    },
     namedCourseOptions: listNamedCourseOptions_(),
     electiveCourseOptions: listElectiveCourseOptions_(),
     manualElectiveSlots: MANUAL_ELECTIVE_SLOTS,
@@ -191,7 +209,8 @@ function getWebAppBootstrapData() {
 }
 
 function runWebEligibility(payload) {
-  const identity = assertDomainUser_();
+  const request = sanitizeWebPayload_(payload);
+  const identity = assertAuthorizedWebUser_(request.auth);
   assertWebRateLimit_(identity, "run");
 
   const ss = getAdmissionsSpreadsheet_();
@@ -207,9 +226,9 @@ function runWebEligibility(payload) {
 
   const avgRules = readAvgRules_(ss);
   const electiveRuleOverrides = readElectiveRuleOverrides_(ss);
-  const namedRows = sanitizeWebNamedCourses_(payload && payload.namedCourses);
+  const namedRows = sanitizeWebNamedCourses_(request.namedCourses);
   const courseMap = buildCourseMap_(namedRows);
-  const manualRows = sanitizeWebManualElectives_(payload && payload.manualElectives);
+  const manualRows = sanitizeWebManualElectives_(request.manualElectives);
   const manualElectives = buildElectives_(manualRows, { source: "manual-web", rowOffset: 1 });
 
   const evaluation = evaluateProgramsForStudent_({
@@ -220,15 +239,30 @@ function runWebEligibility(payload) {
     electiveRuleOverrides,
   });
 
+  const generatedAt = new Date().toISOString();
+
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     headers: RESULTS_HEADER_ROW.slice(),
+    meta: {
+      generatedAt,
+      datasetRows: Math.max(0, programsRange.length - 1),
+      activeProgramsEvaluated: Math.max(0, (evaluation.rowKeysByView && evaluation.rowKeysByView.all || []).length),
+      rowKeyVersion: "v1",
+    },
     summary: {
       totalPrograms: Math.max(0, evaluation.finalOut.length - 1),
       eligible: Math.max(0, evaluation.eligibleRows.length - 1),
       missing: Math.max(0, evaluation.ineligibleRows.length - 1),
       uncheckable: Math.max(0, evaluation.uncheckableRows.length - 1),
     },
+    rowKeysByView: {
+      all: ((evaluation.rowKeysByView && evaluation.rowKeysByView.all) || []).slice(),
+      eligible: ((evaluation.rowKeysByView && evaluation.rowKeysByView.eligible) || []).slice(),
+      ineligible: ((evaluation.rowKeysByView && evaluation.rowKeysByView.ineligible) || []).slice(),
+      uncheckable: ((evaluation.rowKeysByView && evaluation.rowKeysByView.uncheckable) || []).slice(),
+    },
+    detailsByKey: copyWebDetailsByKey_(evaluation.detailsByKey || {}),
     results: {
       all: evaluation.finalOut.slice(1),
       eligible: evaluation.eligibleRows.slice(1),
@@ -256,30 +290,181 @@ function getAdmissionsSpreadsheet_() {
   return SpreadsheetApp.openById(sheetId);
 }
 
+function getWebAppClientConfig_() {
+  const clientIds = getWebAppAllowedGoogleClientIds_();
+  return {
+    googleClientId: clientIds.length ? clientIds[0] : "",
+  };
+}
+
+function getWebAppAllowedGoogleClientIds_() {
+  const props = PropertiesService.getScriptProperties();
+  const csv = String(props.getProperty(WEBAPP_ALLOWED_GOOGLE_CLIENT_IDS_PROPERTY) || "").trim();
+  const primary = String(props.getProperty(WEBAPP_GOOGLE_CLIENT_ID_PROPERTY) || "").trim();
+  const parts = [];
+
+  if (csv) {
+    csv.split(",").forEach((item) => {
+      const id = String(item || "").trim();
+      if (id) parts.push(id);
+    });
+  }
+  if (primary) parts.push(primary);
+
+  return unique_(parts);
+}
+
+function sanitizeWebPayload_(payload) {
+  const root =
+    payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+  assertAllowedObjectKeys_(root, ["auth", "namedCourses", "manualElectives"], "request");
+
+  return {
+    auth: sanitizeWebAuthPayload_(root.auth),
+    namedCourses: Array.isArray(root.namedCourses) ? root.namedCourses : [],
+    manualElectives: Array.isArray(root.manualElectives) ? root.manualElectives : [],
+  };
+}
+
+function sanitizeWebAuthPayload_(authPayload) {
+  const auth =
+    authPayload && typeof authPayload === "object" && !Array.isArray(authPayload)
+      ? authPayload
+      : {};
+  assertAllowedObjectKeys_(auth, ["idToken"], "auth");
+
+  const idToken = String(auth.idToken || "").trim();
+  if (idToken.length > WEBAPP_MAX_ID_TOKEN_LENGTH) {
+    throw new Error("Invalid sign-in token length.");
+  }
+  return { idToken };
+}
+
+function assertAllowedObjectKeys_(obj, allowedKeys, label) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return;
+  const allowed = {};
+  (allowedKeys || []).forEach((k) => (allowed[String(k)] = true));
+  Object.keys(obj).forEach((k) => {
+    if (allowed[k]) return;
+    throw new Error(`Unexpected field "${label}.${k}" was sent. Remove personal info and retry.`);
+  });
+}
+
+function assertAuthorizedWebUser_(authPayload) {
+  const auth = sanitizeWebAuthPayload_(authPayload);
+  if (auth.idToken) {
+    return verifyGoogleIdToken_(auth.idToken);
+  }
+  // Backward-compatible fallback for Workspace deployments that expose ActiveUser email.
+  return assertDomainUser_();
+}
+
+function verifyGoogleIdToken_(idToken) {
+  const token = String(idToken || "").trim();
+  if (!token) {
+    throw new Error("Sign in with your school account and try again.");
+  }
+
+  const cache = CacheService.getScriptCache();
+  const digest = Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token)
+  ).replace(/=+$/g, "");
+  const cacheKey = `WEBAPP_IDT_${digest.slice(0, 80)}`;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const cachedRaw = cache.get(cacheKey);
+
+  if (cachedRaw) {
+    try {
+      const cached = JSON.parse(cachedRaw);
+      const cachedExp = toNumber_(cached && cached.exp);
+      if (isFinite(cachedExp) && cachedExp > nowSec + 10) {
+        return {
+          email: String(cached.email || "").toLowerCase(),
+          tempKey: "",
+          key: String(cached.email || "").toLowerCase(),
+        };
+      }
+    } catch (err) {}
+  }
+
+  const response = UrlFetchApp.fetch(
+    `${WEBAPP_GOOGLE_TOKENINFO_URL}${encodeURIComponent(token)}`,
+    { muteHttpExceptions: true }
+  );
+  if (response.getResponseCode() !== 200) {
+    throw new Error("Google sign-in validation failed. Please sign in again.");
+  }
+
+  let tokenInfo = null;
+  try {
+    tokenInfo = JSON.parse(response.getContentText() || "{}");
+  } catch (err) {
+    throw new Error("Could not validate your sign-in token.");
+  }
+
+  const allowedClientIds = getWebAppAllowedGoogleClientIds_();
+  if (!allowedClientIds.length) {
+    throw new Error(
+      `Web app auth is not configured. Set Script Property ${WEBAPP_GOOGLE_CLIENT_ID_PROPERTY}.`
+    );
+  }
+
+  const aud = String((tokenInfo && tokenInfo.aud) || "").trim();
+  if (allowedClientIds.indexOf(aud) < 0) {
+    throw new Error("This sign-in token is not from an approved client.");
+  }
+
+  const iss = String((tokenInfo && tokenInfo.iss) || "").trim();
+  if (!(iss === "accounts.google.com" || iss === "https://accounts.google.com")) {
+    throw new Error("Token issuer is not trusted.");
+  }
+
+  const exp = Math.round(toNumber_(tokenInfo && tokenInfo.exp));
+  if (!isFinite(exp) || exp <= nowSec) {
+    throw new Error("Your sign-in expired. Please sign in again.");
+  }
+
+  const email = String((tokenInfo && tokenInfo.email) || "")
+    .trim()
+    .toLowerCase();
+  const emailVerified = String((tokenInfo && tokenInfo.email_verified) || "")
+    .trim()
+    .toLowerCase();
+  const hostedDomain = String((tokenInfo && tokenInfo.hd) || "")
+    .trim()
+    .toLowerCase();
+
+  if (!email || emailVerified !== "true") {
+    throw new Error("Google account email is not verified.");
+  }
+  if (!email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
+    throw new Error(`Access is restricted to ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} users.`);
+  }
+  if (hostedDomain !== WEBAPP_ALLOWED_DOMAIN) {
+    throw new Error(`Sign in with your ${WEBAPP_ALLOWED_DOMAIN} school account.`);
+  }
+
+  const ttl = Math.max(30, Math.min(WEBAPP_ID_TOKEN_CACHE_SECONDS, exp - nowSec));
+  cache.put(cacheKey, JSON.stringify({ email, exp }), ttl);
+  return { email, tempKey: "", key: email };
+}
+
 function assertDomainUser_() {
   let email = "";
-  let tempKey = "";
   try {
     email = String((Session.getActiveUser() && Session.getActiveUser().getEmail()) || "")
       .trim()
       .toLowerCase();
   } catch (err) {}
-  try {
-    tempKey = String(Session.getTemporaryActiveUserKey() || "").trim();
-  } catch (err) {}
 
-  if (email && !email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
+  if (!email) {
+    throw new Error("Sign in with your school account and retry.");
+  }
+  if (!email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
     throw new Error(`Access is restricted to ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} users.`);
   }
-  if (!email && !tempKey) {
-    throw new Error("Could not verify your session identity. Sign in with your school account and retry.");
-  }
 
-  return {
-    email,
-    tempKey,
-    key: email || `temp:${tempKey}`,
-  };
+  return { email, tempKey: "", key: email };
 }
 
 function assertWebRateLimit_(identity, action) {
@@ -329,28 +514,64 @@ function listNamedCourseOptions_() {
 
 function sanitizeWebNamedCourses_(rows) {
   const list = Array.isArray(rows) ? rows : [];
+  const allowedByKey = buildWebAllowedCourseSet_(listNamedCourseOptions_());
   const out = [];
   for (let i = 0; i < list.length && i < 80; i++) {
-    const item = list[i] || {};
+    const item = list[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Invalid namedCourses row at position ${i + 1}.`);
+    }
+    assertAllowedObjectKeys_(item, ["course", "mark"], `namedCourses[${i}]`);
     const course = String(item.course || "").trim();
     const mark = toNumber_(item.mark);
-    if (!course || !isFinite(mark)) continue;
-    out.push([course, Math.max(0, Math.min(100, mark))]);
+    if (!course && !isFinite(mark)) continue;
+    if (!course || !isFinite(mark)) {
+      throw new Error(`Named course row ${i + 1} must include both course and mark.`);
+    }
+    const key = normalizeCourseKey_(course);
+    if (!allowedByKey[key]) {
+      throw new Error(`Unsupported course in named row ${i + 1}. Use the course list options only.`);
+    }
+    out.push([formatCourseName_(key), Math.max(0, Math.min(100, mark))]);
   }
   return out;
 }
 
 function sanitizeWebManualElectives_(rows) {
   const list = Array.isArray(rows) ? rows : [];
+  const allowedByKey = buildWebAllowedCourseSet_(listElectiveCourseOptions_());
   const out = [];
   for (let i = 0; i < list.length && i < 25; i++) {
-    const item = list[i] || {};
+    const item = list[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Invalid manualElectives row at position ${i + 1}.`);
+    }
+    assertAllowedObjectKeys_(item, ["course", "group", "mark"], `manualElectives[${i}]`);
     const course = String(item.course || "").trim();
     const mark = toNumber_(item.mark);
-    if (!course || !isFinite(mark)) continue;
+    if (!course && !isFinite(mark)) continue;
+    if (!course || !isFinite(mark)) {
+      throw new Error(`Manual elective row ${i + 1} must include both course and mark.`);
+    }
+    const key = normalizeCourseKey_(course);
+    if (!allowedByKey[key]) {
+      throw new Error(`Unsupported course in manual row ${i + 1}. Use elective dropdown values only.`);
+    }
     const group = String(item.group || "").trim().toUpperCase();
-    out.push([course, ["A", "B", "C", "D"].includes(group) ? group : "", Math.max(0, Math.min(100, mark))]);
+    if (group && !["A", "B", "C", "D"].includes(group)) {
+      throw new Error(`Invalid group in manual row ${i + 1}. Use A, B, C, or D.`);
+    }
+    out.push([formatCourseName_(key), group || "", Math.max(0, Math.min(100, mark))]);
   }
+  return out;
+}
+
+function buildWebAllowedCourseSet_(courses) {
+  const out = {};
+  (courses || []).forEach((course) => {
+    const key = normalizeCourseKey_(course);
+    if (key) out[key] = true;
+  });
   return out;
 }
 
@@ -376,9 +597,11 @@ function evaluateProgramsForStudent_(opts) {
   const idx = indexHeader_(header);
   requireProgramsColumns_(idx);
 
-  const out = [RESULTS_HEADER_ROW.slice()];
+  const rowRecords = [];
+  const detailsByKey = {};
+  const rowKeyCounts = {};
 
-  rows.forEach((r) => {
+  rows.forEach((r, rowIndex) => {
     const institution = getStr_(r, idx, "Institution");
     const program = getStr_(r, idx, "Program");
     const credential = getStr_(r, idx, "Credential_Type");
@@ -497,54 +720,343 @@ function evaluateProgramsForStudent_(opts) {
       }
     }
 
-    out.push([
+    const rowBaseKey = makeProgramKey_(institution, program, credential, r);
+    const programKey = claimProgramKey_(rowBaseKey, rowKeyCounts);
+    const requirementSummaries = [
+      summarizeEvalForWebDetails_("English", englishEval),
+      summarizeEvalForWebDetails_("Math", mathEval),
+      summarizeEvalForWebDetails_("Social Studies", socialEval),
+      summarizeEvalForWebDetails_("Science", scienceEval),
+    ];
+    const studentAvgValue =
+      isFinite(avgMin) && isFinite(avgTotal) && avgTotal > 0 && avg.usedCount >= avgTotal && isFinite(avg.value)
+        ? Number(avg.value.toFixed(1))
+        : "";
+    const missingText = (reasons || []).join(" | ");
+    const notesText = buildNotes_(notes, advisories);
+
+    const row = [
       institution,
       program,
       credential,
       isFinite(avgMin) ? avgMin : "",
-      isFinite(avgMin) && isFinite(avgTotal) && avgTotal > 0 && avg.usedCount >= avgTotal && isFinite(avg.value)
-        ? Number(avg.value.toFixed(1))
-        : "",
+      studentAvgValue,
       avgTotal || "",
       formatAvgUsed_(avg),
       competitiveGuidance,
-      (reasons || []).join(" | "),
-      buildNotes_(notes, advisories),
-    ]);
+      missingText,
+      notesText,
+    ];
+
+    rowRecords.push({
+      key: programKey,
+      row,
+      missing: missingText,
+      notes: notesText,
+      rowIndex,
+    });
+
+    detailsByKey[programKey] = buildProgramDetailsForWeb_({
+      programKey,
+      institution,
+      program,
+      credential,
+      competitiveGuidance,
+      requirementTypeEffective,
+      requirementSummaries,
+      avgMin,
+      studentAvg: studentAvgValue,
+      avgTotal,
+      avg,
+      electiveNeededForAvg,
+      allowedGroups,
+      electiveRules,
+      reasons,
+      notes,
+      advisories,
+    });
   });
 
-  const body = out.slice(1);
-  body.sort((a, b) => {
-    const i = String(a[0]).localeCompare(String(b[0]));
+  rowRecords.sort((a, b) => {
+    const ar = a.row || [];
+    const br = b.row || [];
+    const i = String(ar[0]).localeCompare(String(br[0]));
     if (i !== 0) return i;
-    const p = String(a[1]).localeCompare(String(b[1]));
+    const p = String(ar[1]).localeCompare(String(br[1]));
     if (p !== 0) return p;
-    return String(a[2]).localeCompare(String(b[2]));
+    return String(ar[2]).localeCompare(String(br[2]));
   });
 
+  const body = rowRecords.map((x) => x.row);
   const finalOut = [RESULTS_HEADER_ROW.slice()].concat(body);
-  const eligibleRows = [RESULTS_HEADER_ROW.slice()].concat(
-    body.filter((r) => {
-      const missing = String(r[8] || "").trim();
-      const notes = String(r[9] || "").trim();
-      return missing === "" && !isUncheckable_(notes);
-    })
-  );
-  const ineligibleRows = [RESULTS_HEADER_ROW.slice()].concat(body.filter((r) => String(r[8] || "").trim() !== ""));
-  const uncheckableRows = [RESULTS_HEADER_ROW.slice()].concat(
-    body.filter((r) => {
-      const missing = String(r[8] || "").trim();
-      const notes = String(r[9] || "").trim();
-      return missing === "" && isUncheckable_(notes);
-    })
-  );
+  const eligibleRecords = rowRecords.filter((r) => {
+    const missing = String(r.missing || "").trim();
+    const notes = String(r.notes || "").trim();
+    return missing === "" && !isUncheckable_(notes);
+  });
+  const ineligibleRecords = rowRecords.filter((r) => String(r.missing || "").trim() !== "");
+  const uncheckableRecords = rowRecords.filter((r) => {
+    const missing = String(r.missing || "").trim();
+    const notes = String(r.notes || "").trim();
+    return missing === "" && isUncheckable_(notes);
+  });
+
+  const eligibleRows = [RESULTS_HEADER_ROW.slice()].concat(eligibleRecords.map((r) => r.row));
+  const ineligibleRows = [RESULTS_HEADER_ROW.slice()].concat(ineligibleRecords.map((r) => r.row));
+  const uncheckableRows = [RESULTS_HEADER_ROW.slice()].concat(uncheckableRecords.map((r) => r.row));
 
   return {
     finalOut,
     eligibleRows,
     ineligibleRows,
     uncheckableRows,
+    rowKeysByView: {
+      all: rowRecords.map((r) => r.key),
+      eligible: eligibleRecords.map((r) => r.key),
+      ineligible: ineligibleRecords.map((r) => r.key),
+      uncheckable: uncheckableRecords.map((r) => r.key),
+    },
+    detailsByKey,
   };
+}
+
+function makeProgramKey_(institution, program, credential, row) {
+  const parts = [institution, program, credential]
+    .map((x) => slugProgramKeyPart_(x))
+    .filter(Boolean);
+  const base = parts.length ? parts.join("__") : "program";
+
+  const rowSignature = (row || [])
+    .map((x) => String(x === null || x === undefined ? "" : x).trim())
+    .join("|");
+  const fingerprint = `${institution || ""}||${program || ""}||${credential || ""}||${rowSignature}`;
+
+  const digest = Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, fingerprint)
+  )
+    .replace(/=+$/g, "")
+    .toLowerCase();
+
+  return `${base}_${digest.slice(0, 12)}`;
+}
+
+function slugProgramKeyPart_(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60);
+}
+
+function claimProgramKey_(baseKey, counts) {
+  const map = counts || {};
+  const base = String(baseKey || "program").trim() || "program";
+  const n = (map[base] || 0) + 1;
+  map[base] = n;
+  return n === 1 ? base : `${base}_${n}`;
+}
+
+function summarizeEvalForWebDetails_(label, ev) {
+  const out = {
+    label: String(label || "").trim(),
+    status: "not_required",
+    requirement: "Not required",
+    minMark: "",
+    matched: "",
+    issues: [],
+  };
+  if (!ev || ev.kind === "none") return out;
+  if (isFinite(ev.minMark) && ev.minMark > 0) out.minMark = Number(ev.minMark);
+
+  if (ev.kind === "unknown") {
+    out.status = "unknown";
+    out.requirement = String(ev.reason || "See degree").trim();
+    return out;
+  }
+  if (ev.kind === "assessment") {
+    out.status = "assessment";
+    out.requirement = String(ev.reason || "Assessment/placement required").trim();
+    return out;
+  }
+
+  if (ev.kind === "any") {
+    const courses = ev.courses || [];
+    out.requirement = courses.length ? courses.join(" OR ") : "Required";
+    if (!ev.best) {
+      out.status = "missing";
+      if (courses.length) out.issues.push(`Missing one of: ${courses.join(" OR ")}`);
+      return out;
+    }
+    out.matched = `${ev.best.course}=${ev.best.mark}`;
+    if (isFinite(ev.minMark) && ev.minMark > 0 && ev.best.mark < ev.minMark) {
+      out.status = "low_mark";
+      out.issues.push(`${ev.best.course}=${ev.best.mark} < ${ev.minMark}`);
+      return out;
+    }
+    out.status = "met";
+    return out;
+  }
+
+  if (ev.kind === "all") {
+    const checks = ev.checks || [];
+    if (checks.length) {
+      out.requirement = (ev.courses || []).join(" + ");
+      const matched = [];
+      checks.forEach((c) => {
+        if (c && c.ok === true && isFinite(c.mark)) matched.push(`${c.course}=${c.mark}`);
+        else if (c && c.reason) out.issues.push(c.reason);
+      });
+      out.matched = matched.join(", ");
+      out.status = classifyEvalIssuesForWeb_(out.issues);
+      return out;
+    }
+
+    const parts = ev.parts || [];
+    out.requirement = parts
+      .map((p) => ((p && p.courses && p.courses.length) ? p.courses.join(" OR ") : "Required"))
+      .join(" + ");
+    const matched = [];
+    parts.forEach((p) => {
+      if (!p || !p.best) {
+        const courses = (p && p.courses) || [];
+        if (courses.length) out.issues.push(`Missing one of: ${courses.join(" OR ")}`);
+        return;
+      }
+      matched.push(`${p.best.course}=${p.best.mark}`);
+      if (isFinite(ev.minMark) && ev.minMark > 0 && p.best.mark < ev.minMark) {
+        out.issues.push(`${p.best.course}=${p.best.mark} < ${ev.minMark}`);
+      }
+    });
+    out.matched = matched.join(", ");
+    out.status = classifyEvalIssuesForWeb_(out.issues);
+    return out;
+  }
+
+  if (ev.kind === "all_plus_any") {
+    const allCourses = ev.allCourses || [];
+    const anyCourses = ev.anyCourses || [];
+    out.requirement = `${allCourses.join(" + ")} + one of (${anyCourses.join(" OR ")})`;
+    const matched = [];
+    (ev.checksAll || []).forEach((c) => {
+      if (c && c.ok === true && isFinite(c.mark)) matched.push(`${c.course}=${c.mark}`);
+      else if (c && c.reason) out.issues.push(c.reason);
+    });
+    if (ev.bestAny && ev.anyOk === true && isFinite(ev.bestAny.mark)) {
+      matched.push(`${ev.bestAny.course}=${ev.bestAny.mark}`);
+    } else if (ev.anyReason) {
+      out.issues.push(ev.anyReason);
+    }
+    out.matched = matched.join(", ");
+    out.status = classifyEvalIssuesForWeb_(out.issues);
+    return out;
+  }
+
+  if (ev.kind === "kof") {
+    const courses = ev.courses || [];
+    out.requirement = `Need ${ev.k} of: ${courses.join(", ")}`;
+    const selected = (ev.selected || []).map((s) => `${s.course}=${s.mark}`);
+    out.matched = selected.join(", ");
+    if (!ev.ok) out.issues.push(`Only ${selected.length} of ${ev.k} required subjects present.`);
+    out.status = classifyEvalIssuesForWeb_(out.issues);
+    return out;
+  }
+
+  out.status = "unknown";
+  out.requirement = "Requirement could not be summarized.";
+  return out;
+}
+
+function classifyEvalIssuesForWeb_(issues) {
+  const list = (issues || []).map((x) => String(x || "")).filter(Boolean);
+  if (!list.length) return "met";
+  if (list.some((x) => /too low|<\s*\d+/.test(x.toLowerCase()))) return "low_mark";
+  return "missing";
+}
+
+function buildProgramDetailsForWeb_(opts) {
+  const avg = (opts && opts.avg) || {};
+  const avgMin = toNumber_(opts && opts.avgMin);
+  const studentAvg = toNumber_(opts && opts.studentAvg);
+  const avgTotal = toNumber_(opts && opts.avgTotal);
+  const usedCount = toNumber_(avg.usedCount);
+
+  const averageComplete = isFinite(avgTotal) && avgTotal > 0 && isFinite(usedCount) && usedCount >= avgTotal;
+  const averageMeetsMinimum = isFinite(avgMin)
+    ? (averageComplete && isFinite(studentAvg) && studentAvg >= avgMin)
+    : null;
+
+  const selectedElectives = (Array.isArray(avg.selectedElectives) ? avg.selectedElectives : []).map((e) => ({
+    group: String((e && e.group) || "").trim().toUpperCase(),
+    name: String((e && e.name) || "").trim(),
+    mark: isFinite(toNumber_(e && e.mark)) ? Number(toNumber_(e && e.mark)) : "",
+  }));
+
+  const usableTop = (Array.isArray(avg.usableElectives) ? avg.usableElectives : [])
+    .slice()
+    .sort((a, b) => toNumber_(b && b.mark) - toNumber_(a && a.mark))
+    .slice(0, 10)
+    .map((e) => ({
+      group: String((e && e.group) || "").trim().toUpperCase(),
+      name: String((e && e.name) || "").trim(),
+      mark: isFinite(toNumber_(e && e.mark)) ? Number(toNumber_(e && e.mark)) : "",
+    }));
+
+  return {
+    programKey: String((opts && opts.programKey) || "").trim(),
+    institution: String((opts && opts.institution) || "").trim(),
+    program: String((opts && opts.program) || "").trim(),
+    credential: String((opts && opts.credential) || "").trim(),
+    competitiveGuidance: String((opts && opts.competitiveGuidance) || "").trim(),
+    requirementText: String((opts && opts.requirementTypeEffective) || "").trim(),
+    requirements: (Array.isArray(opts && opts.requirementSummaries) ? opts.requirementSummaries : []).map((x) => ({
+      label: String((x && x.label) || "").trim(),
+      status: String((x && x.status) || "").trim(),
+      requirement: String((x && x.requirement) || "").trim(),
+      minMark: isFinite(toNumber_(x && x.minMark)) ? Number(toNumber_(x && x.minMark)) : "",
+      matched: String((x && x.matched) || "").trim(),
+      issues: (Array.isArray(x && x.issues) ? x.issues : []).map((s) => String(s || "").trim()).filter(Boolean),
+    })),
+    average: {
+      min: isFinite(avgMin) ? Number(avgMin) : "",
+      student: isFinite(studentAvg) ? Number(studentAvg) : "",
+      totalCourses: isFinite(avgTotal) ? Number(avgTotal) : "",
+      usedCourses: isFinite(usedCount) ? Number(usedCount) : 0,
+      complete: averageComplete,
+      meetsMinimum: averageMeetsMinimum,
+      neededElectivesForAverage: Math.max(0, Math.round(toNumber_(opts && opts.electiveNeededForAvg) || 0)),
+      avgUsed: formatAvgUsed_(avg),
+    },
+    electives: {
+      allowedGroups: (Array.isArray(opts && opts.allowedGroups) ? opts.allowedGroups : []).map((g) =>
+        String(g || "").trim().toUpperCase()
+      ),
+      ruleSummary: formatElectiveRuleSummary_((opts && opts.electiveRules) || {}),
+      selected: selectedElectives,
+      usableTop,
+    },
+    missingReasons: (Array.isArray(opts && opts.reasons) ? opts.reasons : []).map((x) => String(x || "").trim()).filter(Boolean),
+    notes: (Array.isArray(opts && opts.notes) ? opts.notes : []).map((x) => String(x || "").trim()).filter(Boolean),
+    advisories: (Array.isArray(opts && opts.advisories) ? opts.advisories : [])
+      .map((x) => String(x || "").trim())
+      .filter(Boolean),
+  };
+}
+
+function copyWebDetailsByKey_(detailsByKey) {
+  const out = {};
+  const src = detailsByKey && typeof detailsByKey === "object" ? detailsByKey : {};
+  Object.keys(src).forEach((rawKey) => {
+    const key = String(rawKey || "").trim();
+    if (!key) return;
+    const value = src[rawKey];
+    try {
+      out[key] = JSON.parse(JSON.stringify(value || {}));
+    } catch (err) {
+      out[key] = {};
+    }
+  });
+  return out;
 }
 
 function writeResultRowsToSheet_(sheet, rows) {

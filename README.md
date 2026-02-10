@@ -9,6 +9,9 @@ This folder contains your consolidated admissions dataset (NAIT + MacEwan + NorQ
 If you are handing this to a coworker, start here:
 - `docs/USER_MANUAL.md`
 
+If you need one-file manual paste bundles for Apps Script, use:
+- `docs/MANUAL_SCRIPT_EXPORT.md`
+
 ## Recommended Architecture (what lives where)
 
 ### 1) Canonical data (locked schema)
@@ -95,6 +98,7 @@ The same Apps Script project now serves a web UI from `apps_script/WebApp.html`.
 
 - Backend entrypoints are in `apps_script/Code.gs`:
   - `doGet()` for page load
+  - `getWebAppBootstrapData(auth)` for auth/bootstrap/options
   - `runWebEligibility(payload)` for checks
 - Uses the same eligibility engine as the sheet menu run.
 - Exports:
@@ -104,6 +108,13 @@ The same Apps Script project now serves a web UI from `apps_script/WebApp.html`.
 Spreadsheet binding for web app calls:
 - By default, web app checks use Sheet ID `1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU`.
 - To override without code edits, set Apps Script property `ADMISSIONS_SHEET_ID`.
+
+Personal deploy auth properties:
+- `WEBAPP_GOOGLE_CLIENT_ID` (required)
+- `WEBAPP_ALLOWED_GOOGLE_CLIENT_IDS` (optional comma-separated allowlist)
+
+Local UI tinkering loop:
+- `docs/LOCAL_WEBAPP_DEV.md`
 
 ### Student template (compact input layout)
 If you want a compact `Student` tab with 5 manual elective slots, copy/paste:

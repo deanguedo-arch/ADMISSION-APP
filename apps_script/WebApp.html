@@ -7,22 +7,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;700;800&family=Source+Sans+3:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Rubik:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
       :root {
-        --bg-cream: #f8f6ef;
-        --bg-mint: #dff5e9;
-        --ink: #102421;
-        --ink-soft: #2c4d46;
-        --accent: #126e57;
-        --accent-2: #0d4d3e;
-        --line: #c7dfd6;
-        --card: #ffffffcc;
-        --good: #1f7a5a;
-        --warn: #8d4f00;
-        --neutral: #2b5f9a;
+        --bg-page: #f8fafb;
+        --bg-panel: #ffffff;
+        --bg-subtle: #f1f7f4;
+        --ink: #505155;
+        --ink-soft: #5a5a5a;
+        --brand: #18a676;
+        --brand-dark: #127956;
+        --brand-soft: #50b794;
+        --deep-green: #1e634c;
+        --gold: #f9c747;
+        --line: #d6e5df;
+        --card-shadow: #11342817;
+        --warn: #b07a00;
+        --danger: #9a3d34;
       }
 
       * {
@@ -31,15 +35,14 @@
 
       body {
         margin: 0;
-        font-family: "Source Sans 3", sans-serif;
+        font-family: "Open Sans", sans-serif;
         color: var(--ink);
-        background: radial-gradient(circle at 8% 10%, #ecfff3 0%, transparent 42%),
-          radial-gradient(circle at 92% 16%, #e2f5ff 0%, transparent 35%),
-          linear-gradient(155deg, var(--bg-cream), var(--bg-mint));
+        background: radial-gradient(circle at -5% -10%, #dff4ea 0%, transparent 44%),
+          radial-gradient(circle at 105% -15%, #fef0be 0%, transparent 40%), var(--bg-page);
       }
 
       .shell {
-        max-width: 1280px;
+        max-width: 1320px;
         margin: 0 auto;
         padding: 22px 18px 28px;
       }
@@ -47,31 +50,76 @@
       .hero {
         display: flex;
         justify-content: space-between;
-        align-items: flex-end;
+        align-items: stretch;
         gap: 18px;
         margin-bottom: 18px;
         animation: rise 0.55s ease-out;
       }
 
+      .hero-main {
+        flex: 1 1 auto;
+        border: 1px solid var(--line);
+        border-top: 5px solid var(--brand);
+        border-radius: 14px;
+        background: linear-gradient(120deg, #ffffff, #f7fcfa);
+        padding: 12px 14px;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 74px;
+      }
+
+      .brand-logo {
+        width: min(45vw, 285px);
+        max-height: 68px;
+        object-fit: contain;
+        object-position: left center;
+      }
+
       .title {
         margin: 0;
-        font-family: "Sora", sans-serif;
-        font-size: clamp(1.4rem, 2vw + 1rem, 2.3rem);
+        font-family: "Rubik", sans-serif;
+        font-size: clamp(1.2rem, 1.2vw + 0.9rem, 1.8rem);
+        font-weight: 500;
+        color: var(--brand-dark);
         letter-spacing: 0.2px;
       }
 
       .subtitle {
         margin: 6px 0 0;
-        color: var(--ink-soft);
+        color: var(--ink);
       }
 
       .stamp {
         font-size: 0.9rem;
-        color: var(--ink-soft);
+        color: var(--deep-green);
         padding: 9px 12px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: #ffffffa3;
+        background: #ffffffd9;
+        align-self: center;
+      }
+
+      .auth-strip {
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--bg-panel);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .auth-line {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.95rem;
       }
 
       .layout {
@@ -81,19 +129,19 @@
       }
 
       .panel {
-        background: var(--card);
-        backdrop-filter: blur(6px);
+        background: var(--bg-panel);
         border: 1px solid var(--line);
         border-radius: 16px;
         padding: 16px;
-        box-shadow: 0 14px 30px #12312817;
+        box-shadow: 0 14px 30px var(--card-shadow);
         animation: rise 0.5s ease-out;
       }
 
       .panel h2 {
         margin: 0 0 12px;
-        font-family: "Sora", sans-serif;
+        font-family: "Rubik", sans-serif;
         font-size: 1.05rem;
+        color: var(--deep-green);
       }
 
       .panel h3 {
@@ -124,7 +172,7 @@
       th {
         font-size: 0.78rem;
         letter-spacing: 0.04em;
-        color: #39564f;
+        color: var(--deep-green);
         text-transform: uppercase;
       }
 
@@ -143,8 +191,8 @@
       input:focus,
       select:focus {
         outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px #126e571f;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px #18a67622;
       }
 
       .actions {
@@ -168,21 +216,21 @@
       }
 
       .btn-main {
-        background: linear-gradient(140deg, var(--accent), var(--accent-2));
+        background: linear-gradient(140deg, var(--brand), var(--brand-dark));
         color: #fff;
         font-weight: 700;
       }
 
       .btn-subtle {
-        border-color: #b9d7cc;
-        background: #fff;
-        color: var(--ink);
+        border-color: #b7d7c9;
+        background: var(--bg-panel);
+        color: var(--deep-green);
       }
 
       .btn-danger-lite {
         background: #fff3ef;
         border-color: #f1cdc3;
-        color: #7d3525;
+        color: var(--danger);
       }
 
       .summary {
@@ -196,7 +244,7 @@
         border-radius: 12px;
         padding: 10px;
         border: 1px solid var(--line);
-        background: #fff;
+        background: var(--bg-panel);
       }
 
       .stat .label {
@@ -206,13 +254,13 @@
 
       .stat .value {
         margin-top: 4px;
-        font-family: "Sora", sans-serif;
+        font-family: "Rubik", sans-serif;
         font-size: 1.1rem;
         font-weight: 700;
       }
 
       .stat.good .value {
-        color: var(--good);
+        color: var(--brand-dark);
       }
 
       .stat.warn .value {
@@ -220,14 +268,11 @@
       }
 
       .stat.neutral .value {
-        color: var(--neutral);
+        color: var(--deep-green);
       }
 
       .result-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
+        display: grid;
         gap: 8px;
         margin-bottom: 8px;
       }
@@ -238,27 +283,91 @@
         gap: 6px;
       }
 
-      .filter-btn {
-        border: 1px solid #b8d5c8;
-        border-radius: 999px;
+      .toolbar-controls {
+        display: grid;
+        grid-template-columns: minmax(180px, 1.5fr) repeat(2, minmax(140px, 1fr)) minmax(190px, 1.2fr) auto;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .result-control {
+        width: 100%;
+        border: 1px solid #bfd4cb;
+        border-radius: 10px;
+        padding: 7px 9px;
+        font: inherit;
+        color: var(--ink);
         background: #fff;
+      }
+
+      .clear-control {
+        white-space: nowrap;
+        padding: 7px 11px;
+      }
+
+      .filter-btn {
+        border: 1px solid #c7ddd3;
+        border-radius: 999px;
+        background: var(--bg-panel);
         padding: 5px 10px;
         font-size: 0.85rem;
         cursor: pointer;
+        color: var(--deep-green);
       }
 
       .filter-btn.active {
-        background: #d7f0e6;
-        border-color: #96c8b5;
+        background: #d9f1e8;
+        border-color: var(--brand-soft);
         font-weight: 700;
       }
 
+      .pin-btn {
+        border: 1px solid #c7ddd3;
+        border-radius: 999px;
+        background: #fff;
+        color: var(--deep-green);
+        font-size: 0.78rem;
+        padding: 3px 9px;
+        cursor: pointer;
+      }
+
+      .pin-btn.active {
+        background: #e4f5ee;
+        border-color: var(--brand-soft);
+        color: var(--brand-dark);
+        font-weight: 700;
+      }
+
+      .action-btn {
+        border: 1px solid #c7ddd3;
+        border-radius: 999px;
+        background: #fff;
+        color: var(--deep-green);
+        font-size: 0.74rem;
+        padding: 3px 8px;
+        cursor: pointer;
+      }
+
+      .action-btn.active {
+        background: #e8f3ff;
+        border-color: #9fc4f1;
+        color: #194f8d;
+        font-weight: 700;
+      }
+
+      .row-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+
       .results-wrap {
-        border: 1px solid #cae0d6;
+        border: 1px solid #cfe0d9;
         border-radius: 13px;
         overflow: auto;
         max-height: 68vh;
-        background: #fff;
+        background: var(--bg-panel);
       }
 
       .results-wrap table {
@@ -266,7 +375,194 @@
       }
 
       .results-wrap tbody tr:nth-child(odd) {
+        background: var(--bg-subtle);
+      }
+
+      .results-wrap tbody tr.row-pinned {
+        box-shadow: inset 4px 0 0 var(--brand-soft);
+      }
+
+      .results-wrap tbody tr.row-selected {
+        box-shadow: inset 4px 0 0 #73a7e2;
+      }
+
+      .compare-strip {
+        border: 1px dashed #bfd5cf;
+        border-radius: 11px;
         background: #f8fcfa;
+        padding: 9px 10px;
+        margin: 8px 0;
+        display: grid;
+        gap: 6px;
+      }
+
+      .compare-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .compare-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .compare-chip {
+        border: 1px solid #c7ddd3;
+        border-radius: 999px;
+        background: #fff;
+        color: var(--deep-green);
+        font-size: 0.78rem;
+        padding: 4px 9px;
+        cursor: pointer;
+      }
+
+      .details-drawer {
+        margin-top: 10px;
+        border: 1px solid #cfe0d9;
+        border-radius: 13px;
+        background: #fcfefd;
+        padding: 12px;
+        display: grid;
+        gap: 9px;
+      }
+
+      .compare-table-wrap {
+        border: 1px solid #ddebe6;
+        border-radius: 10px;
+        overflow: auto;
+        background: #fff;
+      }
+
+      .compare-table {
+        width: 100%;
+        min-width: 860px;
+        border-collapse: collapse;
+      }
+
+      .compare-table th,
+      .compare-table td {
+        border-bottom: 1px solid #e5f0ec;
+        padding: 8px;
+        vertical-align: top;
+        text-align: left;
+      }
+
+      .compare-table thead th {
+        background: #f3f9f6;
+      }
+
+      .compare-table .field-col {
+        width: 210px;
+        min-width: 210px;
+        color: var(--deep-green);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .compare-program {
+        display: grid;
+        gap: 2px;
+      }
+
+      .compare-program strong {
+        font-size: 0.9rem;
+        color: var(--deep-green);
+      }
+
+      .compare-program span {
+        font-size: 0.79rem;
+        color: var(--ink-soft);
+      }
+
+      .detail-head {
+        display: grid;
+        gap: 2px;
+      }
+
+      .detail-title {
+        margin: 0;
+        font-family: "Rubik", sans-serif;
+        font-size: 1rem;
+        color: var(--deep-green);
+      }
+
+      .detail-sub {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .detail-grid {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .detail-block {
+        border: 1px solid #ddebe6;
+        border-radius: 10px;
+        background: #fff;
+        padding: 8px 9px;
+      }
+
+      .detail-block h4 {
+        margin: 0 0 6px;
+        font-size: 0.82rem;
+        color: var(--deep-green);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .detail-list {
+        margin: 0;
+        padding-left: 18px;
+        display: grid;
+        gap: 4px;
+      }
+
+      .detail-list li {
+        font-size: 0.87rem;
+      }
+
+      .requirement-line {
+        display: grid;
+        gap: 2px;
+      }
+
+      .req-label {
+        font-weight: 700;
+      }
+
+      .req-meta {
+        color: var(--ink-soft);
+        font-size: 0.82rem;
+      }
+
+      .req-status {
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .req-status.met {
+        color: var(--brand-dark);
+      }
+
+      .req-status.low_mark {
+        color: var(--warn);
+      }
+
+      .req-status.missing {
+        color: var(--danger);
+      }
+
+      .req-status.unknown,
+      .req-status.assessment {
+        color: #194f8d;
       }
 
       .status {
@@ -276,7 +572,7 @@
       }
 
       .status.error {
-        color: #8c2f25;
+        color: var(--danger);
       }
 
       .empty {
@@ -301,6 +597,24 @@
       }
 
       @media (max-width: 960px) {
+        .hero {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .stamp {
+          align-self: flex-start;
+        }
+
+        .brand-lockup {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .brand-logo {
+          width: min(70vw, 280px);
+        }
+
         .layout {
           grid-template-columns: 1fr;
         }
@@ -308,18 +622,36 @@
         .summary {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
+        .toolbar-controls {
+          grid-template-columns: 1fr;
+        }
+
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
     <div class="shell">
       <header class="hero">
-        <div>
-          <h1 class="title">Next Step Admissions Checker</h1>
-          <p class="subtitle">Enter grades once, then review Eligible, Missing, and Uncheckable programs.</p>
+        <div class="hero-main">
+          <div class="brand-lockup">
+            <img class="brand-logo" src="data:image/png;base64,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" alt="Next Step logo" />
+            <div>
+              <h1 class="title">Next Step Admissions Checker</h1>
+              <p class="subtitle">Enter grades once, then review Eligible, Missing, and Uncheckable programs.</p>
+            </div>
+          </div>
         </div>
         <div class="stamp" id="stamp">Loading options...</div>
       </header>
+
+      <section class="auth-strip">
+        <p class="auth-line" id="authLine">Checking sign-in requirements...</p>
+        <div id="googleSignIn"></div>
+      </section>
 
       <main class="layout">
         <section class="panel">
@@ -394,12 +726,45 @@
               <button class="filter-btn" type="button" data-view="ineligible">Missing</button>
               <button class="filter-btn" type="button" data-view="uncheckable">Uncheckable</button>
               <button class="filter-btn" type="button" data-view="all">All</button>
+              <button class="filter-btn" type="button" data-view="shortlist">Shortlist</button>
+            </div>
+            <div class="toolbar-controls">
+              <input
+                class="result-control"
+                id="resultSearch"
+                type="text"
+                placeholder="Search institution, program, credential..."
+              />
+              <select class="result-control" id="institutionFilter">
+                <option value="">All Institutions</option>
+              </select>
+              <select class="result-control" id="credentialFilter">
+                <option value="">All Credentials</option>
+              </select>
+              <select class="result-control" id="sortSelect">
+                <option value="closest">Sort: Closest to eligible</option>
+                <option value="institution_program">Sort: Institution + Program</option>
+                <option value="program_az">Sort: Program A-Z</option>
+                <option value="min_avg_asc">Sort: Min Avg low-high</option>
+                <option value="min_avg_desc">Sort: Min Avg high-low</option>
+              </select>
+              <button class="btn btn-subtle clear-control" id="clearResultFiltersBtn" type="button">
+                Clear
+              </button>
             </div>
             <div class="ghost" id="rowsStamp">No results yet</div>
           </div>
 
+          <div class="compare-strip" id="compareStrip">
+            <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
+          </div>
+
           <div class="results-wrap" id="resultsWrap">
             <div class="empty">Run a check to see program-by-program results.</div>
+          </div>
+
+          <div class="details-drawer" id="detailsDrawer">
+            <div class="ghost">Select a program row to inspect requirements and next steps.</div>
           </div>
         </section>
       </main>
@@ -409,14 +774,34 @@
     <datalist id="electiveCourses"></datalist>
 
     <script>
+      const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all", "shortlist"];
+      const DEFAULT_RESULT_SORT = "closest";
+
       const state = {
         boot: null,
         result: null,
+        resultModel: null,
         view: "eligible",
+        shortlist: {},
+        selectedProgramKey: "",
+        compareKeys: [],
+        resultFilters: {
+          query: "",
+          institution: "",
+          credential: "",
+          sort: DEFAULT_RESULT_SORT,
+        },
+        mockMode: false,
+        auth: {
+          idToken: "",
+          email: "",
+        },
       };
 
       const ui = {
         stamp: document.getElementById("stamp"),
+        authLine: document.getElementById("authLine"),
+        googleSignIn: document.getElementById("googleSignIn"),
         status: document.getElementById("status"),
         namedBody: document.querySelector("#namedTable tbody"),
         electiveBody: document.querySelector("#electiveTable tbody"),
@@ -430,6 +815,13 @@
         sumMissing: document.getElementById("sumMissing"),
         sumUncheckable: document.getElementById("sumUncheckable"),
         filterGroup: document.getElementById("filterGroup"),
+        resultSearch: document.getElementById("resultSearch"),
+        institutionFilter: document.getElementById("institutionFilter"),
+        credentialFilter: document.getElementById("credentialFilter"),
+        sortSelect: document.getElementById("sortSelect"),
+        clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        compareStrip: document.getElementById("compareStrip"),
+        detailsDrawer: document.getElementById("detailsDrawer"),
       };
 
       boot();
@@ -441,32 +833,118 @@
       document.getElementById("pdfBtn").addEventListener("click", exportPdf);
       document.getElementById("resetBtn").addEventListener("click", resetForm);
       ui.filterGroup.addEventListener("click", onFilterClick);
+      ui.resultsWrap.addEventListener("click", onResultsWrapClick);
+      ui.resultSearch.addEventListener("input", onResultControlChange);
+      ui.institutionFilter.addEventListener("change", onResultControlChange);
+      ui.credentialFilter.addEventListener("change", onResultControlChange);
+      ui.sortSelect.addEventListener("change", onResultControlChange);
+      ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
+      ui.compareStrip.addEventListener("click", onCompareStripClick);
 
       function boot() {
         resetForm();
-        if (!isAppsScriptContext()) {
-          setStatus(
-            "This page is ready. Open it through the deployed Apps Script web app URL to run checks.",
-            true
-          );
-          ui.stamp.textContent = "Standalone preview";
+        state.mockMode = isMockMode();
+        if (state.mockMode) {
+          bootMockMode();
           return;
         }
+        if (!isAppsScriptContext()) {
+          setStatus(
+            "This page is ready. Use Apps Script /dev for real backend, or run local server with ?mock=1 for UI preview.",
+            true
+          );
+          ui.stamp.textContent = "Standalone preview (no backend)";
+          ui.authLine.textContent = "Not connected to Apps Script backend.";
+          return;
+        }
+        loadPublicBootstrap();
+      }
+
+      function loadPublicBootstrap() {
+        setStatus("Loading sign-in settings...");
         google.script.run
-          .withSuccessHandler((data) => {
-            state.boot = data || {};
-            bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
-            bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
-            seedRows();
-            const stamp = (state.boot.generatedAt || "").replace("T", " ").replace("Z", " UTC");
-            ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
-            setStatus("Ready.");
-          })
+          .withSuccessHandler(handleBootstrapResponse)
           .withFailureHandler((err) => {
             setStatus(readError(err), true);
             ui.stamp.textContent = "Load failed";
+            ui.authLine.textContent = "Sign-in check failed.";
           })
-          .getWebAppBootstrapData();
+          .getWebAppBootstrapData({});
+      }
+
+      function loadSecureBootstrap() {
+        if (!state.auth.idToken) {
+          setStatus("Sign in with your school account to continue.", true);
+          return;
+        }
+        setStatus("Verifying sign-in...");
+        google.script.run
+          .withSuccessHandler(handleBootstrapResponse)
+          .withFailureHandler((err) => {
+            setStatus(readError(err), true);
+            ui.authLine.textContent = "Sign-in failed. Try again.";
+          })
+          .getWebAppBootstrapData({ idToken: state.auth.idToken });
+      }
+
+      function handleBootstrapResponse(data) {
+        const boot = data || {};
+        if (boot.requiresAuth) {
+          const auth = boot.auth || {};
+          ui.authLine.textContent = `Sign in with your ${auth.allowedDomainSuffix || "@eips.ca"} account.`;
+          initializeGoogleSignIn(auth.googleClientId || "");
+          ui.stamp.textContent = "Awaiting sign-in";
+          setStatus("Sign in to load course options.");
+          return;
+        }
+
+        state.boot = boot;
+        state.auth.email = String((boot.auth && boot.auth.email) || "").trim().toLowerCase();
+        bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
+        bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
+        seedRows();
+        const stamp = (state.boot.generatedAt || "").replace("T", " ").replace("Z", " UTC");
+        ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
+        ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
+        setStatus("Ready.");
+      }
+
+      function initializeGoogleSignIn(clientId) {
+        if (!clientId) {
+          setStatus(
+            "Web app auth is not configured. Set Script Property WEBAPP_GOOGLE_CLIENT_ID in Apps Script.",
+            true
+          );
+          return;
+        }
+        if (!(window.google && google.accounts && google.accounts.id)) {
+          setStatus("Google sign-in script did not load. Refresh and try again.", true);
+          return;
+        }
+        ui.googleSignIn.innerHTML = "";
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: onGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        google.accounts.id.renderButton(ui.googleSignIn, {
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          text: "signin_with",
+          logo_alignment: "left",
+        });
+      }
+
+      function onGoogleCredential(response) {
+        const token = String((response && response.credential) || "").trim();
+        if (!token) {
+          setStatus("Google sign-in did not return a token. Try again.", true);
+          return;
+        }
+        state.auth.idToken = token;
+        loadSecureBootstrap();
       }
 
       function seedRows() {
@@ -485,11 +963,23 @@
         for (let i = 0; i < 8; i++) addNamedRow();
         for (let i = 0; i < 5; i++) addElectiveRow();
         state.result = null;
+        state.resultModel = null;
         state.view = "eligible";
+        state.shortlist = {};
+        state.selectedProgramKey = "";
+        state.compareKeys = [];
+        state.resultFilters.query = "";
+        state.resultFilters.institution = "";
+        state.resultFilters.credential = "";
+        state.resultFilters.sort = DEFAULT_RESULT_SORT;
         ui.csvBtn.disabled = true;
         ui.pdfBtn.disabled = true;
+        syncResultControls();
+        populateResultFilterOptions();
         updateSummary({ totalPrograms: 0, eligible: 0, missing: 0, uncheckable: 0 });
         renderResults();
+        renderCompareStrip();
+        renderDetailsDrawer();
         setStatus("");
         syncFilterButtons();
       }
@@ -559,7 +1049,11 @@
           })
           .filter((x) => x.course && Number.isFinite(x.mark));
 
-        return { namedCourses, manualElectives };
+        return {
+          auth: { idToken: state.auth.idToken || "" },
+          namedCourses,
+          manualElectives,
+        };
       }
 
       function runCheck() {
@@ -568,8 +1062,16 @@
           setStatus("Enter at least one course and mark before running the check.", true);
           return;
         }
+        if (state.mockMode) {
+          runMockCheck(payload);
+          return;
+        }
         if (!isAppsScriptContext()) {
           setStatus("Open this page using the deployed Apps Script web app URL to run checks.", true);
+          return;
+        }
+        if (!payload.auth.idToken) {
+          setStatus("Sign in with your school account first.", true);
           return;
         }
 
@@ -577,13 +1079,7 @@
         setStatus("Checking admissions rules...");
         google.script.run
           .withSuccessHandler((data) => {
-            state.result = data || null;
-            state.view = "eligible";
-            ui.csvBtn.disabled = !state.result;
-            ui.pdfBtn.disabled = !state.result;
-            updateSummary((state.result && state.result.summary) || {});
-            syncFilterButtons();
-            renderResults();
+            applyResultPayload(data || null);
             setStatus("Check complete.");
             setBusy(false);
           })
@@ -592,6 +1088,187 @@
             setBusy(false);
           })
           .runWebEligibility(payload);
+      }
+
+      function runMockCheck(payload) {
+        setBusy(true);
+        setStatus("Running local mock check...");
+        setTimeout(() => {
+          applyResultPayload(buildMockResult(payload));
+          setBusy(false);
+          setStatus("Mock check complete.");
+        }, 250);
+      }
+
+      function applyResultPayload(result) {
+        state.result = result || null;
+        state.resultModel = buildResultModel(state.result);
+        if (RESULT_VIEWS.indexOf(state.view) < 0) state.view = "eligible";
+        trimShortlistToCurrentModel();
+        trimCompareToCurrentModel();
+        if (state.selectedProgramKey && !(state.resultModel && state.resultModel.rowsByKey && state.resultModel.rowsByKey[state.selectedProgramKey])) {
+          state.selectedProgramKey = "";
+        }
+        syncResultControls();
+        populateResultFilterOptions();
+        if (state.view === "shortlist" && countShortlistRows() === 0) {
+          state.view = "eligible";
+        }
+        ui.csvBtn.disabled = !state.result;
+        ui.pdfBtn.disabled = !state.result;
+        updateSummary((state.result && state.result.summary) || {});
+        syncFilterButtons();
+        renderResults();
+        renderCompareStrip();
+        renderDetailsDrawer();
+      }
+
+      function buildMockResult(payload) {
+        const headers = [
+          "Institution",
+          "Program",
+          "Credential",
+          "Min Avg",
+          "Student Avg",
+          "Avg Courses",
+          "Avg Used",
+          "Competitive Guidance",
+          "Missing",
+          "Notes",
+        ];
+        const totalInputs = (payload.namedCourses || []).length + (payload.manualElectives || []).length;
+        const avg =
+          totalInputs > 0
+            ? (payload.namedCourses || [])
+                .concat(payload.manualElectives || [])
+                .reduce((sum, r) => sum + Number(r.mark || 0), 0) / totalInputs
+            : 0;
+        const studentAvg = Number(avg.toFixed(1));
+        const eligibleRow = [
+          "MacEwan",
+          "Bachelor of Arts Undeclared",
+          "Degree",
+          70,
+          studentAvg,
+          5,
+          "English 30-1=82, Math 30-2=76",
+          "",
+          "",
+          "",
+        ];
+        const missingRow = [
+          "NAIT",
+          "Business Administration Diploma",
+          "Diploma",
+          70,
+          "",
+          5,
+          "English 30-1=82",
+          "",
+          "Need 1 more elective mark(s) for average",
+          "",
+        ];
+        const uncheckableRow = [
+          "UAlberta",
+          "Bachelor of Music",
+          "Degree",
+          75,
+          studentAvg,
+          5,
+          "English 30-1=82, Math 30-2=76",
+          "",
+          "",
+          "Other requirements: audition",
+        ];
+        const k1 = "mock_macewan_ba";
+        const k2 = "mock_nait_business";
+        const k3 = "mock_ualberta_music";
+        return {
+          generatedAt: new Date().toISOString(),
+          headers,
+          meta: {
+            generatedAt: new Date().toISOString(),
+            datasetRows: 3,
+            activeProgramsEvaluated: 3,
+            rowKeyVersion: "v1",
+          },
+          summary: {
+            totalPrograms: 3,
+            eligible: 1,
+            missing: 1,
+            uncheckable: 1,
+          },
+          rowKeysByView: {
+            all: [k1, k2, k3],
+            eligible: [k1],
+            ineligible: [k2],
+            uncheckable: [k3],
+          },
+          detailsByKey: {
+            [k1]: {
+              institution: "MacEwan",
+              program: "Bachelor of Arts Undeclared",
+              credential: "Degree",
+              requirements: [
+                { label: "English", status: "met", requirement: "English 30-1 OR English 30-2", matched: "English 30-1=82", issues: [] },
+              ],
+              average: { min: 70, student: studentAvg, totalCourses: 5, usedCourses: 5, complete: true, meetsMinimum: true, neededElectivesForAverage: 0 },
+              electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
+              missingReasons: [],
+              notes: [],
+              advisories: [],
+            },
+            [k2]: {
+              institution: "NAIT",
+              program: "Business Administration Diploma",
+              credential: "Diploma",
+              requirements: [],
+              average: { min: 70, student: "", totalCourses: 5, usedCourses: 1, complete: false, meetsMinimum: false, neededElectivesForAverage: 1 },
+              electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
+              missingReasons: ["Need 1 more elective mark(s) for average"],
+              notes: [],
+              advisories: [],
+            },
+            [k3]: {
+              institution: "UAlberta",
+              program: "Bachelor of Music",
+              credential: "Degree",
+              requirements: [],
+              average: { min: 75, student: studentAvg, totalCourses: 5, usedCourses: 5, complete: true, meetsMinimum: true, neededElectivesForAverage: 0 },
+              electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
+              missingReasons: [],
+              notes: [],
+              advisories: ["Other requirements: audition"],
+            },
+          },
+          results: {
+            all: [eligibleRow, missingRow, uncheckableRow],
+            eligible: [eligibleRow],
+            ineligible: [missingRow],
+            uncheckable: [uncheckableRow],
+          },
+        };
+      }
+
+      function bootMockMode() {
+        state.boot = {
+          generatedAt: new Date().toISOString(),
+          namedCourseOptions: [
+            "English 30-1",
+            "Math 30-2",
+            "Biology 30",
+            "Chemistry 30",
+            "Social Studies 30-1",
+          ],
+          electiveCourseOptions: ["Art 30", "Drama 30", "Physics 30", "Computer Science Advanced CTS"],
+          manualElectiveSlots: 5,
+        };
+        bindDatalist("namedCourses", state.boot.namedCourseOptions);
+        bindDatalist("electiveCourses", state.boot.electiveCourseOptions);
+        seedRows();
+        ui.stamp.textContent = "Mock mode";
+        ui.authLine.textContent = "Local preview mode (no real student data is sent).";
+        setStatus("Mock mode enabled. UI changes can be tested locally.");
       }
 
       function updateSummary(summary) {
@@ -604,9 +1281,47 @@
       function onFilterClick(e) {
         const btn = e.target && e.target.closest("button[data-view]");
         if (!btn) return;
-        state.view = btn.dataset.view || "eligible";
+        const nextView = String(btn.dataset.view || "eligible").trim();
+        if (RESULT_VIEWS.indexOf(nextView) < 0) return;
+        if (nextView === "shortlist" && countShortlistRows() === 0) {
+          state.view = "shortlist";
+          syncFilterButtons();
+          renderResults();
+          setStatus("Shortlist is empty. Pin programs from any view to add them.");
+          return;
+        }
+        state.view = nextView;
         syncFilterButtons();
         renderResults();
+      }
+
+      function onResultControlChange() {
+        state.resultFilters.query = String(ui.resultSearch.value || "").trim();
+        state.resultFilters.institution = String(ui.institutionFilter.value || "").trim();
+        state.resultFilters.credential = String(ui.credentialFilter.value || "").trim();
+        state.resultFilters.sort = String(ui.sortSelect.value || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        renderResults();
+      }
+
+      function clearResultFilters() {
+        state.resultFilters.query = "";
+        state.resultFilters.institution = "";
+        state.resultFilters.credential = "";
+        state.resultFilters.sort = DEFAULT_RESULT_SORT;
+        syncResultControls();
+        renderResults();
+      }
+
+      function syncResultControls() {
+        ui.resultSearch.value = state.resultFilters.query || "";
+        ui.institutionFilter.value = state.resultFilters.institution || "";
+        ui.credentialFilter.value = state.resultFilters.credential || "";
+        ui.sortSelect.value = state.resultFilters.sort || DEFAULT_RESULT_SORT;
+        ui.clearResultFiltersBtn.disabled =
+          !state.resultFilters.query &&
+          !state.resultFilters.institution &&
+          !state.resultFilters.credential &&
+          (state.resultFilters.sort || DEFAULT_RESULT_SORT) === DEFAULT_RESULT_SORT;
       }
 
       function syncFilterButtons() {
@@ -616,40 +1331,739 @@
         });
       }
 
+      function populateResultFilterOptions() {
+        const rows = state.resultModel && state.resultModel.rows ? state.resultModel.rows : [];
+        const institutions = uniqueStrings(
+          rows.map((r) => String(r.institution || "").trim()).filter((x) => x)
+        ).sort((a, b) => a.localeCompare(b));
+        const credentials = uniqueStrings(
+          rows.map((r) => String(r.credential || "").trim()).filter((x) => x)
+        ).sort((a, b) => a.localeCompare(b));
+
+        renderSelectOptions(ui.institutionFilter, "All Institutions", institutions, state.resultFilters.institution);
+        if (state.resultFilters.institution && institutions.indexOf(state.resultFilters.institution) < 0) {
+          state.resultFilters.institution = "";
+        }
+        renderSelectOptions(ui.credentialFilter, "All Credentials", credentials, state.resultFilters.credential);
+        if (state.resultFilters.credential && credentials.indexOf(state.resultFilters.credential) < 0) {
+          state.resultFilters.credential = "";
+        }
+        syncResultControls();
+      }
+
+      function renderSelectOptions(select, emptyLabel, options, selectedValue) {
+        const selected = String(selectedValue || "").trim();
+        const html =
+          `<option value="">${escapeHtml(emptyLabel)}</option>` +
+          (options || [])
+            .map((opt) => {
+              const value = String(opt || "").trim();
+              const selectedAttr = value === selected ? ' selected="selected"' : "";
+              return `<option value="${escapeAttr(value)}"${selectedAttr}>${escapeHtml(value)}</option>`;
+            })
+            .join("");
+        select.innerHTML = html;
+      }
+
+      function onResultsWrapClick(e) {
+        const pinBtn = e.target && e.target.closest("button[data-pin-key]");
+        if (pinBtn) {
+          const key = String(pinBtn.getAttribute("data-pin-key") || "").trim();
+          if (!key) return;
+          toggleShortlistKey(key);
+          if (state.view === "shortlist" && countShortlistRows() === 0) {
+            state.view = "eligible";
+            syncFilterButtons();
+            setStatus("Shortlist is empty. Showing Eligible view.");
+          }
+          renderResults();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const compareBtn = e.target && e.target.closest("button[data-compare-key]");
+        if (compareBtn) {
+          const key = String(compareBtn.getAttribute("data-compare-key") || "").trim();
+          if (!key) return;
+          toggleCompareKey(key);
+          renderResults();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const detailBtn = e.target && e.target.closest("button[data-detail-key]");
+        if (detailBtn) {
+          const key = String(detailBtn.getAttribute("data-detail-key") || "").trim();
+          selectProgramKey(key);
+          renderResults();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const rowEl = e.target && e.target.closest("tr[data-row-key]");
+        if (!rowEl) return;
+        selectProgramKey(String(rowEl.getAttribute("data-row-key") || "").trim());
+        renderResults();
+        renderDetailsDrawer();
+      }
+
+      function toggleShortlistKey(key) {
+        const k = String(key || "").trim();
+        if (!k) return;
+        if (state.shortlist[k]) {
+          delete state.shortlist[k];
+          return;
+        }
+        state.shortlist[k] = true;
+      }
+
+      function countShortlistRows() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) return 0;
+        return Object.keys(state.shortlist).filter((k) => !!model.rowsByKey[k]).length;
+      }
+
+      function trimShortlistToCurrentModel() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          state.shortlist = {};
+          return;
+        }
+        Object.keys(state.shortlist).forEach((k) => {
+          if (!model.rowsByKey[k]) delete state.shortlist[k];
+        });
+      }
+
+      function selectProgramKey(key) {
+        const k = String(key || "").trim();
+        if (!k) {
+          state.selectedProgramKey = "";
+          return;
+        }
+        if (!(state.resultModel && state.resultModel.rowsByKey && state.resultModel.rowsByKey[k])) return;
+        state.selectedProgramKey = k;
+      }
+
+      function toggleCompareKey(key) {
+        const k = String(key || "").trim();
+        if (!k) return;
+        const idx = state.compareKeys.indexOf(k);
+        if (idx >= 0) {
+          state.compareKeys.splice(idx, 1);
+          return;
+        }
+        if (state.compareKeys.length >= 3) {
+          setStatus("Compare prep supports up to 3 programs. Remove one to add another.", true);
+          return;
+        }
+        state.compareKeys.push(k);
+      }
+
+      function trimCompareToCurrentModel() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          state.compareKeys = [];
+          return;
+        }
+        state.compareKeys = state.compareKeys.filter((k) => !!model.rowsByKey[k]);
+      }
+
+      function onCompareStripClick(e) {
+        const removeBtn = e.target && e.target.closest("button[data-compare-remove]");
+        if (removeBtn) {
+          const key = String(removeBtn.getAttribute("data-compare-remove") || "").trim();
+          if (!key) return;
+          state.compareKeys = state.compareKeys.filter((k) => k !== key);
+          renderResults();
+          renderCompareStrip();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const clearBtn = e.target && e.target.closest("button[data-compare-clear]");
+        if (!clearBtn) return;
+        state.compareKeys = [];
+        renderResults();
+        renderCompareStrip();
+        renderDetailsDrawer();
+      }
+
       function renderResults() {
-        if (!state.result) {
+        if (!state.result || !state.resultModel) {
           ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
           ui.rowsStamp.textContent = "No results yet";
+          syncResultControls();
+          renderCompareStrip();
+          renderDetailsDrawer();
           return;
         }
 
-        const headers = state.result.headers || [];
-        const categoryRows = ((state.result.results || {})[state.view] || []).slice();
-        ui.rowsStamp.textContent = `${categoryRows.length} rows`;
+        const headers = state.resultModel.headers || [];
+        const viewRows = getRowsForView(state.view);
+        const filteredRows = sortRows(filterRows(viewRows), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const viewCount = viewRows.length;
+        const shownCount = filteredRows.length;
+        ui.rowsStamp.textContent = shownCount === viewCount ? `${shownCount} rows` : `${shownCount} of ${viewCount} rows`;
 
-        if (!categoryRows.length) {
-          ui.resultsWrap.innerHTML = `<div class="empty">No rows in this category.</div>`;
+        if (!filteredRows.length) {
+          const emptyMsg =
+            viewCount === 0 ? "No rows in this category." : "No rows match the current filters. Clear filters to widen results.";
+          ui.resultsWrap.innerHTML = `<div class="empty">${escapeHtml(emptyMsg)}</div>`;
+          syncResultControls();
+          renderCompareStrip();
+          renderDetailsDrawer();
           return;
         }
 
-        const headHtml = `<tr>${headers.map((h) => `<th>${escapeHtml(String(h))}</th>`).join("")}</tr>`;
-        const bodyHtml = categoryRows
-          .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(formatCell(c))}</td>`).join("")}</tr>`)
+        const headHtml =
+          `<tr><th style="width: 190px">Actions</th>${headers
+            .map((h) => `<th>${escapeHtml(String(h))}</th>`)
+            .join("")}</tr>`;
+        const bodyHtml = filteredRows
+          .map((row) => {
+            const isPinned = !!state.shortlist[row.key];
+            const isSelected = row.key === state.selectedProgramKey;
+            const isCompared = state.compareKeys.indexOf(row.key) >= 0;
+            const pinClass = isPinned ? "pin-btn active" : "pin-btn";
+            const compareClass = isCompared ? "action-btn active" : "action-btn";
+            const viewClass = isSelected ? "action-btn active" : "action-btn";
+            const trClasses = []
+              .concat(isPinned ? ["row-pinned"] : [])
+              .concat(isSelected ? ["row-selected"] : [])
+              .join(" ");
+            const trClass = trClasses ? ` class="${trClasses}"` : "";
+            const pinLabel = isPinned ? "Pinned" : "Pin";
+            const compareLabel = isCompared ? "Compared" : "Compare";
+            const viewLabel = isSelected ? "Viewing" : "View";
+            return `<tr${trClass} data-row-key="${escapeAttr(row.key)}"><td><div class="row-actions"><button class="${pinClass}" type="button" data-pin-key="${escapeAttr(
+              row.key
+            )}">${pinLabel}</button><button class="${compareClass}" type="button" data-compare-key="${escapeAttr(
+              row.key
+            )}">${compareLabel}</button><button class="${viewClass}" type="button" data-detail-key="${escapeAttr(
+              row.key
+            )}">${viewLabel}</button></div></td>${row.cells
+              .map((c) => `<td>${escapeHtml(formatCell(c))}</td>`)
+              .join("")}</tr>`;
+          })
           .join("");
         ui.resultsWrap.innerHTML = `<table><thead>${headHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+        syncResultControls();
+        renderCompareStrip();
+        renderDetailsDrawer();
+      }
+
+      function renderCompareStrip() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          ui.compareStrip.innerHTML = `<div class="ghost">Compare prep: add up to 3 programs while triaging.</div>`;
+          return;
+        }
+
+        const selected = state.compareKeys.map((k) => model.rowsByKey[k]).filter(Boolean);
+        if (!selected.length) {
+          ui.compareStrip.innerHTML = `<div class="ghost">Compare prep: add up to 3 programs while triaging.</div>`;
+          return;
+        }
+
+        const chips = selected
+          .map((row) => {
+            const label = `${row.program} (${row.institution})`;
+            return `<button class="compare-chip" type="button" data-compare-remove="${escapeAttr(
+              row.key
+            )}" title="Remove">${escapeHtml(label)}</button>`;
+          })
+          .join("");
+        ui.compareStrip.innerHTML = `
+          <div class="compare-header">
+            <strong>Compare Prep (${selected.length}/3)</strong>
+            <button class="action-btn" type="button" data-compare-clear="1">Clear</button>
+          </div>
+          <div class="compare-chips">${chips}</div>
+          <div class="ghost">Selection is ready for side-by-side compare mode.</div>
+        `;
+      }
+
+      function renderDetailsDrawer() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program row to inspect requirements and next steps.</div>`;
+          return;
+        }
+
+        const compareRows = getCompareRows_();
+        if (compareRows.length >= 2) {
+          renderCompareDrawer_(compareRows);
+          return;
+        }
+
+        let row = state.selectedProgramKey && model.rowsByKey[state.selectedProgramKey]
+          ? model.rowsByKey[state.selectedProgramKey]
+          : null;
+        if (!row && compareRows.length === 1) row = compareRows[0];
+
+        if (!row) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program row to inspect requirements and next steps.</div>`;
+          return;
+        }
+
+        renderSingleProgramDetails_(row);
+      }
+
+      function renderCompareDrawer_(rows) {
+        const items = (rows || []).map((row) => ({
+          row,
+          detail: getProgramDetailsForRow(row),
+        }));
+        if (items.length < 2) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Select at least 2 programs to compare side by side.</div>`;
+          return;
+        }
+
+        const requirementLabels = uniqueStrings(
+          items
+            .map((item) => (Array.isArray(item.detail.requirements) ? item.detail.requirements : []))
+            .reduce((acc, list) => acc.concat(list), [])
+            .map((req) => String((req && req.label) || "").trim())
+            .filter(Boolean)
+        );
+
+        const requirementMaps = items.map((item) => {
+          const map = {};
+          (Array.isArray(item.detail.requirements) ? item.detail.requirements : []).forEach((req) => {
+            const label = String((req && req.label) || "").trim();
+            if (!label) return;
+            map[label] = formatRequirementForCompare_(req);
+          });
+          return map;
+        });
+
+        const rowHtml = [];
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Institution",
+            items.map((item) => String(item.detail.institution || item.row.institution || "").trim() || "N/A")
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Credential",
+            items.map((item) => String(item.detail.credential || item.row.credential || "").trim() || "N/A")
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Min Avg",
+            items.map((item) => formatMaybeValue_(item.detail.average && item.detail.average.min))
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Student Avg",
+            items.map((item) => formatMaybeValue_(item.detail.average && item.detail.average.student))
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Courses Used",
+            items.map((item) => {
+              const avg = item.detail.average || {};
+              const used = formatMaybeValue_(avg.usedCourses, "0");
+              const total = formatMaybeValue_(avg.totalCourses);
+              return `${used}/${total}`;
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Meets Average Minimum",
+            items.map((item) => {
+              const v = item.detail.average && item.detail.average.meetsMinimum;
+              if (v === null || v === undefined) return "N/A";
+              return v ? "Yes" : "No";
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Missing Reasons",
+            items.map((item) => {
+              const list = Array.isArray(item.detail.missingReasons) ? item.detail.missingReasons : [];
+              return list.length ? list.join(" | ") : "None";
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Competitive Guidance",
+            items.map((item) => String(item.detail.competitiveGuidance || "").trim() || "None")
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Advisories",
+            items.map((item) => {
+              const list = Array.isArray(item.detail.advisories) ? item.detail.advisories : [];
+              return list.length ? list.join(" | ") : "None";
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Elective Rules",
+            items.map((item) => {
+              const electives = item.detail.electives || {};
+              const groups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups.join("/") : "";
+              const rule = String(electives.ruleSummary || "").trim();
+              if (!groups && !rule) return "None";
+              return [groups ? `Groups: ${groups}` : "", rule ? `Rules: ${rule}` : ""].filter(Boolean).join(" | ");
+            })
+          )
+        );
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Selected Electives",
+            items.map((item) => {
+              const electives = item.detail.electives || {};
+              const selected = Array.isArray(electives.selected) ? electives.selected : [];
+              if (!selected.length) return "None";
+              return selected
+                .map((e) => `${e.group || ""}${e.name ? ` (${e.name})` : ""}=${formatMaybeValue_(e.mark)}`)
+                .join(", ");
+            })
+          )
+        );
+
+        requirementLabels.forEach((label) => {
+          rowHtml.push(
+            renderCompareDataRow_(
+              `${label} Requirement`,
+              requirementMaps.map((reqMap) => reqMap[label] || "N/A")
+            )
+          );
+        });
+
+        rowHtml.push(
+          renderCompareDataRow_(
+            "Notes",
+            items.map((item) => {
+              const list = Array.isArray(item.detail.notes) ? item.detail.notes : [];
+              return list.length ? list.join(" | ") : "None";
+            })
+          )
+        );
+
+        const headerCells = items
+          .map((item) => {
+            const programName = String(item.detail.program || item.row.program || "").trim() || "Program";
+            const sub = String(item.detail.institution || item.row.institution || "").trim() || "";
+            return `<th><div class="compare-program"><strong>${escapeHtml(programName)}</strong><span>${escapeHtml(
+              sub
+            )}</span></div></th>`;
+          })
+          .join("");
+
+        ui.detailsDrawer.innerHTML = `
+          <div class="detail-head">
+            <h3 class="detail-title">Program Compare</h3>
+            <p class="detail-sub">Side-by-side view for ${items.length} selected programs.</p>
+          </div>
+          <div class="compare-table-wrap">
+            <table class="compare-table">
+              <thead>
+                <tr><th class="field-col">Field</th>${headerCells}</tr>
+              </thead>
+              <tbody>${rowHtml.join("")}</tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function renderCompareDataRow_(label, values) {
+        const cells = (values || [])
+          .map((value) => {
+            const hasValue = !(value === null || value === undefined || value === "");
+            return `<td>${escapeHtml(hasValue ? String(value) : "N/A")}</td>`;
+          })
+          .join("");
+        return `<tr><th class="field-col">${escapeHtml(label)}</th>${cells}</tr>`;
+      }
+
+      function formatRequirementForCompare_(req) {
+        if (!req || typeof req !== "object") return "N/A";
+        const status = normalizeReqStatus(req.status);
+        const parts = [statusLabel(status)];
+        if (req.minMark !== "" && req.minMark !== null && req.minMark !== undefined) {
+          parts.push(`min ${formatCell(req.minMark)}`);
+        }
+        if (req.matched) parts.push(`matched: ${req.matched}`);
+        const issues = Array.isArray(req.issues) ? req.issues.filter(Boolean) : [];
+        if (issues.length) parts.push(issues.join(" | "));
+        return parts.join("; ");
+      }
+
+      function formatMaybeValue_(value, fallback) {
+        const hasValue = !(value === null || value === undefined || value === "");
+        if (!hasValue) return fallback || "N/A";
+        const text = formatCell(value);
+        return text === "" ? (fallback || "N/A") : text;
+      }
+
+      function getCompareRows_() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) return [];
+        return state.compareKeys.map((k) => model.rowsByKey[k]).filter(Boolean);
+      }
+
+      function renderSingleProgramDetails_(row) {
+        const detail = getProgramDetailsForRow(row);
+        const missing = (Array.isArray(detail.missingReasons) ? detail.missingReasons : []).filter(Boolean);
+        const notes = (Array.isArray(detail.notes) ? detail.notes : []).filter(Boolean);
+        const advisories = (Array.isArray(detail.advisories) ? detail.advisories : []).filter(Boolean);
+        const requirementLines = (Array.isArray(detail.requirements) ? detail.requirements : [])
+          .map((req) => {
+            const status = normalizeReqStatus(req.status);
+            const issues = (Array.isArray(req.issues) ? req.issues : []).filter(Boolean);
+            return `<li><div class="requirement-line"><span class="req-label">${escapeHtml(
+              req.label || ""
+            )}</span><span class="req-status ${escapeAttr(status)}">${escapeHtml(
+              statusLabel(status)
+            )}</span><span class="req-meta">${escapeHtml(req.requirement || "")}${
+              req.minMark !== "" ? ` (min ${escapeHtml(formatCell(req.minMark))})` : ""
+            }${req.matched ? `; matched: ${escapeHtml(req.matched)}` : ""}</span>${
+              issues.length ? `<span class="req-meta">${escapeHtml(issues.join(" | "))}</span>` : ""
+            }</div></li>`;
+          })
+          .join("");
+
+        const missingHtml = missing.length
+          ? `<ul class="detail-list">${missing.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+          : `<p class="ghost">No missing items from marks-based checks.</p>`;
+        const notesHtml = notes.length
+          ? `<ul class="detail-list">${notes.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+          : `<p class="ghost">No extra notes.</p>`;
+        const advisoryHtml = advisories.length
+          ? `<ul class="detail-list">${advisories.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+          : `<p class="ghost">No additional advisory flags.</p>`;
+
+        const avg = detail.average || {};
+        const electives = detail.electives || {};
+        const avgMinText = avg.min === "" || avg.min === null || avg.min === undefined ? "N/A" : escapeHtml(formatCell(avg.min));
+        const avgStudentText =
+          avg.student === "" || avg.student === null || avg.student === undefined ? "N/A" : escapeHtml(formatCell(avg.student));
+        const avgTotalText =
+          avg.totalCourses === "" || avg.totalCourses === null || avg.totalCourses === undefined
+            ? "N/A"
+            : escapeHtml(formatCell(avg.totalCourses));
+        const avgUsedText = escapeHtml(formatCell(avg.usedCourses || 0));
+        const allowedGroups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups : [];
+        const selectedElectives = Array.isArray(electives.selected) ? electives.selected : [];
+        ui.detailsDrawer.innerHTML = `
+          <div class="detail-head">
+            <h3 class="detail-title">${escapeHtml(detail.program || row.program || "")}</h3>
+            <p class="detail-sub">${escapeHtml(detail.institution || row.institution || "")} | ${escapeHtml(
+              detail.credential || row.credential || ""
+            )}</p>
+          </div>
+          <div class="detail-grid">
+            <div class="detail-block">
+              <h4>Missing / Next Steps</h4>
+              ${missingHtml}
+            </div>
+            <div class="detail-block">
+              <h4>Average Snapshot</h4>
+              <ul class="detail-list">
+                <li>Min Avg: ${avgMinText}</li>
+                <li>Student Avg: ${avgStudentText}</li>
+                <li>Courses used: ${avgUsedText}/${avgTotalText}</li>
+                <li>Complete: ${avg.complete ? "Yes" : "No"}</li>
+                <li>Meets minimum: ${avg.meetsMinimum === null ? "N/A" : avg.meetsMinimum ? "Yes" : "No"}</li>
+                <li>Electives needed for avg: ${escapeHtml(formatCell(avg.neededElectivesForAverage || 0))}</li>
+              </ul>
+            </div>
+            <div class="detail-block">
+              <h4>Requirements</h4>
+              ${
+                requirementLines
+                  ? `<ul class="detail-list">${requirementLines}</ul>`
+                  : `<p class="ghost">Requirement details are unavailable for this row.</p>`
+              }
+            </div>
+            <div class="detail-block">
+              <h4>Elective Rules</h4>
+              <ul class="detail-list">
+                <li>Allowed groups: ${escapeHtml((allowedGroups.join("/") || "A/B/C/D"))}</li>
+                <li>Rule summary: ${escapeHtml(electives.ruleSummary || "None")}</li>
+                <li>Selected electives: ${
+                  selectedElectives.length
+                    ? escapeHtml(
+                        selectedElectives
+                          .map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${formatCell(e.mark)}`)
+                          .join(", ")
+                      )
+                    : "None"
+                }</li>
+              </ul>
+            </div>
+            <div class="detail-block">
+              <h4>Advisories</h4>
+              ${advisoryHtml}
+            </div>
+            <div class="detail-block">
+              <h4>Notes</h4>
+              ${notesHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      function getProgramDetailsForRow(row) {
+        const model = state.resultModel || {};
+        const map = model.detailsByKey && typeof model.detailsByKey === "object" ? model.detailsByKey : {};
+        const fromBackend = row && row.key && map[row.key] ? map[row.key] : null;
+        if (fromBackend && typeof fromBackend === "object") return fromBackend;
+
+        return {
+          institution: row.institution || "",
+          program: row.program || "",
+          credential: row.credential || "",
+          requirements: [],
+          average: {
+            min: row.minAvg,
+            student: row.studentAvg,
+            totalCourses: toFiniteNumber(row.cells[5]),
+            usedCourses: NaN,
+            complete: false,
+            meetsMinimum: null,
+            neededElectivesForAverage: parseMissingElectiveCount(row.missing || ""),
+          },
+          electives: { allowedGroups: [], ruleSummary: "", selected: [] },
+          missingReasons: splitPipedText(row.missing),
+          notes: splitPipedText(row.notes),
+          advisories: [],
+        };
+      }
+
+      function splitPipedText(text) {
+        return String(text || "")
+          .split("|")
+          .map((x) => x.trim())
+          .filter(Boolean);
+      }
+
+      function normalizeReqStatus(status) {
+        const s = String(status || "").trim().toLowerCase();
+        if (s === "met" || s === "low_mark" || s === "missing" || s === "unknown" || s === "assessment") return s;
+        return "unknown";
+      }
+
+      function statusLabel(status) {
+        if (status === "met") return "Met";
+        if (status === "low_mark") return "Low Mark";
+        if (status === "missing") return "Missing";
+        if (status === "assessment") return "Assessment";
+        return "Unknown";
+      }
+
+      function getRowsForView(view) {
+        const model = state.resultModel;
+        if (!model || !model.keysByView || !model.rowsByKey) return [];
+        if (view === "shortlist") {
+          return (model.keysByView.all || [])
+            .filter((k) => !!state.shortlist[k])
+            .map((k) => model.rowsByKey[k])
+            .filter(Boolean);
+        }
+        const safeView = RESULT_VIEWS.indexOf(view) >= 0 ? view : "all";
+        const keys = model.keysByView[safeView] || [];
+        return keys.map((k) => model.rowsByKey[k]).filter(Boolean);
+      }
+
+      function filterRows(rows) {
+        const query = String(state.resultFilters.query || "").trim().toLowerCase();
+        const institution = String(state.resultFilters.institution || "").trim();
+        const credential = String(state.resultFilters.credential || "").trim();
+        return (rows || []).filter((row) => {
+          if (institution && row.institution !== institution) return false;
+          if (credential && row.credential !== credential) return false;
+          if (!query) return true;
+          const terms = query.split(/\s+/).filter(Boolean);
+          if (!terms.length) return true;
+          const haystack = String(row.searchText || "").toLowerCase();
+          return terms.every((term) => haystack.indexOf(term) >= 0);
+        });
+      }
+
+      function sortRows(rows, sortKey) {
+        const safeSort = String(sortKey || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        const list = (rows || []).slice();
+        list.sort((a, b) => compareRowsBySort(a, b, safeSort));
+        return list;
+      }
+
+      function compareRowsBySort(a, b, sortKey) {
+        if (sortKey === "min_avg_asc") {
+          const cmp = compareNumbersNullable(a.minAvg, b.minAvg, true);
+          return cmp !== 0 ? cmp : compareInstitutionProgram(a, b);
+        }
+        if (sortKey === "min_avg_desc") {
+          const cmp = compareNumbersNullable(a.minAvg, b.minAvg, false);
+          return cmp !== 0 ? cmp : compareInstitutionProgram(a, b);
+        }
+        if (sortKey === "institution_program") {
+          return compareInstitutionProgram(a, b);
+        }
+        if (sortKey === "program_az") {
+          const p = String(a.program || "").localeCompare(String(b.program || ""));
+          if (p !== 0) return p;
+          return compareInstitutionProgram(a, b);
+        }
+        return compareClosestRows(a, b);
+      }
+
+      function compareClosestRows(a, b) {
+        const aUncheckablePenalty = a.viewFlags && a.viewFlags.uncheckable ? 1 : 0;
+        const bUncheckablePenalty = b.viewFlags && b.viewFlags.uncheckable ? 1 : 0;
+
+        if (a.issueCount !== b.issueCount) return a.issueCount - b.issueCount;
+        if (aUncheckablePenalty !== bUncheckablePenalty) return aUncheckablePenalty - bUncheckablePenalty;
+        if (a.avgGap !== b.avgGap) return a.avgGap - b.avgGap;
+        if (a.electiveGap !== b.electiveGap) return a.electiveGap - b.electiveGap;
+        return compareInstitutionProgram(a, b);
+      }
+
+      function compareInstitutionProgram(a, b) {
+        const i = String(a.institution || "").localeCompare(String(b.institution || ""));
+        if (i !== 0) return i;
+        const p = String(a.program || "").localeCompare(String(b.program || ""));
+        if (p !== 0) return p;
+        return String(a.credential || "").localeCompare(String(b.credential || ""));
+      }
+
+      function compareNumbersNullable(a, b, ascending) {
+        const aNum = Number.isFinite(a);
+        const bNum = Number.isFinite(b);
+        if (aNum && bNum) return ascending ? a - b : b - a;
+        if (aNum) return -1;
+        if (bNum) return 1;
+        return 0;
       }
 
       function exportCsv() {
-        if (!state.result) return;
-        const rows = [state.result.headers || []].concat((state.result.results || {}).all || []);
+        if (!state.result || !state.resultModel) return;
+        const visible = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const rows = [state.resultModel.headers || []].concat(visible.map((r) => r.cells));
         const csv = rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
-        downloadBlob(csv, "text/csv;charset=utf-8", fileStamp("admissions_results", "csv"));
+        downloadBlob(csv, "text/csv;charset=utf-8", fileStamp(`admissions_${viewSlug(state.view)}`, "csv"));
       }
 
       function exportPdf() {
-        if (!state.result) return;
-        const headers = state.result.headers || [];
-        const rows = ((state.result.results || {})[state.view] || []).slice();
+        if (!state.result || !state.resultModel) return;
+        const headers = state.resultModel.headers || [];
+        const rows = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT).map(
+          (r) => r.cells
+        );
         const label = viewLabel(state.view);
         const generated = (state.result.generatedAt || "").replace("T", " ").replace("Z", " UTC");
         const html = `
@@ -659,12 +2073,12 @@
     <meta charset="utf-8" />
     <title>Admissions ${escapeHtml(label)}</title>
     <style>
-      body { font-family: "Source Sans 3", sans-serif; margin: 24px; color: #102421; }
-      h1 { margin: 0 0 4px; font-size: 20px; }
-      p { margin: 0 0 14px; color: #36544e; }
+      body { font-family: "Open Sans", sans-serif; margin: 24px; color: #505155; }
+      h1 { margin: 0 0 4px; font-family: "Rubik", sans-serif; font-size: 20px; color: #127956; }
+      p { margin: 0 0 14px; color: #1e634c; }
       table { width: 100%; border-collapse: collapse; font-size: 11px; }
-      th, td { border: 1px solid #d3e3dc; padding: 5px; text-align: left; vertical-align: top; }
-      th { background: #eef8f3; }
+      th, td { border: 1px solid #d6e5df; padding: 5px; text-align: left; vertical-align: top; }
+      th { background: #f1f7f4; color: #1e634c; }
       @media print { body { margin: 8mm; } }
     </style>
   </head>
@@ -691,6 +2105,261 @@
         setTimeout(() => {
           w.print();
         }, 250);
+      }
+
+      function buildResultModel(result) {
+        if (!result || typeof result !== "object") return null;
+        const headers = Array.isArray(result.headers) ? result.headers.map((x) => String(x || "")) : [];
+        const headerIndex = buildHeaderIndex(headers);
+        const results = result.results && typeof result.results === "object" ? result.results : {};
+        const rawDetailsByKey =
+          result.detailsByKey && typeof result.detailsByKey === "object" ? result.detailsByKey : {};
+
+        let allRowsRaw = Array.isArray(results.all) ? results.all : [];
+        if (!allRowsRaw.length) {
+          allRowsRaw = []
+            .concat(Array.isArray(results.eligible) ? results.eligible : [])
+            .concat(Array.isArray(results.ineligible) ? results.ineligible : [])
+            .concat(Array.isArray(results.uncheckable) ? results.uncheckable : []);
+        }
+
+        const providedViewKeys =
+          result.rowKeysByView && typeof result.rowKeysByView === "object" ? result.rowKeysByView : {};
+        const providedAllKeys = Array.isArray(providedViewKeys.all) ? providedViewKeys.all : [];
+        const usedKeys = {};
+        const rows = allRowsRaw.map((cells, i) => {
+          const rowCells = Array.isArray(cells) ? cells.slice() : [];
+          const providedKey = sanitizeProgramKey(providedAllKeys[i]);
+          const fallbackKey = makeProgramKey(rowCells, i);
+          const key = claimUniqueKey(providedKey || fallbackKey, usedKeys);
+          return buildResultRow({
+            key,
+            cells: rowCells,
+            headerIndex,
+          });
+        });
+
+        const rowsByKey = {};
+        rows.forEach((row) => {
+          rowsByKey[row.key] = row;
+        });
+
+        const detailsByKey = {};
+        Object.keys(rawDetailsByKey).forEach((k) => {
+          const key = sanitizeProgramKey(k);
+          if (!key || !rowsByKey[key]) return;
+          detailsByKey[key] = rawDetailsByKey[k];
+        });
+
+        const keysByView = {
+          all: rows.map((r) => r.key),
+          eligible: [],
+          ineligible: [],
+          uncheckable: [],
+        };
+
+        ["eligible", "ineligible", "uncheckable"].forEach((view) => {
+          const providedKeys = Array.isArray(providedViewKeys[view]) ? providedViewKeys[view] : [];
+          const validProvided = uniqueStrings(
+            providedKeys.map((k) => sanitizeProgramKey(k)).filter((k) => k && rowsByKey[k])
+          );
+          if (validProvided.length) {
+            keysByView[view] = validProvided;
+            return;
+          }
+
+          const viewRowsRaw = Array.isArray(results[view]) ? results[view] : [];
+          keysByView[view] = deriveViewKeysFromRows(rows, viewRowsRaw);
+        });
+
+        Object.keys(keysByView).forEach((view) => {
+          (keysByView[view] || []).forEach((key) => {
+            if (!rowsByKey[key]) return;
+            rowsByKey[key].viewFlags[view] = true;
+          });
+        });
+
+        return {
+          headers,
+          headerIndex,
+          rows,
+          rowsByKey,
+          keysByView,
+          detailsByKey,
+          meta: result.meta && typeof result.meta === "object" ? result.meta : {},
+        };
+      }
+
+      function buildResultRow(opts) {
+        const key = String((opts && opts.key) || "").trim();
+        const cells = (opts && opts.cells) || [];
+        const headerIndex = (opts && opts.headerIndex) || {};
+        const institution = String(getHeaderValue(cells, headerIndex, "Institution") || "").trim();
+        const program = String(getHeaderValue(cells, headerIndex, "Program") || "").trim();
+        const credential = String(getHeaderValue(cells, headerIndex, "Credential") || "").trim();
+        const minAvg = toFiniteNumber(getHeaderValue(cells, headerIndex, "Min Avg"));
+        const studentAvg = toFiniteNumber(getHeaderValue(cells, headerIndex, "Student Avg"));
+        const missing = String(getHeaderValue(cells, headerIndex, "Missing") || "").trim();
+        const notes = String(getHeaderValue(cells, headerIndex, "Notes") || "").trim();
+        const issueCount = countMissingIssues(missing);
+        const avgGap = parseAverageGap(missing, minAvg, studentAvg);
+        const electiveGap = parseMissingElectiveCount(missing);
+        return {
+          key,
+          cells: cells.slice(),
+          institution,
+          program,
+          credential,
+          minAvg,
+          studentAvg,
+          missing,
+          notes,
+          issueCount,
+          avgGap,
+          electiveGap,
+          searchText: `${institution} ${program} ${credential} ${missing} ${notes}`.toLowerCase(),
+          viewFlags: {},
+        };
+      }
+
+      function deriveViewKeysFromRows(allRows, viewRowsRaw) {
+        const queues = {};
+        (allRows || []).forEach((row) => {
+          const signature = rowSignature(row.cells);
+          if (!queues[signature]) queues[signature] = [];
+          queues[signature].push(row.key);
+        });
+
+        const out = [];
+        (viewRowsRaw || []).forEach((cells) => {
+          const signature = rowSignature(Array.isArray(cells) ? cells : []);
+          const queue = queues[signature];
+          if (!queue || !queue.length) return;
+          out.push(queue.shift());
+        });
+        return out;
+      }
+
+      function rowSignature(cells) {
+        return (cells || []).map((x) => String(x === null || x === undefined ? "" : x)).join("\u001f");
+      }
+
+      function buildHeaderIndex(headers) {
+        const idx = {};
+        (headers || []).forEach((h, i) => {
+          const key = String(h || "").trim().toLowerCase();
+          if (key && idx[key] === undefined) idx[key] = i;
+        });
+        return idx;
+      }
+
+      function getHeaderValue(cells, headerIndex, name) {
+        const key = String(name || "").trim().toLowerCase();
+        const idx = headerIndex[key];
+        if (idx === undefined) return "";
+        return cells[idx];
+      }
+
+      function toFiniteNumber(value) {
+        if (value === null || value === undefined) return NaN;
+        const num = Number(String(value).trim());
+        return Number.isFinite(num) ? num : NaN;
+      }
+
+      function countMissingIssues(missingText) {
+        const text = String(missingText || "").trim();
+        if (!text) return 0;
+        const parts = text.split("|").map((x) => x.trim()).filter(Boolean);
+        return parts.length || 1;
+      }
+
+      function parseAverageGap(missingText, minAvg, studentAvg) {
+        const text = String(missingText || "");
+        const match = text.match(/(\d+(?:\.\d+)?)\s*<\s*(\d+(?:\.\d+)?)/);
+        if (match) {
+          const left = Number(match[1]);
+          const right = Number(match[2]);
+          if (Number.isFinite(left) && Number.isFinite(right)) return Math.max(0, right - left);
+        }
+        if (Number.isFinite(minAvg) && Number.isFinite(studentAvg)) return Math.max(0, minAvg - studentAvg);
+        return 0;
+      }
+
+      function parseMissingElectiveCount(missingText) {
+        const text = String(missingText || "");
+        const match = text.match(/Need\s+(\d+)\s+more\s+elective/i);
+        if (!match) return 0;
+        const count = Number(match[1]);
+        return Number.isFinite(count) ? Math.max(0, count) : 0;
+      }
+
+      function makeProgramKey(cells, index) {
+        const inst = slugPart(cells[0]);
+        const program = slugPart(cells[1]);
+        const credential = slugPart(cells[2]);
+        const parts = [inst, program, credential].filter(Boolean);
+        const stem = parts.length ? parts.join("_") : `row_${index + 1}`;
+        const hash = simpleHash(rowSignature(Array.isArray(cells) ? cells : []));
+        return `${stem}_${hash.toString(36)}`;
+      }
+
+      function sanitizeProgramKey(key) {
+        const safe = String(key || "").trim().replace(/[^a-zA-Z0-9._-]/g, "_");
+        return safe || "";
+      }
+
+      function claimUniqueKey(baseKey, used) {
+        const base = sanitizeProgramKey(baseKey) || "row_key";
+        if (!used[base]) {
+          used[base] = 1;
+          return base;
+        }
+        const n = used[base] + 1;
+        used[base] = n;
+        return `${base}_${n}`;
+      }
+
+      function slugPart(value) {
+        return String(value || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 60);
+      }
+
+      function simpleHash(text) {
+        const input = String(text || "");
+        let hash = 2166136261;
+        for (let i = 0; i < input.length; i++) {
+          hash ^= input.charCodeAt(i);
+          hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+        }
+        return hash >>> 0;
+      }
+
+      function uniqueStrings(values) {
+        const seen = {};
+        const out = [];
+        (values || []).forEach((value) => {
+          const key = String(value || "");
+          if (!key || seen[key]) return;
+          seen[key] = true;
+          out.push(key);
+        });
+        return out;
+      }
+
+      function viewSlug(view) {
+        return String(view || "all")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "") || "all";
+      }
+
+      function isMockMode() {
+        const params = new URLSearchParams(window.location.search || "");
+        return params.get("mock") === "1";
       }
 
       function isAppsScriptContext() {
@@ -756,6 +2425,7 @@
         if (view === "eligible") return "Eligible";
         if (view === "ineligible") return "Missing";
         if (view === "uncheckable") return "Uncheckable";
+        if (view === "shortlist") return "Shortlist";
         return "All Programs";
       }
 
@@ -771,6 +2441,6 @@
       function escapeAttr(v) {
         return escapeHtml(v);
       }
-    </script>
+</script>
   </body>
 </html>

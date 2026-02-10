@@ -106,3 +106,49 @@ Keep entries short and append-only.
 - Reduced callable server surface by renaming non-web top-level functions in `apps_script/Code.gs` to underscore-suffixed private functions.
 - Updated sheet menu callbacks to call private function names (`runEligibility_`, `setupWorkbookForStaff_`, etc.).
 - Ran `tools/validate-webapp-surface.ps1` in strict mode: PASS.
+## 2026-02-10 (Personal Deploy Security + Local Tinkering Loop)
+- Updated `apps_script/appsscript.json`: `webapp.access` -> `ANYONE` (signed-in users) for personal deployment compatibility.
+- Hardened `apps_script/Code.gs` web auth path: `runWebEligibility` now requires validated Google ID token (`aud` allowlist, `iss`, `exp`, `email_verified`, hosted domain `eips.ca`), with script-property client ID config.
+- Added strict request key allowlists in `apps_script/Code.gs` (`auth`, `namedCourses`, `manualElectives`) and row key allowlists to block unexpected fields/PII payload shape.
+- Tightened course input sanitization in `apps_script/Code.gs` to accept only allowlisted course values for named/manual rows.
+- Updated `apps_script/WebApp.html` auth/bootstrap flow: sign-in required, token passed to backend calls, and `?mock=1` local preview mode with mock run results.
+- Added local preview command `tools/start-webapp-preview.ps1` and guide `docs/LOCAL_WEBAPP_DEV.md`.
+- Updated `docs/DECISIONS.md`, `docs/SPRINT_SLICE.md`, `docs/WEBAPP_QA_CHECKLIST.md`, `tools/validate-webapp-surface.ps1`, and `README.md` for the new deployment/auth model.
+- Ran `tools/validate-webapp-surface.ps1` after changes: PASS.
+
+## 2026-02-10 (Local Preview Stabilization + Session Resume)
+- Updated `tools/start-webapp-preview.ps1` to support `-Mode auto|node|powershell`, with automatic fallback to a built-in PowerShell static server when Node is unavailable.
+- Added clearer startup diagnostics in `tools/start-webapp-preview.ps1` for busy ports (includes process name/PID and suggests `-Port 5200`).
+- Updated `.vscode/tasks.json` with local preview tasks and safe quoting for workspace paths that contain spaces.
+- Updated `docs/LOCAL_WEBAPP_DEV.md` with no-Python local preview flow, mode selection, and port-conflict troubleshooting.
+- Verified local mock preview path serves correctly (`/WebApp.html?mock=1`) and diagnosed the startup failure as a port conflict on `5173`.
+- Current state: local preview is working; project is in web app end-to-end validation phase (`/dev` auth + backend calls + role/access checks).
+
+## 2026-02-10 (Web App Brand Alignment Pass)
+- Updated `apps_script/WebApp.html` visual theme to match Next Step site branding (Rubik/Open Sans typography and green/gold palette).
+- Embedded uploaded logo asset (`Materials/Logos - Next Step/Logos - Next Step/NXT_LogoPack/png/NXT_Logo_Tag_web.png`) directly in the web app header as an inline data URI for deploy-safe rendering.
+- Updated PDF export print style in `apps_script/WebApp.html` to use the same brand fonts/colors.
+- Ran `tools/validate-webapp-surface.ps1`: PASS.
+
+## 2026-02-10 (Web App UX Slice: Search/Filter/Sort + Shortlist)
+- Updated `apps_script/WebApp.html` Results toolbar with category tabs + `Shortlist`, global search, institution filter, credential filter, sort selector, and clear-filters action.
+- Added client-side result model normalization in `apps_script/WebApp.html` (stable per-row program keys, view membership mapping, and closest-to-eligible ranking signals) to keep filtering/sorting fast on large result sets.
+- Added pin/unpin controls per result row and a shortlist-only view in `apps_script/WebApp.html`.
+- Updated CSV/PDF export in `apps_script/WebApp.html` to export the current filtered/sorted active view (including shortlist view).
+- Ran `tools/validate-webapp-surface.ps1`: PASS.
+
+## 2026-02-10 (Web App UX Slice: Details Drawer + Compare Prep)
+- Extended `apps_script/Code.gs` web response contract in `runWebEligibility` to include `meta`, `rowKeysByView`, and `detailsByKey` while preserving existing `results` arrays.
+- Updated `apps_script/Code.gs` evaluation output to emit stable per-program keys and structured per-program detail payloads (requirements, average snapshot, electives, missing reasons, advisories).
+- Updated `apps_script/WebApp.html` Results UI with row actions (`Pin`, `Compare`, `View`), a compare-prep strip (up to 3 selections), and a structured details drawer for selected programs.
+- Wired `apps_script/WebApp.html` to consume backend `rowKeysByView`/`detailsByKey` when available, with fallback derivation for compatibility.
+- Ran `tools/validate-webapp-surface.ps1`: PASS.
+- Added true side-by-side compare rendering in `apps_script/WebApp.html` details drawer when 2-3 compare selections are present (field-by-field table across selected programs).
+- Kept single-program details mode as fallback in `apps_script/WebApp.html` when fewer than 2 programs are in compare prep.
+- Added compare-table styling in `apps_script/WebApp.html` for readable multi-program scan on desktop/mobile.
+- Ran `tools/validate-webapp-surface.ps1`: PASS.
+- Ran `tools/handoff.ps1` to refresh `docs/SESSION_HANDOFF.md` for new-agent continuation after context-window saturation.
+## 2026-02-10 (Manual Apps Script Bundle Export)
+- Added `tools/export-appsscript-bundles.ps1` to generate one-file paste bundles from `apps_script/*.gs` with profiles: `full`, `sheet-only`, `sync-only`, or `all`.
+- Added `docs/MANUAL_SCRIPT_EXPORT.md` with export commands and clipboard usage (`-CopyToClipboard`) for manual migrations.
+- Linked the manual export doc from `README.md`.

@@ -5,12 +5,14 @@ Run this before each production push affecting `apps_script/`.
 ## 1) Preflight
 - [ ] Run `.\tools\validate-webapp-surface.ps1`
 - [ ] Confirm `apps_script/appsscript.json` has:
-  - [ ] `webapp.access = DOMAIN`
+  - [ ] `webapp.access = ANYONE`
   - [ ] `timeZone = America/Edmonton`
 
 ## 2) Security
 - [ ] Domain user can load deployed web app.
-- [ ] Non-domain user is blocked (or cannot access due to deployment policy).
+- [ ] Non-domain user is blocked after sign-in validation.
+- [ ] Google sign-in requires configured client ID.
+- [ ] ID token validation enforces: aud/iss/exp/email_verified/hosted domain.
 - [ ] `getWebAppBootstrapData` enforces domain gate.
 - [ ] `runWebEligibility` enforces domain gate.
 - [ ] Rate limit triggers friendly message under rapid repeated runs.
