@@ -61,7 +61,7 @@ function boot() {
         bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
         seedRows();
-        const stamp = (state.boot.generatedAt || "").replace("T", " ").replace("Z", " UTC");
+        const stamp = formatUtcStamp(state.boot.generatedAt || "");
         ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
         ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
         setStatus("Ready.");
@@ -275,6 +275,7 @@ function boot() {
         ui.csvBtn.disabled = !state.result;
         ui.pdfBtn.disabled = !state.result;
         updateSummary((state.result && state.result.summary) || {});
+        updateHeaderStampFromResult();
         syncFilterButtons();
         renderResults();
         renderCompareStrip();
@@ -349,6 +350,9 @@ function boot() {
             datasetRows: 3,
             activeProgramsEvaluated: 3,
             rowKeyVersion: "v1",
+            datasetStamp: "v1_mock_20260210",
+            datasetStampVersion: "v1",
+            cacheHit: false,
           },
           summary: {
             totalPrograms: 3,
@@ -434,6 +438,33 @@ function boot() {
         ui.sumEligible.textContent = Number(summary.eligible || 0);
         ui.sumMissing.textContent = Number(summary.missing || 0);
         ui.sumUncheckable.textContent = Number(summary.uncheckable || 0);
+      }
+
+      function formatUtcStamp(value) {
+        const iso = String(value || "").trim();
+        return iso ? iso.replace("T", " ").replace("Z", " UTC") : "";
+      }
+
+      function getResultMeta() {
+        if (!(state.resultModel && state.resultModel.meta && typeof state.resultModel.meta === "object")) return {};
+        return state.resultModel.meta;
+      }
+
+      function getResultDatasetStamp() {
+        return String((getResultMeta().datasetStamp || "")).trim();
+      }
+
+      function updateHeaderStampFromResult() {
+        if (!state.result) return;
+        const meta = getResultMeta();
+        const generated = formatUtcStamp(state.result.generatedAt || meta.generatedAt || "");
+        const datasetStamp = getResultDatasetStamp();
+        const parts = [];
+        if (datasetStamp) parts.push(`Dataset: ${datasetStamp}`);
+        if (generated) parts.push(`Generated: ${generated}`);
+        if (meta.cacheHit === true) parts.push("Cache: hit");
+        if (meta.cacheHit === false) parts.push("Cache: miss");
+        ui.stamp.textContent = parts.length ? parts.join(" | ") : "Results loaded";
       }
 
       function onFilterClick(e) {
@@ -1210,8 +1241,17 @@ function boot() {
 
       function exportCsv() {
         if (!state.result || !state.resultModel) return;
+        const label = viewLabel(state.view);
+        const generated = formatUtcStamp(state.result.generatedAt || getResultMeta().generatedAt || "");
+        const datasetStamp = getResultDatasetStamp() || "n/a";
         const visible = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT);
-        const rows = [state.resultModel.headers || []].concat(visible.map((r) => r.cells));
+        const rows = [
+          ["Report View", label],
+          ["Generated At (UTC)", generated || "n/a"],
+          ["Dataset Stamp", datasetStamp],
+          [],
+          state.resultModel.headers || [],
+        ].concat(visible.map((r) => r.cells));
         const csv = rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
         downloadBlob(csv, "text/csv;charset=utf-8", fileStamp(`admissions_${viewSlug(state.view)}`, "csv"));
       }
@@ -1223,7 +1263,8 @@ function boot() {
           (r) => r.cells
         );
         const label = viewLabel(state.view);
-        const generated = (state.result.generatedAt || "").replace("T", " ").replace("Z", " UTC");
+        const generated = formatUtcStamp(state.result.generatedAt || getResultMeta().generatedAt || "");
+        const datasetStamp = getResultDatasetStamp() || "n/a";
         const html = `
 <!doctype html>
 <html>
@@ -1242,7 +1283,7 @@ function boot() {
   </head>
   <body>
     <h1>Next Step Admissions Checker</h1>
-    <p>${escapeHtml(label)} | ${escapeHtml(generated)}</p>
+    <p>${escapeHtml(label)} | Generated: ${escapeHtml(generated || "n/a")} | Dataset: ${escapeHtml(datasetStamp)}</p>
     <table>
       <thead><tr>${headers.map((h) => `<th>${escapeHtml(String(h))}</th>`).join("")}</tr></thead>
       <tbody>${rows
@@ -1251,18 +1292,44 @@ function boot() {
     </table>
   </body>
 </html>`;
-        const w = window.open("", "_blank");
-        if (!w) {
-          setStatus("Popup was blocked. Allow popups to export PDF.", true);
+        const frameId = "pdfExportFrame";
+        let frame = document.getElementById(frameId);
+        if (!frame) {
+          frame = document.createElement("iframe");
+          frame.id = frameId;
+          frame.style.position = "fixed";
+          frame.style.right = "0";
+          frame.style.bottom = "0";
+          frame.style.width = "0";
+          frame.style.height = "0";
+          frame.style.border = "0";
+          frame.setAttribute("aria-hidden", "true");
+          document.body.appendChild(frame);
+        }
+        frame.onload = () => {
+          setTimeout(() => {
+            try {
+              const win = frame.contentWindow;
+              if (!win) throw new Error("Print frame unavailable");
+              win.focus();
+              win.print();
+            } catch (err) {
+              setStatus("PDF export failed in this browser. Use CSV export instead.", true);
+            }
+          }, 160);
+        };
+        if ("srcdoc" in frame) {
+          frame.srcdoc = html;
           return;
         }
-        w.document.open();
-        w.document.write(html);
-        w.document.close();
-        w.focus();
-        setTimeout(() => {
-          w.print();
-        }, 250);
+        const doc = frame.contentWindow && frame.contentWindow.document;
+        if (!doc) {
+          setStatus("PDF export failed in this browser. Use CSV export instead.", true);
+          return;
+        }
+        doc.open();
+        doc.write(html);
+        doc.close();
       }
 
       function buildResultModel(result) {
