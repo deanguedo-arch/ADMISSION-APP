@@ -38,3 +38,14 @@ This file is the stable decision source for future sessions. Update it only when
   - Ship in small slices: security -> backend response -> UI -> export/performance/ops.
   - One slice per commit.
   - Run `tools/validate-webapp-surface.ps1` before web app pushes.
+
+## ADR-005: Apps Script Module Boundaries
+- Date: 2026-02-10
+- Status: Active
+- Decisions:
+  - Keep `apps_script/Code.gs` as the thin shell (entrypoints + constants + orchestration).
+  - Keep auth/input sanitation in `apps_script/WebAuth.gs`.
+  - Keep workbook/admin operations in `apps_script/WorkbookAdmin.gs`.
+  - Keep admissions domain logic in `apps_script/EligibilityEngine.gs`.
+  - Keep sync webhook logic isolated in `apps_script/SyncPrograms.gs`.
+  - Enforce structure drift checks with `tools/validate-apps-script-structure.ps1`.

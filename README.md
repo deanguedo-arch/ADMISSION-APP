@@ -11,6 +11,7 @@ If you are handing this to a coworker, start here:
 
 If you need one-file manual paste bundles for Apps Script, use:
 - `docs/MANUAL_SCRIPT_EXPORT.md`
+- `docs/APPS_SCRIPT_ARCHITECTURE.md`
 
 ## Recommended Architecture (what lives where)
 
@@ -24,7 +25,11 @@ If you need one-file manual paste bundles for Apps Script, use:
 Script: `tools/clean-master.ps1`
 
 ### 2) Eligibility engine (rules + matching)
-- Sheet-side engine (runs for staff): `apps_script/Code.gs`
+- Apps Script modules:
+  - App shell + constants: `apps_script/Code.gs`
+  - Web auth/input surface: `apps_script/WebAuth.gs`
+  - Workbook/admin operations: `apps_script/WorkbookAdmin.gs`
+  - Eligibility domain engine: `apps_script/EligibilityEngine.gs`
 - Logic is intentionally **separate** from scraping. You should be able to change the dataset without rewriting the checker.
 
 ### 3) Scrape / enrich / extract pipeline (Python later)
@@ -75,7 +80,9 @@ This writes: `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
      - Column D: elective course (dropdown after setup)
      - Column E: auto-filled group (or optional manual override: `A`, `B`, `C`, or `D`)
      - Column F: mark (number)
-4. Open Extensions -> Apps Script, paste `apps_script/Code.gs` into the editor, save.
+4. Open Extensions -> Apps Script and load code:
+   - One-file manual paste (recommended for quick migration): run `.\tools\export-appsscript-bundles.ps1 -Profile full -CopyToClipboard`, then paste into `Code.gs`.
+   - Full modular copy: add `apps_script/Code.gs`, `apps_script/WebAuth.gs`, `apps_script/WorkbookAdmin.gs`, `apps_script/EligibilityEngine.gs`, and `apps_script/WebApp.html`.
 5. Reload the sheet -> run **Admissions Checker -> One-Time Setup (Recommended)** once.
 6. Use **Admissions Checker -> Check Eligibility**.
 
@@ -94,12 +101,15 @@ The script writes:
 Output layout (left-to-right): Institution, Program, Credential, Min Avg, Student Avg, Avg Courses, Avg Used, Competitive Guidance, Missing, Notes.
 
 ### C) Use the web app (staff form + CSV/PDF export)
-The same Apps Script project now serves a web UI from `apps_script/WebApp.html`.
+The same Apps Script project serves a web UI from `apps_script/WebApp.html`.
 
-- Backend entrypoints are in `apps_script/Code.gs`:
+- Backend shell entrypoints are in `apps_script/Code.gs`:
   - `doGet()` for page load
   - `getWebAppBootstrapData(auth)` for auth/bootstrap/options
   - `runWebEligibility(payload)` for checks
+- Entrypoint dependencies:
+  - auth/request guards in `apps_script/WebAuth.gs`
+  - evaluation logic in `apps_script/EligibilityEngine.gs`
 - Uses the same eligibility engine as the sheet menu run.
 - Exports:
   - CSV (all rows)
@@ -155,6 +165,9 @@ Guardrails now included in local sync:
 - upload stops if validation fails
 - successful uploads refresh `out/last_good_programs.csv` as local rollback baseline
 - Apps Script sync now snapshots the current tab to `Programs_BACKUP` before overwrite
+
+Apps Script structure guardrail:
+- `tools/validate-apps-script-structure.ps1` checks module boundaries and expected shell/auth/admin function ownership.
 
 GitHub automation setup:
 - `docs/GITHUB_AUTOMATION.md`

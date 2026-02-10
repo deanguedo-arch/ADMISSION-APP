@@ -152,3 +152,17 @@ Keep entries short and append-only.
 - Added `tools/export-appsscript-bundles.ps1` to generate one-file paste bundles from `apps_script/*.gs` with profiles: `full`, `sheet-only`, `sync-only`, or `all`.
 - Added `docs/MANUAL_SCRIPT_EXPORT.md` with export commands and clipboard usage (`-CopyToClipboard`) for manual migrations.
 - Linked the manual export doc from `README.md`.
+
+## 2026-02-10 (Apps Script Modularization Seam 1)
+- Refactored `apps_script/Code.gs` into layered modules without changing callable contracts:
+  - `apps_script/Code.gs` (thin shell + constants + entrypoints)
+  - `apps_script/WebAuth.gs` (web auth + payload sanitation)
+  - `apps_script/WorkbookAdmin.gs` (setup/admin sheet operations)
+  - `apps_script/EligibilityEngine.gs` (domain evaluation logic + helpers)
+- Added structure guardrail script `tools/validate-apps-script-structure.ps1`.
+- Added architecture map `docs/APPS_SCRIPT_ARCHITECTURE.md`.
+- Updated references in `README.md`, `docs/PROJECT_CONTEXT.md`, `docs/DECISIONS.md`, and `docs/SPRINT_SLICE.md`.
+- Validation run results:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS
+  - `tools/export-appsscript-bundles.ps1 -Profile sheet-only`: generated successfully and excluded web-only functions.

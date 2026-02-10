@@ -29,7 +29,10 @@ Google Sheets + Apps Script, plus a staff-facing Apps Script web app.
 - Optional: `ElectiveRules` (manual rule-text overrides for elective caps/constraints not yet captured in dataset text)
 
 ### Apps Script
-- File: `apps_script/Code.gs`
+- Shell: `apps_script/Code.gs`
+- Web auth/input: `apps_script/WebAuth.gs`
+- Workbook/admin: `apps_script/WorkbookAdmin.gs`
+- Eligibility engine: `apps_script/EligibilityEngine.gs`
 - Menu: **Admissions Checker -> Check Eligibility**
 - Web app entrypoint: `doGet()` + `apps_script/WebApp.html`
 - Web app backend call: `runWebEligibility(payload)` (same eligibility engine as sheet menu)
@@ -100,3 +103,4 @@ For non-technical users, use:
 - Active build slice: `docs/SPRINT_SLICE.md`
 - Web app QA gate: `docs/WEBAPP_QA_CHECKLIST.md`
 - Guardrail script: `tools/validate-webapp-surface.ps1`
+- Structure guardrail: `tools/validate-apps-script-structure.ps1`

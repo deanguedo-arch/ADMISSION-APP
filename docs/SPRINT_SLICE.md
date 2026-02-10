@@ -3,7 +3,7 @@
 Use this file to keep each Codex session focused and low-pass.
 
 ## Current Objective (2026-02-10)
-Harden and ship a staff-ready web app MVP without changing admissions rule intent.
+Stabilize the staff-ready web app MVP and modularize Apps Script for low-risk maintenance.
 
 ## Slice Backlog
 - [x] Slice 1: Security lockdown (signed-in access, token/domain gate, rate limit, minimize callable functions)
@@ -11,6 +11,7 @@ Harden and ship a staff-ready web app MVP without changing admissions rule inten
 - [ ] Slice 3: Web UI MVP upgrades (paste parser, search/filter/sort, details drawer, star)
 - [ ] Slice 4: Export + performance + lightweight audit (iframe PDF, caching, audit sheet)
 - [ ] Slice 5: QA + release verification
+- [ ] Slice 6: Apps Script structural modularization + guardrails
 
 ## Working Rules
 - Keep changes surgical; no unrelated refactors.
