@@ -37,6 +37,7 @@ $expectedByFile = @{
     "autoFillManualElectiveGroupRow_",
     "runEligibility_",
     "doGet",
+    "includeHtml_",
     "getWebAppBootstrapData",
     "runWebEligibility",
     "getAdmissionsSpreadsheet_"
@@ -204,7 +205,9 @@ if (Test-Path -LiteralPath $webAppMainPath -PathType Leaf) {
   $webAppMain = Get-Content -LiteralPath $webAppMainPath -Raw
   $includeNames = @("WebAppStyles", "WebAppBody", "WebAppScriptState", "WebAppScriptFunctions", "WebAppScriptInit")
   foreach ($name in $includeNames) {
-    if ($webAppMain -notmatch [regex]::Escape("<!-- @include:$name -->")) {
+    $hasCommentInclude = $webAppMain -match [regex]::Escape("<!-- @include:$name -->")
+    $hasTemplateInclude = $webAppMain -match ("includeHtml_\(\s*['""]" + [regex]::Escape($name) + "['""]\s*\)")
+    if (-not ($hasCommentInclude -or $hasTemplateInclude)) {
       Add-Issue("WebApp.html missing include marker for $name")
     }
   }

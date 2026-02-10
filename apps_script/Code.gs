@@ -176,9 +176,16 @@ function runEligibility_() {
 }
 
 function doGet(e) {
-  return HtmlService.createHtmlOutput(renderWebAppHtml_())
+  return HtmlService.createTemplateFromFile("WebApp")
+    .evaluate()
     .setTitle("Next Step Admissions Checker")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function includeHtml_(name) {
+  const file = String(name || "").trim();
+  if (!file) throw new Error("Web app include name is empty.");
+  return HtmlService.createHtmlOutputFromFile(file).getContent();
 }
 
 function getWebAppBootstrapData(authPayload) {
