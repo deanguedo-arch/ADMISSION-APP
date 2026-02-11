@@ -262,3 +262,6 @@ Keep entries short and append-only.
 - Validation run results:
   - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
+## 2026-02-11 (Release Gate Checklist + Handoff)
+- Added `docs/RELEASE_QUESTIONS.md` as a go/no-go checklist for release readiness (auth/deployment/surface/data/quotas/rollback).
+- Next: run `tools/handoff.ps1` to refresh `docs/SESSION_HANDOFF.md` for a clean session boundary.
