@@ -255,3 +255,10 @@ Keep entries short and append-only.
 - Validation run results:
   - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
+## 2026-02-11 (Web App: Dropdown Option Canonical Dedupe)
+- Fixed duplicate dropdown labels caused by case variants (e.g., `ENGLISH 30-1` vs `English 30-1`).
+- Updated `listNamedCourseOptions_()` in `apps_script/WebAuth.gs` to dedupe by canonical course key and emit formatted labels.
+- Updated `listElectiveCourseOptions_()` in `apps_script/EligibilityElectives.gs` to canonicalize and dedupe before returning options.
+- Validation run results:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS

@@ -253,9 +253,20 @@ function sanitizeWebMessage_(msg) {
 function listNamedCourseOptions_() {
   const alias = courseAliases_();
   const fromAlias = Object.keys(alias).map((k) => String(alias[k] || "").trim());
-  return unique_(fromAlias.concat(listElectiveCourseOptions_()).filter(Boolean)).sort((a, b) =>
-    String(a).localeCompare(String(b))
-  );
+  const byKey = {};
+
+  fromAlias
+    .concat(listElectiveCourseOptions_())
+    .filter(Boolean)
+    .forEach((course) => {
+      const key = normalizeCourseKey_(course);
+      if (!key) return;
+      byKey[key] = formatCourseName_(key);
+    });
+
+  return Object.keys(byKey)
+    .map((key) => byKey[key])
+    .sort((a, b) => String(a).localeCompare(String(b)));
 }
 
 function sanitizeWebNamedCourses_(rows) {

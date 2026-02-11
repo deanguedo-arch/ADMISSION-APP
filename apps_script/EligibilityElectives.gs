@@ -36,10 +36,15 @@ function buildElectives_(rows, opts) {
 }
 
 function listElectiveCourseOptions_() {
-  const options = Object.keys(courseGroupMap_())
-    .map((k) => formatCourseName_(k))
-    .filter(Boolean);
-  return unique_(options).sort((a, b) => String(a).localeCompare(String(b)));
+  const byKey = {};
+  Object.keys(courseGroupMap_()).forEach((courseKey) => {
+    const key = normalizeCourseKey_(courseKey);
+    if (!key) return;
+    byKey[key] = formatCourseName_(key);
+  });
+  return Object.keys(byKey)
+    .map((key) => byKey[key])
+    .sort((a, b) => String(a).localeCompare(String(b)));
 }
 
 function buildAutoElectivesFromCourseMap_(courseMap) {
