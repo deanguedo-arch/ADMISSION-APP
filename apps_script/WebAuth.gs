@@ -64,15 +64,39 @@ function assertAllowedObjectKeys_(obj, allowedKeys, label) {
 
 function assertAuthorizedWebUser_(authPayload) {
   const auth = sanitizeWebAuthPayload_(authPayload);
+  const devOpenRaw = String(
+    PropertiesService.getScriptProperties().getProperty(WEBAPP_DEV_OPEN_ACCESS_PROPERTY) || ""
+  )
+    .trim()
+    .toLowerCase();
+  const devOpenAccess =
+    devOpenRaw === "1" || devOpenRaw === "true" || devOpenRaw === "yes" || devOpenRaw === "on";
   if (auth.idToken) {
-    return verifyGoogleIdToken_(auth.idToken);
+    try {
+      return verifyGoogleIdToken_(auth.idToken);
+    } catch (err) {
+      if (!devOpenAccess) throw err;
+      Logger.log(`Web auth token fallback (dev open access): ${String(err && err.message ? err.message : err)}`);
+    }
   }
   // Backward-compatible fallback for Workspace deployments that expose ActiveUser email.
-  return assertDomainUser_();
+  try {
+    return assertDomainUser_();
+  } catch (err) {
+    if (!devOpenAccess) throw err;
+    return { email: "", tempKey: "dev-open-access", key: "dev-open-access" };
+  }
 }
 
 function verifyGoogleIdToken_(idToken) {
   const token = String(idToken || "").trim();
+  const devOpenRaw = String(
+    PropertiesService.getScriptProperties().getProperty(WEBAPP_DEV_OPEN_ACCESS_PROPERTY) || ""
+  )
+    .trim()
+    .toLowerCase();
+  const devOpenAccess =
+    devOpenRaw === "1" || devOpenRaw === "true" || devOpenRaw === "yes" || devOpenRaw === "on";
   if (!token) {
     throw new Error("Sign in with your school account and try again.");
   }
@@ -115,14 +139,14 @@ function verifyGoogleIdToken_(idToken) {
   }
 
   const allowedClientIds = getWebAppAllowedGoogleClientIds_();
-  if (!allowedClientIds.length) {
+  if (!allowedClientIds.length && !devOpenAccess) {
     throw new Error(
       `Web app auth is not configured. Set Script Property ${WEBAPP_GOOGLE_CLIENT_ID_PROPERTY}.`
     );
   }
 
   const aud = String((tokenInfo && tokenInfo.aud) || "").trim();
-  if (allowedClientIds.indexOf(aud) < 0) {
+  if (!devOpenAccess && allowedClientIds.indexOf(aud) < 0) {
     throw new Error("This sign-in token is not from an approved client.");
   }
 
@@ -149,11 +173,13 @@ function verifyGoogleIdToken_(idToken) {
   if (!email || emailVerified !== "true") {
     throw new Error("Google account email is not verified.");
   }
-  if (!email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
-    throw new Error(`Access is restricted to ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} users.`);
-  }
-  if (hostedDomain !== WEBAPP_ALLOWED_DOMAIN) {
-    throw new Error(`Sign in with your ${WEBAPP_ALLOWED_DOMAIN} school account.`);
+  if (!devOpenAccess) {
+    if (!email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
+      throw new Error(`Access is restricted to ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} users.`);
+    }
+    if (hostedDomain !== WEBAPP_ALLOWED_DOMAIN) {
+      throw new Error(`Sign in with your ${WEBAPP_ALLOWED_DOMAIN} school account.`);
+    }
   }
 
   const ttl = Math.max(30, Math.min(WEBAPP_ID_TOKEN_CACHE_SECONDS, exp - nowSec));
@@ -162,6 +188,13 @@ function verifyGoogleIdToken_(idToken) {
 }
 
 function assertDomainUser_() {
+  const devOpenRaw = String(
+    PropertiesService.getScriptProperties().getProperty(WEBAPP_DEV_OPEN_ACCESS_PROPERTY) || ""
+  )
+    .trim()
+    .toLowerCase();
+  const devOpenAccess =
+    devOpenRaw === "1" || devOpenRaw === "true" || devOpenRaw === "yes" || devOpenRaw === "on";
   let email = "";
   try {
     email = String((Session.getActiveUser() && Session.getActiveUser().getEmail()) || "")
@@ -170,9 +203,10 @@ function assertDomainUser_() {
   } catch (err) {}
 
   if (!email) {
+    if (devOpenAccess) return { email: "", tempKey: "dev-open-access", key: "dev-open-access" };
     throw new Error("Sign in with your school account and retry.");
   }
-  if (!email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
+  if (!devOpenAccess && !email.endsWith(WEBAPP_ALLOWED_DOMAIN_SUFFIX)) {
     throw new Error(`Access is restricted to ${WEBAPP_ALLOWED_DOMAIN_SUFFIX} users.`);
   }
 

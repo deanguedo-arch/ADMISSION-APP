@@ -246,3 +246,12 @@ Keep entries short and append-only.
 - Validation run results:
   - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
+## 2026-02-11 (Web App: Temporary Dev Open-Access Toggle)
+- Added script property toggle `WEBAPP_DEV_OPEN_ACCESS` (false by default) to permit temporary non-domain test access during build/QA.
+- `apps_script/WebAuth.gs` now treats `WEBAPP_DEV_OPEN_ACCESS` values (`1/true/yes/on`) as permissive mode:
+  - bypasses strict `@eips.ca` domain gate for token/session auth,
+  - allows fallback dev identity when workspace session email is unavailable.
+- `apps_script/Code.gs` added the new property constant for auth module use.
+- Validation run results:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS
