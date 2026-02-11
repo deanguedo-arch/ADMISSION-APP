@@ -239,3 +239,10 @@ Keep entries short and append-only.
   - Deployed domain-account checks remain environment-dependent and require interactive `/exec` validation with valid `@eips.ca` sign-in.
 - Committed and pushed:
   - `91662f2 fix(webapp): finalize qa slice and release handoff`
+## 2026-02-11 (Web App: No-GIS Bootstrap/Run Fallback)
+- Updated `apps_script/Code.gs` `getWebAppBootstrapData` to attempt server-side auth (ID token if present, otherwise session/domain fallback) before requiring extra sign-in.
+- Updated `apps_script/WebAppScriptFunctions.html` to remove frontend hard dependency on `idToken` for running checks; access now depends on bootstrap auth state.
+- Removed GIS script include from `apps_script/WebApp.html` so the page no longer triggers Google Identity button flow by default.
+- Validation run results:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS

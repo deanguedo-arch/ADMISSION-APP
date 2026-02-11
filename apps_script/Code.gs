@@ -196,20 +196,22 @@ function includeHtml_(name) {
 function getWebAppBootstrapData(authPayload) {
   const clientConfig = getWebAppClientConfig_();
   const auth = sanitizeWebAuthPayload_(authPayload);
-
-  if (!auth.idToken) {
+  let identity = null;
+  try {
+    // Allow session/domain auth when GIS token is unavailable.
+    identity = assertAuthorizedWebUser_(auth);
+    assertWebRateLimit_(identity, "bootstrap");
+  } catch (err) {
     return {
       generatedAt: new Date().toISOString(),
       requiresAuth: true,
       auth: {
         googleClientId: clientConfig.googleClientId,
         allowedDomainSuffix: WEBAPP_ALLOWED_DOMAIN_SUFFIX,
+        message: sanitizeWebMessage_(err && err.message ? err.message : "Sign in with your school account and retry."),
       },
     };
   }
-
-  const identity = assertAuthorizedWebUser_(auth);
-  assertWebRateLimit_(identity, "bootstrap");
 
   return {
     generatedAt: new Date().toISOString(),

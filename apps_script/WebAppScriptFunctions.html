@@ -19,7 +19,7 @@ function boot() {
       }
 
       function loadPublicBootstrap() {
-        setStatus("Loading sign-in settings...");
+        setStatus("Checking access...");
         google.script.run
           .withSuccessHandler(handleBootstrapResponse)
           .withFailureHandler((err) => {
@@ -49,10 +49,11 @@ function boot() {
         const boot = data || {};
         if (boot.requiresAuth) {
           const auth = boot.auth || {};
-          ui.authLine.textContent = `Sign in with your ${auth.allowedDomainSuffix || "@eips.ca"} account.`;
-          initializeGoogleSignIn(auth.googleClientId || "");
+          const message = String(auth.message || "").trim();
+          ui.googleSignIn.innerHTML = "";
+          ui.authLine.textContent = message || `Sign in with your ${auth.allowedDomainSuffix || "@eips.ca"} account.`;
           ui.stamp.textContent = "Awaiting sign-in";
-          setStatus("Sign in to load course options.");
+          setStatus(message || "Sign in with your school account and reload the page.", true);
           return;
         }
 
@@ -228,8 +229,8 @@ function boot() {
           setStatus("Open this page using the deployed Apps Script web app URL to run checks.", true);
           return;
         }
-        if (!payload.auth.idToken) {
-          setStatus("Sign in with your school account first.", true);
+        if (!state.boot) {
+          setStatus("Access is not ready. Sign in with your school account and reload.", true);
           return;
         }
 
