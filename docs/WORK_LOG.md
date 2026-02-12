@@ -294,3 +294,6 @@ Keep entries short and append-only.
 - Added CI auto-refresh workflow: `.github/workflows/update-normal-use-playbook.yml` to regenerate and commit playbook updates on relevant main-branch changes.
 ## 2026-02-12 (Playbook Linking)
 - Added `docs/NORMAL_USE_PLAYBOOK.md` as a first-class operator SOP reference in `docs/PROJECT_CONTEXT.md` under Engineering controls.
+## 2026-02-12 (CI Sync CMD Parse Hotfix)
+- Fixed `scripts/SYNC_ALL.cmd` CMD parse failure in GitHub Actions (`. was unexpected at this time.`) by removing parenthesized secret names from an `echo` line inside an `if (...)` block.
+- Verified locally: `scripts/SYNC_ALL.cmd` completes successfully and exits 0.

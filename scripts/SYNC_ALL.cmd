@@ -11,7 +11,7 @@ echo === SYNC (publish to Google Sheets) ===
 if not exist ".\config\sheets_sync.json" (
   echo ERROR: Missing config\sheets_sync.json.
   echo - Copy config\sheets_sync.json.example to config\sheets_sync.json and fill values,
-  echo   or in GitHub Actions write it from secrets (SHEETS_WEBHOOK_URL / SHEETS_SYNC_TOKEN).
+  echo   or in GitHub Actions write it from secrets SHEETS_WEBHOOK_URL and SHEETS_SYNC_TOKEN.
   exit /b 1
 )
 
