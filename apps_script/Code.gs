@@ -81,6 +81,7 @@ const WEBAPP_DATASET_STAMP_VERSION = "v1";
 const WEBAPP_AUDIT_SHEET_NAME = "WebAudit";
 const WEBAPP_AUDIT_MAX_DATA_ROWS = 2000;
 const LAST_PROGRAMS_SYNC_UTC_PROPERTY = "LAST_PROGRAMS_SYNC_UTC";
+const LAST_PROGRAMS_SYNC_LOCAL_PROPERTY = "LAST_PROGRAMS_SYNC_LOCAL";
 const RESULTS_HEADER_ROW = [
   "Institution",
   "Program",
@@ -248,6 +249,9 @@ function getWebAppBootstrapData(authPayload) {
       lastProgramsSyncUtc: String(
         PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
       ).trim(),
+      lastProgramsSyncLocal: String(
+        PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_LOCAL_PROPERTY) || ""
+      ).trim(),
     },
     namedCourseOptions: listNamedCourseOptions_(),
     electiveCourseOptions: listElectiveCourseOptions_(),
@@ -398,11 +402,14 @@ function runWebEligibility(payload) {
               rowKeyVersion: String(cachedMeta.rowKeyVersion || "v1"),
               datasetStamp,
               datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
-              cacheHit: true,
-              lastProgramsSyncUtc: String(
-                PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
-              ).trim(),
-            }),
+               cacheHit: true,
+               lastProgramsSyncUtc: String(
+                 PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+               ).trim(),
+               lastProgramsSyncLocal: String(
+                 PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_LOCAL_PROPERTY) || ""
+               ).trim(),
+             }),
             summary: Object.assign({}, cached.summary || {}),
             rowKeysByView: {
             all: Array.isArray(cachedRowKeys.all) ? cachedRowKeys.all.slice() : [],
@@ -452,11 +459,14 @@ function runWebEligibility(payload) {
       rowKeyVersion: "v1",
       datasetStamp,
       datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
-      cacheHit: false,
-      lastProgramsSyncUtc: String(
-        PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
-      ).trim(),
-    },
+       cacheHit: false,
+       lastProgramsSyncUtc: String(
+         PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+       ).trim(),
+       lastProgramsSyncLocal: String(
+         PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_LOCAL_PROPERTY) || ""
+       ).trim(),
+     },
     summary: {
       totalPrograms: Math.max(0, evaluation.finalOut.length - 1),
       eligible: Math.max(0, evaluation.eligibleRows.length - 1),

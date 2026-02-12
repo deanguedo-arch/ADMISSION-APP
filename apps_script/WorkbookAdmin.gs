@@ -264,11 +264,16 @@ function adminSyncProgramsFromGitHub_() {
   programsSheet.getRange(1, 1, values.length, values[0].length).setValues(values);
   programsSheet.setFrozenRows(1);
 
+  const scriptTz = Session.getScriptTimeZone() || "America/Edmonton";
   const stampUtc = Utilities.formatDate(new Date(), "Etc/UTC", "yyyy-MM-dd HH:mm:ss'Z'");
+  const stampLocal = Utilities.formatDate(new Date(), scriptTz, "yyyy-MM-dd HH:mm:ss z");
   props.setProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY, stampUtc);
+  props.setProperty(LAST_PROGRAMS_SYNC_LOCAL_PROPERTY, stampLocal);
 
   writeSettingsStamp_(ss, {
     lastProgramsSyncUtc: stampUtc,
+    lastProgramsSyncLocal: stampLocal,
+    scriptTimeZone: scriptTz,
     programsRows: Math.max(0, values.length - 1),
     datasetRawUrl: rawUrl,
   });
@@ -452,6 +457,8 @@ function writeSettingsStamp_(ss, info) {
   const rows = [];
   if (info && typeof info === "object") {
     if (info.lastProgramsSyncUtc) rows.push(["LAST_PROGRAMS_SYNC_UTC", String(info.lastProgramsSyncUtc)]);
+    if (info.lastProgramsSyncLocal) rows.push(["LAST_PROGRAMS_SYNC_LOCAL", String(info.lastProgramsSyncLocal)]);
+    if (info.scriptTimeZone) rows.push(["SCRIPT_TIME_ZONE", String(info.scriptTimeZone)]);
     if (isFinite(toNumber_(info.programsRows))) {
       rows.push(["PROGRAMS_ROW_COUNT", String(Math.round(toNumber_(info.programsRows)))]);
     }

@@ -301,3 +301,12 @@ Keep entries short and append-only.
 - Updated `tools/refresh-all.ps1` Step 5 to gracefully skip Avg_Total apply when `-SkipScrape` is set and `extract\\avg_total_candidates.csv` is not present on a clean runner.
 - Behavior retained: still fails if candidates are missing during normal (non-skip) scrape runs.
 - Local validation passed for both artifact-present and artifact-missing paths.
+## 2026-02-12 (Local Time Sync Stamp)
+- Added local sync stamp support alongside UTC:
+  - New Script Property field usage: `LAST_PROGRAMS_SYNC_LOCAL`
+  - `adminSyncProgramsFromGitHub_` now writes both UTC and script-timezone-local stamps.
+  - Settings stamp now includes `LAST_PROGRAMS_SYNC_LOCAL` and `SCRIPT_TIME_ZONE`.
+- Web app header stamp now shows both `Synced (local)` and `Synced (UTC)` when available.
+- Validation run results:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS
