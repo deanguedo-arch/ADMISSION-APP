@@ -288,3 +288,9 @@ Keep entries short and append-only.
 - Tweaked `.github/workflows/refresh_and_sync.yml` to accept `workflow_dispatch` inputs (`limit`, `institutions`, `skip_scrape`) and ensured `scripts/RUN_ALL.cmd` forwards args to refresh only (sync step stays clean).
 - Local smoke: `scripts/REFRESH_ALL.cmd -Limit 1 -SkipScrape -SkipFixtures -SkipAvgApply -SkipElectivePrefill` completed successfully (repo-relative wrapper path validated); canonical dataset regenerated (`data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`).
 - Full wrapper smoke: `scripts/REFRESH_ALL.cmd -Limit 50 -SkipSync` succeeded (fixtures + scrape/enrichment + Avg_Total apply + ElectiveRules prefill). Added robustness in `scripts/REFRESH_ALL.cmd` to avoid duplicate `-SkipSync` arg binding.
+## 2026-02-12 (Normal Use Playbook Automation)
+- Added auto-generated operator guide: `docs/NORMAL_USE_PLAYBOOK.md` for post-setup daily workflow.
+- Added generator script: `tools/generate-normal-use-playbook.ps1` (derives current workflow names/triggers and operational steps from repo state).
+- Added CI auto-refresh workflow: `.github/workflows/update-normal-use-playbook.yml` to regenerate and commit playbook updates on relevant main-branch changes.
+## 2026-02-12 (Playbook Linking)
+- Added `docs/NORMAL_USE_PLAYBOOK.md` as a first-class operator SOP reference in `docs/PROJECT_CONTEXT.md` under Engineering controls.

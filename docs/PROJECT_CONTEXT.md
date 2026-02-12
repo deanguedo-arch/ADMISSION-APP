@@ -106,6 +106,7 @@ For non-technical users, use:
 ## Engineering controls
 - Stable decisions: `docs/DECISIONS.md`
 - Active build slice: `docs/SPRINT_SLICE.md`
+- Normal operator SOP: `docs/NORMAL_USE_PLAYBOOK.md`
 - Web app QA gate: `docs/WEBAPP_QA_CHECKLIST.md`
 - Guardrail script: `tools/validate-webapp-surface.ps1`
 - Structure guardrail: `tools/validate-apps-script-structure.ps1`
