@@ -313,3 +313,10 @@ Keep entries short and append-only.
 ## 2026-02-12 (Git Sync Helper)
 - Added `tools/sync-main.ps1` to automate: stash (if dirty) -> fetch/pull --rebase -> push -> restore stash.
 - Intended to reduce repeated `main -> main (fetch first)` push failures during bot/CI auto-commit activity.
+## 2026-02-12 (Session Wrap - CI + Apps Script Automation Stabilized)
+- Stabilized GitHub Actions refresh flow by fixing CMD parse error in `scripts/SYNC_ALL.cmd` and SkipScrape Avg_Total artifact handling in `tools/refresh-all.ps1`.
+- Added auto-maintained operator SOP (`docs/NORMAL_USE_PLAYBOOK.md`) with generator (`tools/generate-normal-use-playbook.ps1`) and CI auto-refresh workflow (`.github/workflows/update-normal-use-playbook.yml`).
+- Added one-command git sync helper (`tools/sync-main.ps1`) to handle stash + pull --rebase + push + restore for frequent bot commits on `main`.
+- Added local+UTC sync stamping in Apps Script (`LAST_PROGRAMS_SYNC_LOCAL` + `LAST_PROGRAMS_SYNC_UTC`) and updated web header display.
+- Guardrails passing (`tools/validate-webapp-surface.ps1`, `tools/validate-apps-script-structure.ps1`).
+- Next chat can operate from `docs/SESSION_HANDOFF.md`.

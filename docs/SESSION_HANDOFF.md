@@ -1,4 +1,4 @@
-﻿# Session Handoff (2026-02-12 08:49)
+﻿# Session Handoff (2026-02-12 13:59)
 
 ## Read these first
 - `docs/PROJECT_CONTEXT.md`
@@ -19,34 +19,34 @@
 
 ## Recent work log (tail)
 
-- Updated `apps_script/WebAppScriptFunctions.html` to remove frontend hard dependency on `idToken` for running checks; access now depends on bootstrap auth state.
-- Removed GIS script include from `apps_script/WebApp.html` so the page no longer triggers Google Identity button flow by default.
+- Added generator script: `tools/generate-normal-use-playbook.ps1` (derives current workflow names/triggers and operational steps from repo state).
+- Added CI auto-refresh workflow: `.github/workflows/update-normal-use-playbook.yml` to regenerate and commit playbook updates on relevant main-branch changes.
+## 2026-02-12 (Playbook Linking)
+- Added `docs/NORMAL_USE_PLAYBOOK.md` as a first-class operator SOP reference in `docs/PROJECT_CONTEXT.md` under Engineering controls.
+## 2026-02-12 (CI Sync CMD Parse Hotfix)
+- Fixed `scripts/SYNC_ALL.cmd` CMD parse failure in GitHub Actions (`. was unexpected at this time.`) by removing parenthesized secret names from an `echo` line inside an `if (...)` block.
+- Verified locally: `scripts/SYNC_ALL.cmd` completes successfully and exits 0.
+## 2026-02-12 (CI SkipScrape Avg_Total Hotfix)
+- Updated `tools/refresh-all.ps1` Step 5 to gracefully skip Avg_Total apply when `-SkipScrape` is set and `extract\\avg_total_candidates.csv` is not present on a clean runner.
+- Behavior retained: still fails if candidates are missing during normal (non-skip) scrape runs.
+- Local validation passed for both artifact-present and artifact-missing paths.
+## 2026-02-12 (Local Time Sync Stamp)
+- Added local sync stamp support alongside UTC:
+  - New Script Property field usage: `LAST_PROGRAMS_SYNC_LOCAL`
+  - `adminSyncProgramsFromGitHub_` now writes both UTC and script-timezone-local stamps.
+  - Settings stamp now includes `LAST_PROGRAMS_SYNC_LOCAL` and `SCRIPT_TIME_ZONE`.
+- Web app header stamp now shows both `Synced (local)` and `Synced (UTC)` when available.
 - Validation run results:
   - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
-## 2026-02-11 (Web App: Temporary Dev Open-Access Toggle)
-- Added script property toggle `WEBAPP_DEV_OPEN_ACCESS` (false by default) to permit temporary non-domain test access during build/QA.
-- `apps_script/WebAuth.gs` now treats `WEBAPP_DEV_OPEN_ACCESS` values (`1/true/yes/on`) as permissive mode:
-  - bypasses strict `@eips.ca` domain gate for token/session auth,
-  - allows fallback dev identity when workspace session email is unavailable.
-- `apps_script/Code.gs` added the new property constant for auth module use.
-- Validation run results:
-  - `tools/validate-webapp-surface.ps1`: PASS
-  - `tools/validate-apps-script-structure.ps1`: PASS
-## 2026-02-11 (Web App: Dropdown Option Canonical Dedupe)
-- Fixed duplicate dropdown labels caused by case variants (e.g., `ENGLISH 30-1` vs `English 30-1`).
-- Updated `listNamedCourseOptions_()` in `apps_script/WebAuth.gs` to dedupe by canonical course key and emit formatted labels.
-- Updated `listElectiveCourseOptions_()` in `apps_script/EligibilityElectives.gs` to canonicalize and dedupe before returning options.
-- Validation run results:
-  - `tools/validate-webapp-surface.ps1`: PASS
-  - `tools/validate-apps-script-structure.ps1`: PASS
-## 2026-02-11 (Release Gate Checklist + Handoff)
-- Added `docs/RELEASE_QUESTIONS.md` as a go/no-go checklist for release readiness (auth/deployment/surface/data/quotas/rollback).
-- Next: run `tools/handoff.ps1` to refresh `docs/SESSION_HANDOFF.md` for a clean session boundary.
-## 2026-02-11 (Session Wrap)
-- Tagged prerelease checkpoint: `v1.0.0-pre1` (commit `37f97fd`).
-- Added release go/no-go checklist: `docs/RELEASE_QUESTIONS.md`.
-- Confirmed dropdown duplicate fix is live (canonical-key dedupe for course options).
-- Discussed next automation seams: Actions-driven refresh/sync, optional Apps Script pull-from-GitHub publish, CourseCatalog validations, and clasp-based Apps Script sync.
-- Refreshed session handoff with latest state.
+## 2026-02-12 (Git Sync Helper)
+- Added `tools/sync-main.ps1` to automate: stash (if dirty) -> fetch/pull --rebase -> push -> restore stash.
+- Intended to reduce repeated `main -> main (fetch first)` push failures during bot/CI auto-commit activity.
+## 2026-02-12 (Session Wrap - CI + Apps Script Automation Stabilized)
+- Stabilized GitHub Actions refresh flow by fixing CMD parse error in `scripts/SYNC_ALL.cmd` and SkipScrape Avg_Total artifact handling in `tools/refresh-all.ps1`.
+- Added auto-maintained operator SOP (`docs/NORMAL_USE_PLAYBOOK.md`) with generator (`tools/generate-normal-use-playbook.ps1`) and CI auto-refresh workflow (`.github/workflows/update-normal-use-playbook.yml`).
+- Added one-command git sync helper (`tools/sync-main.ps1`) to handle stash + pull --rebase + push + restore for frequent bot commits on `main`.
+- Added local+UTC sync stamping in Apps Script (`LAST_PROGRAMS_SYNC_LOCAL` + `LAST_PROGRAMS_SYNC_UTC`) and updated web header display.
+- Guardrails passing (`tools/validate-webapp-surface.ps1`, `tools/validate-apps-script-structure.ps1`).
+- Next chat can operate from `docs/SESSION_HANDOFF.md`.
 
