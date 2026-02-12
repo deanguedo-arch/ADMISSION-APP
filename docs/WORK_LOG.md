@@ -297,3 +297,7 @@ Keep entries short and append-only.
 ## 2026-02-12 (CI Sync CMD Parse Hotfix)
 - Fixed `scripts/SYNC_ALL.cmd` CMD parse failure in GitHub Actions (`. was unexpected at this time.`) by removing parenthesized secret names from an `echo` line inside an `if (...)` block.
 - Verified locally: `scripts/SYNC_ALL.cmd` completes successfully and exits 0.
+## 2026-02-12 (CI SkipScrape Avg_Total Hotfix)
+- Updated `tools/refresh-all.ps1` Step 5 to gracefully skip Avg_Total apply when `-SkipScrape` is set and `extract\\avg_total_candidates.csv` is not present on a clean runner.
+- Behavior retained: still fails if candidates are missing during normal (non-skip) scrape runs.
+- Local validation passed for both artifact-present and artifact-missing paths.

@@ -83,10 +83,12 @@ if (-not $SkipAvgApply) {
   Write-Host ""
   Write-Host "Step 5/8: Apply Avg_Total candidates into canonical CSV"
   if (-not (Test-Path $candidatesPath)) {
-    throw "Avg_Total candidates file not found: $candidatesPath"
-  }
-
-  if ($DryRun) {
+    if ($SkipScrape) {
+      Write-Host "Avg_Total candidates file not found after -SkipScrape; skipping Avg_Total apply."
+    } else {
+      throw "Avg_Total candidates file not found: $candidatesPath"
+    }
+  } elseif ($DryRun) {
     & .\\tools\\apply-avg-total-candidates.ps1 -CandidatesPath $candidatesPath -DryRun | Out-Host
   } else {
     & .\\tools\\apply-avg-total-candidates.ps1 -CandidatesPath $candidatesPath | Out-Host
