@@ -310,3 +310,6 @@ Keep entries short and append-only.
 - Validation run results:
   - `tools/validate-webapp-surface.ps1`: PASS
   - `tools/validate-apps-script-structure.ps1`: PASS
+## 2026-02-12 (Git Sync Helper)
+- Added `tools/sync-main.ps1` to automate: stash (if dirty) -> fetch/pull --rebase -> push -> restore stash.
+- Intended to reduce repeated `main -> main (fetch first)` push failures during bot/CI auto-commit activity.
