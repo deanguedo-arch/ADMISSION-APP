@@ -1,4 +1,4 @@
-﻿# Normal Use Playbook (Operator SOP)
+# Normal Use Playbook (Operator SOP)
 
 This document is the day-to-day workflow after one-time setup is complete.
 
