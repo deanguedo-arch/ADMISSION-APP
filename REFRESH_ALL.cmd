@@ -1,5 +1,5 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-powershell -ExecutionPolicy Bypass -File ".\tools\refresh-all.ps1" %*
-pause
+call ".\scripts\REFRESH_ALL.cmd" %*
+exit /b %errorlevel%

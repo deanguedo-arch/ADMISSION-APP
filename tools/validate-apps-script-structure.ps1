@@ -76,7 +76,16 @@ $expectedByFile = @{
     "adminShowAllTabs_",
     "setupStudentElectiveInputs_",
     "setupElectiveRulesTemplate_",
-    "notifyStudentSetupComplete_"
+    "notifyStudentSetupComplete_",
+    "adminSyncProgramsFromGitHub_",
+    "adminInstallNightlyProgramsSync_",
+    "adminRemoveNightlyProgramsSync_",
+    "removeTriggersByHandler_",
+    "adminRebuildCourseCatalog_",
+    "markValidationForCell_",
+    "normalizeCsvGrid_",
+    "backupSheetSnapshot_",
+    "writeSettingsStamp_"
   )
   "EligibilityEngine.gs" = @(
     "evaluateProgramsForStudent_",

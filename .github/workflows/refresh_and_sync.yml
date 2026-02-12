@@ -1,0 +1,128 @@
+name: Refresh + Sync (Commit Outputs)
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Pipeline limit (0 = all). Start small to smoke-test."
+        required: false
+        default: "0"
+      institutions:
+        description: "Optional CSV of institutions (e.g., NAIT,NorQuest,MacEwan). Blank = all."
+        required: false
+        default: ""
+      skip_scrape:
+        description: "Skip scraping/enrichment (faster; uses existing artifacts where possible)."
+        type: boolean
+        required: false
+        default: false
+  # Optional schedule (disabled by default to avoid unexpected quota/scrape load).
+  # schedule:
+  #   - cron: "0 13 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-and-sync
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Write Sheets sync config (from secrets)
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace("${{ secrets.SHEETS_WEBHOOK_URL }}")) {
+            throw "Missing secret: SHEETS_WEBHOOK_URL"
+          }
+          if ([string]::IsNullOrWhiteSpace("${{ secrets.SHEETS_SYNC_TOKEN }}")) {
+            throw "Missing secret: SHEETS_SYNC_TOKEN"
+          }
+
+          $cfg = @{
+            webhook_url = "${{ secrets.SHEETS_WEBHOOK_URL }}"
+            sync_token = "${{ secrets.SHEETS_SYNC_TOKEN }}"
+            sheet_name = "Programs"
+          } | ConvertTo-Json -Depth 10
+
+          New-Item -ItemType Directory -Force -Path ".\\config" | Out-Null
+          $cfg | Out-File -FilePath ".\\config\\sheets_sync.json" -Encoding utf8
+
+      - name: Run refresh + sync
+        shell: pwsh
+        run: |
+          $limit = "${{ inputs.limit }}"
+          if ([string]::IsNullOrWhiteSpace($limit)) { $limit = "0" }
+
+          $args = @("-Limit", $limit)
+          if ("${{ inputs.skip_scrape }}" -eq "true") {
+            $args += "-SkipScrape"
+          }
+
+          $instCsv = "${{ inputs.institutions }}"
+          if (-not [string]::IsNullOrWhiteSpace($instCsv)) {
+            $instCsv.Split(",") | ForEach-Object {
+              $name = [string]$_
+              if (-not [string]::IsNullOrWhiteSpace($name)) {
+                $args += @("-Institution", $name.Trim())
+              }
+            }
+          }
+
+          Write-Host "RUN_ALL args (refresh only): $($args -join ' ')"
+          & cmd /c scripts\\RUN_ALL.cmd @args
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Smoke check canonical CSV exists and is non-trivial
+        shell: pwsh
+        run: |
+          $canonical = "data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv"
+          $fallback = "data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new"
+          $path = $null
+
+          if ((Test-Path $canonical) -and (Test-Path $fallback)) {
+            $a = Get-Item $canonical
+            $b = Get-Item $fallback
+            $path = if ($b.LastWriteTimeUtc -gt $a.LastWriteTimeUtc) { $fallback } else { $canonical }
+          } elseif (Test-Path $canonical) {
+            $path = $canonical
+          } elseif (Test-Path $fallback) {
+            $path = $fallback
+          } else {
+            throw "No canonical CSV found at $canonical or $fallback."
+          }
+
+          $lineCount = (Get-Content -LiteralPath $path | Measure-Object -Line).Lines
+          if (-not $lineCount -or $lineCount -lt 201) {
+            throw "Canonical CSV too small ($lineCount lines): $path"
+          }
+
+          Write-Host "Canonical OK: $path ($lineCount lines)"
+
+      - name: Commit and push changes (if any)
+        shell: pwsh
+        run: |
+          $diff = git status --porcelain=v1
+          if (-not $diff) {
+            Write-Host "No changes to commit."
+            exit 0
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "chore: refresh dataset + sync artifacts (CI)"
+          git push

@@ -1,2 +1,4 @@
 @echo off
-powershell -ExecutionPolicy Bypass -File ".\tools\sync-all-to-sheets.ps1" %*
+cd /d "%~dp0"
+call ".\scripts\SYNC_ALL.cmd" %*
+exit /b %errorlevel%
