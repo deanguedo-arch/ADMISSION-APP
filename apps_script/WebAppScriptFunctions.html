@@ -459,9 +459,11 @@ function boot() {
         if (!state.result) return;
         const meta = getResultMeta();
         const generated = formatUtcStamp(state.result.generatedAt || meta.generatedAt || "");
+        const synced = formatUtcStamp(meta.lastProgramsSyncUtc || "");
         const datasetStamp = getResultDatasetStamp();
         const parts = [];
         if (datasetStamp) parts.push(`Dataset: ${datasetStamp}`);
+        if (synced) parts.push(`Synced: ${synced}`);
         if (generated) parts.push(`Generated: ${generated}`);
         if (meta.cacheHit === true) parts.push("Cache: hit");
         if (meta.cacheHit === false) parts.push("Cache: miss");

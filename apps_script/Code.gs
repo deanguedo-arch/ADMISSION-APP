@@ -26,6 +26,15 @@ function onOpen() {
       .addItem("Setup Student Elective Dropdowns", "setupStudentElectiveInputs_")
       .addItem("Setup ElectiveRules Template", "setupElectiveRulesTemplate_")
       .addSeparator()
+      .addSubMenu(
+        SpreadsheetApp.getUi()
+          .createMenu("Admissions Admin")
+          .addItem("Sync Programs from GitHub", "adminSyncProgramsFromGitHub_")
+          .addItem("Install Nightly Programs Sync", "adminInstallNightlyProgramsSync_")
+          .addItem("Remove Nightly Programs Sync", "adminRemoveNightlyProgramsSync_")
+          .addSeparator()
+          .addItem("Rebuild CourseCatalog + Validations", "adminRebuildCourseCatalog_")
+      )
       .addItem("Admin: Apply Staff Lockdown", "applyStaffLockdown_")
       .addItem("Admin: Show All Tabs", "adminShowAllTabs_")
       .addToUi();
@@ -59,6 +68,7 @@ const WEBAPP_RESULT_CACHE_MAX_CHARS = 95000;
 const WEBAPP_DATASET_STAMP_VERSION = "v1";
 const WEBAPP_AUDIT_SHEET_NAME = "WebAudit";
 const WEBAPP_AUDIT_MAX_DATA_ROWS = 2000;
+const LAST_PROGRAMS_SYNC_UTC_PROPERTY = "LAST_PROGRAMS_SYNC_UTC";
 const RESULTS_HEADER_ROW = [
   "Institution",
   "Program",
@@ -222,6 +232,11 @@ function getWebAppBootstrapData(authPayload) {
       googleClientId: clientConfig.googleClientId,
       allowedDomainSuffix: WEBAPP_ALLOWED_DOMAIN_SUFFIX,
     },
+    dataset: {
+      lastProgramsSyncUtc: String(
+        PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+      ).trim(),
+    },
     namedCourseOptions: listNamedCourseOptions_(),
     electiveCourseOptions: listElectiveCourseOptions_(),
     manualElectiveSlots: MANUAL_ELECTIVE_SLOTS,
@@ -362,19 +377,22 @@ function runWebEligibility(payload) {
       if (cached && typeof cached === "object") {
         const cachedMeta = cached.meta && typeof cached.meta === "object" ? cached.meta : {};
         const cachedRowKeys = cached.rowKeysByView && typeof cached.rowKeysByView === "object" ? cached.rowKeysByView : {};
-        const responseFromCache = {
-          generatedAt: String(cached.generatedAt || new Date().toISOString()),
-          headers: Array.isArray(cached.headers) ? cached.headers.slice() : RESULTS_HEADER_ROW.slice(),
-          meta: Object.assign({}, cachedMeta, {
-            datasetRows: Math.max(0, programsRange.length - 1),
-            activeProgramsEvaluated: Math.max(0, ((cachedRowKeys.all && cachedRowKeys.all.length) || 0)),
-            rowKeyVersion: String(cachedMeta.rowKeyVersion || "v1"),
-            datasetStamp,
-            datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
-            cacheHit: true,
-          }),
-          summary: Object.assign({}, cached.summary || {}),
-          rowKeysByView: {
+          const responseFromCache = {
+            generatedAt: String(cached.generatedAt || new Date().toISOString()),
+            headers: Array.isArray(cached.headers) ? cached.headers.slice() : RESULTS_HEADER_ROW.slice(),
+            meta: Object.assign({}, cachedMeta, {
+              datasetRows: Math.max(0, programsRange.length - 1),
+              activeProgramsEvaluated: Math.max(0, ((cachedRowKeys.all && cachedRowKeys.all.length) || 0)),
+              rowKeyVersion: String(cachedMeta.rowKeyVersion || "v1"),
+              datasetStamp,
+              datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
+              cacheHit: true,
+              lastProgramsSyncUtc: String(
+                PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+              ).trim(),
+            }),
+            summary: Object.assign({}, cached.summary || {}),
+            rowKeysByView: {
             all: Array.isArray(cachedRowKeys.all) ? cachedRowKeys.all.slice() : [],
             eligible: Array.isArray(cachedRowKeys.eligible) ? cachedRowKeys.eligible.slice() : [],
             ineligible: Array.isArray(cachedRowKeys.ineligible) ? cachedRowKeys.ineligible.slice() : [],
@@ -423,6 +441,9 @@ function runWebEligibility(payload) {
       datasetStamp,
       datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
       cacheHit: false,
+      lastProgramsSyncUtc: String(
+        PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+      ).trim(),
     },
     summary: {
       totalPrograms: Math.max(0, evaluation.finalOut.length - 1),

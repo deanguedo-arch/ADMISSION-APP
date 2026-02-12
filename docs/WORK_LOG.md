@@ -271,3 +271,20 @@ Keep entries short and append-only.
 - Confirmed dropdown duplicate fix is live (canonical-key dedupe for course options).
 - Discussed next automation seams: Actions-driven refresh/sync, optional Apps Script pull-from-GitHub publish, CourseCatalog validations, and clasp-based Apps Script sync.
 - Refreshed session handoff with latest state.
+## 2026-02-12 (Automation + Admin Publishing)
+- Added runner-safe command wrappers in `scripts/`:
+  - `scripts/REFRESH_ALL.cmd` (refresh, no Sheets publish)
+  - `scripts/SYNC_ALL.cmd` (publish to Sheets)
+  - `scripts/RUN_ALL.cmd` (refresh then sync; fail-fast)
+- Updated root `REFRESH_ALL.cmd` / `SYNC_ALL.cmd` to delegate to `scripts/` versions (no pauses; proper exit codes).
+- Added GitHub Action workflow `.github/workflows/refresh_and_sync.yml` to run `scripts\\RUN_ALL.cmd`, smoke-check canonical row count, and commit/push diffs.
+- Apps Script admin publishing:
+  - Added `adminSyncProgramsFromGitHub_` + nightly trigger install/remove in `apps_script/WorkbookAdmin.gs` (uses Script Property `DATASET_RAW_URL` + optional `GITHUB_TOKEN`).
+  - Added `adminRebuildCourseCatalog_` to build hidden `CourseCatalog` and apply Student tab validations (course dropdowns + mark bounds).
+  - Web app header stamp now includes `lastProgramsSyncUtc` when available.
+- Validation run results:
+  - `tools/validate-webapp-surface.ps1`: PASS
+  - `tools/validate-apps-script-structure.ps1`: PASS
+- Tweaked `.github/workflows/refresh_and_sync.yml` to accept `workflow_dispatch` inputs (`limit`, `institutions`, `skip_scrape`) and ensured `scripts/RUN_ALL.cmd` forwards args to refresh only (sync step stays clean).
+- Local smoke: `scripts/REFRESH_ALL.cmd -Limit 1 -SkipScrape -SkipFixtures -SkipAvgApply -SkipElectivePrefill` completed successfully (repo-relative wrapper path validated); canonical dataset regenerated (`data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`).
+- Full wrapper smoke: `scripts/REFRESH_ALL.cmd -Limit 50 -SkipSync` succeeded (fixtures + scrape/enrichment + Avg_Total apply + ElectiveRules prefill). Added robustness in `scripts/REFRESH_ALL.cmd` to avoid duplicate `-SkipSync` arg binding.
