@@ -19,22 +19,34 @@ function onOpen() {
   // onOpen can be invoked from contexts where Spreadsheet UI is unavailable (for example,
   // running onOpen directly from the Apps Script editor). In that case, skip menu creation.
   try {
-    SpreadsheetApp.getUi()
+    const ui = SpreadsheetApp.getUi();
+    const menu = ui
       .createMenu("Admissions Checker")
       .addItem("Check Eligibility", "runEligibility_")
       .addItem("One-Time Setup (Recommended)", "setupWorkbookForStaff_")
       .addItem("Setup Student Elective Dropdowns", "setupStudentElectiveInputs_")
       .addItem("Setup ElectiveRules Template", "setupElectiveRulesTemplate_")
-      .addSeparator()
-      .addSubMenu(
-        SpreadsheetApp.getUi()
+      .addSeparator();
+
+    try {
+      menu.addSubMenu(
+        ui
           .createMenu("Admissions Admin")
           .addItem("Sync Programs from GitHub", "adminSyncProgramsFromGitHub_")
           .addItem("Install Nightly Programs Sync", "adminInstallNightlyProgramsSync_")
           .addItem("Remove Nightly Programs Sync", "adminRemoveNightlyProgramsSync_")
           .addSeparator()
           .addItem("Rebuild CourseCatalog + Validations", "adminRebuildCourseCatalog_")
-      )
+      );
+    } catch (submenuErr) {
+      menu
+        .addItem("Admin: Sync Programs from GitHub", "adminSyncProgramsFromGitHub_")
+        .addItem("Admin: Install Nightly Programs Sync", "adminInstallNightlyProgramsSync_")
+        .addItem("Admin: Remove Nightly Programs Sync", "adminRemoveNightlyProgramsSync_")
+        .addItem("Admin: Rebuild CourseCatalog + Validations", "adminRebuildCourseCatalog_");
+    }
+
+    menu
       .addItem("Admin: Apply Staff Lockdown", "applyStaffLockdown_")
       .addItem("Admin: Show All Tabs", "adminShowAllTabs_")
       .addToUi();
