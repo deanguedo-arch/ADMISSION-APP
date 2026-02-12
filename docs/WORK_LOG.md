@@ -265,3 +265,9 @@ Keep entries short and append-only.
 ## 2026-02-11 (Release Gate Checklist + Handoff)
 - Added `docs/RELEASE_QUESTIONS.md` as a go/no-go checklist for release readiness (auth/deployment/surface/data/quotas/rollback).
 - Next: run `tools/handoff.ps1` to refresh `docs/SESSION_HANDOFF.md` for a clean session boundary.
+## 2026-02-11 (Session Wrap)
+- Tagged prerelease checkpoint: `v1.0.0-pre1` (commit `37f97fd`).
+- Added release go/no-go checklist: `docs/RELEASE_QUESTIONS.md`.
+- Confirmed dropdown duplicate fix is live (canonical-key dedupe for course options).
+- Discussed next automation seams: Actions-driven refresh/sync, optional Apps Script pull-from-GitHub publish, CourseCatalog validations, and clasp-based Apps Script sync.
+- Refreshed session handoff with latest state.

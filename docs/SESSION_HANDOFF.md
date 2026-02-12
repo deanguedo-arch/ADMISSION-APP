@@ -1,4 +1,4 @@
-﻿# Session Handoff (2026-02-11 12:43)
+﻿# Session Handoff (2026-02-12 08:49)
 
 ## Read these first
 - `docs/PROJECT_CONTEXT.md`
@@ -19,12 +19,6 @@
 
 ## Recent work log (tail)
 
-  - Local preview startup smoke (`tools/start-webapp-preview.ps1 -Port 5510 -Mode powershell`): startup PASS (URL announced successfully).
-  - Deployed domain-account checks remain environment-dependent and require interactive `/exec` validation with valid `@eips.ca` sign-in.
-- Committed and pushed:
-  - `91662f2 fix(webapp): finalize qa slice and release handoff`
-## 2026-02-11 (Web App: No-GIS Bootstrap/Run Fallback)
-- Updated `apps_script/Code.gs` `getWebAppBootstrapData` to attempt server-side auth (ID token if present, otherwise session/domain fallback) before requiring extra sign-in.
 - Updated `apps_script/WebAppScriptFunctions.html` to remove frontend hard dependency on `idToken` for running checks; access now depends on bootstrap auth state.
 - Removed GIS script include from `apps_script/WebApp.html` so the page no longer triggers Google Identity button flow by default.
 - Validation run results:
@@ -49,4 +43,10 @@
 ## 2026-02-11 (Release Gate Checklist + Handoff)
 - Added `docs/RELEASE_QUESTIONS.md` as a go/no-go checklist for release readiness (auth/deployment/surface/data/quotas/rollback).
 - Next: run `tools/handoff.ps1` to refresh `docs/SESSION_HANDOFF.md` for a clean session boundary.
+## 2026-02-11 (Session Wrap)
+- Tagged prerelease checkpoint: `v1.0.0-pre1` (commit `37f97fd`).
+- Added release go/no-go checklist: `docs/RELEASE_QUESTIONS.md`.
+- Confirmed dropdown duplicate fix is live (canonical-key dedupe for course options).
+- Discussed next automation seams: Actions-driven refresh/sync, optional Apps Script pull-from-GitHub publish, CourseCatalog validations, and clasp-based Apps Script sync.
+- Refreshed session handoff with latest state.
 
