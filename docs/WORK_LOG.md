@@ -396,3 +396,10 @@ Keep entries short and append-only.
 - Added columns compare styles in `apps_script/WebAppStyles.html`:
   - `.compare-columns-wrap`, `.compare-columns-table`, `.program-col`, and related cell/header styles.
 - Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Hotfix: request.errors Payload Leak + Logo Data URI)
+- Fixed web run payload shape in `apps_script/WebAppScriptFunctions.html`.
+  - `runCheck()` now sends a strict `requestPayload` object (`auth`, `namedCourses`, `manualElectives`) to `runWebEligibility`.
+  - Prevents backend sanitizer rejection: `Unexpected field "request.errors" was sent`.
+- Re-embedded the Next Step logo from source PNG to repair a corrupted inline base64 URI in `apps_script/WebAppBody.html`.
+  - Confirmed base64 decodes successfully after replacement.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.

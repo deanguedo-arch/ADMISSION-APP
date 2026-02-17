@@ -647,8 +647,13 @@ function boot() {
           setStatus("Enter at least one course and mark before running the check.", true);
           return;
         }
+        const requestPayload = {
+          auth: payload.auth || { idToken: "" },
+          namedCourses: Array.isArray(payload.namedCourses) ? payload.namedCourses : [],
+          manualElectives: Array.isArray(payload.manualElectives) ? payload.manualElectives : [],
+        };
         if (state.mockMode) {
-          runMockCheck(payload);
+          runMockCheck(requestPayload);
           return;
         }
 
@@ -664,7 +669,7 @@ function boot() {
             setStatus(readError(err), true);
             setBusy(false);
           })
-          .runWebEligibility(payload);
+          .runWebEligibility(requestPayload);
       }
 
       function runMockCheck(payload) {
