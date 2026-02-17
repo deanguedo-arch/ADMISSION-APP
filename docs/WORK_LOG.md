@@ -431,3 +431,10 @@ Keep entries short and append-only.
   - Sync runs on render updates and window resize via `schedulePanelHeightSync()`.
 - Updated details panel layout in `apps_script/WebAppStyles.html` so the details drawer fills panel height and scrolls internally.
 - Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Program Card Student Avg Emphasis)
+- Updated program result cards to show a prominent `Student Avg Used` percentage directly under `Min Avg` + status pills in `apps_script/WebAppScriptFunctions.html`.
+- Added status-aligned styling in `apps_script/WebAppStyles.html` so the student average is large and color-coded by outcome:
+  - Eligible = green
+  - Missing = red
+  - Uncheckable = blue
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.

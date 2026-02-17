@@ -503,6 +503,9 @@
         display: flex;
         flex-wrap: wrap;
         gap: 5px;
+        justify-content: flex-end;
+        text-align: right;
+        min-width: 0;
       }
 
       .metric-pill {
@@ -538,6 +541,42 @@
         color: #184e82;
         border-color: #b2d0ec;
         background: #eaf3fc;
+      }
+
+      .student-avg-block {
+        flex: 1 0 100%;
+        margin-top: 2px;
+        line-height: 1.05;
+      }
+
+      .student-avg-label {
+        font-size: 0.64rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #4f655d;
+      }
+
+      .student-avg-value {
+        margin-top: 2px;
+        font-family: "Rubik", sans-serif;
+        font-size: 1.42rem;
+        font-weight: 800;
+      }
+
+      .student-avg-block.eligible .student-avg-value {
+        color: #155942;
+      }
+
+      .student-avg-block.missing .student-avg-value {
+        color: #7b3a30;
+      }
+
+      .student-avg-block.uncheckable .student-avg-value {
+        color: #184e82;
+      }
+
+      .student-avg-block.neutral .student-avg-value {
+        color: #345247;
       }
 
       .card-reason {

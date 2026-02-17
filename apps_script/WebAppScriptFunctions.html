@@ -1227,6 +1227,11 @@ function boot() {
             const pinLabel = isPinned ? "Pinned" : "Pin";
             const compareLabel = isCompared ? "Compared" : "Compare";
             const viewLabel = isSelected ? "Viewing" : "View";
+            const studentAvgText = Number.isFinite(row.studentAvg) ? `${formatMarkDisplay(row.studentAvg)}%` : "N/A";
+            const avgToneClass =
+              status.css === "eligible" || status.css === "missing" || status.css === "uncheckable"
+                ? status.css
+                : "neutral";
             return `
               <article class="result-card${cardClass}" data-row-key="${escapeAttr(row.key)}">
                 <div class="card-top">
@@ -1239,6 +1244,10 @@ function boot() {
                   <div class="card-metrics">
                     <span class="metric-pill">Min Avg: ${escapeHtml(Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a")}</span>
                     <span class="status-pill ${escapeAttr(status.css)}">${escapeHtml(status.label)}</span>
+                    <div class="student-avg-block ${escapeAttr(avgToneClass)}">
+                      <div class="student-avg-label">Student Avg Used</div>
+                      <div class="student-avg-value">${escapeHtml(studentAvgText)}</div>
+                    </div>
                   </div>
                 </div>
                 <div class="card-reason">${escapeHtml(reason)}</div>
