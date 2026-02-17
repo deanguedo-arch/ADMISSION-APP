@@ -7,10 +7,12 @@
         boot: null,
         result: null,
         resultModel: null,
-        view: "eligible",
+        view: "ineligible",
         shortlist: {},
         selectedProgramKey: "",
         compareKeys: [],
+        compareViewMode: "side",
+        inputsCollapsed: false,
         resultFilters: {
           query: "",
           institution: "",
@@ -25,10 +27,17 @@
       };
 
       const ui = {
+        workflowMain: document.getElementById("workflowMain"),
+        toggleInputsBtn: document.getElementById("toggleInputsBtn"),
+        showInputsBtn: document.getElementById("showInputsBtn"),
         stamp: document.getElementById("stamp"),
         authLine: document.getElementById("authLine"),
         googleSignIn: document.getElementById("googleSignIn"),
         status: document.getElementById("status"),
+        pasteInput: document.getElementById("pasteInput"),
+        pasteApplyBtn: document.getElementById("pasteApplyBtn"),
+        pasteClearBtn: document.getElementById("pasteClearBtn"),
+        pasteStatus: document.getElementById("pasteStatus"),
         namedBody: document.querySelector("#namedTable tbody"),
         electiveBody: document.querySelector("#electiveTable tbody"),
         runBtn: document.getElementById("runBtn"),
@@ -40,6 +49,11 @@
         sumEligible: document.getElementById("sumEligible"),
         sumMissing: document.getElementById("sumMissing"),
         sumUncheckable: document.getElementById("sumUncheckable"),
+        tabCountEligible: document.getElementById("tabCountEligible"),
+        tabCountIneligible: document.getElementById("tabCountIneligible"),
+        tabCountUncheckable: document.getElementById("tabCountUncheckable"),
+        tabCountShortlist: document.getElementById("tabCountShortlist"),
+        tabCountAll: document.getElementById("tabCountAll"),
         filterGroup: document.getElementById("filterGroup"),
         resultSearch: document.getElementById("resultSearch"),
         institutionFilter: document.getElementById("institutionFilter"),
@@ -47,6 +61,7 @@
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
         compareStrip: document.getElementById("compareStrip"),
+        compareResults: document.getElementById("compareResults"),
         detailsDrawer: document.getElementById("detailsDrawer"),
       };
 </script>

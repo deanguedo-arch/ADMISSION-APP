@@ -42,8 +42,11 @@ function readHtmlWithIncludes(filePath, stack = []) {
   }
 
   const raw = fs.readFileSync(full, "utf8");
-  return raw.replace(/<!--\s*@include:([A-Za-z0-9_]+)\s*-->/g, (_, name) => {
-    const includePath = path.join(root, `${String(name || "").trim()}.html`);
+  const includeRx =
+    /(?:<!--\s*@include:([A-Za-z0-9_]+)\s*-->)|(?:<\?!=\s*includeHtml_\(\s*["']([A-Za-z0-9_]+)["']\s*\)\s*;?\s*\?>)/g;
+  return raw.replace(includeRx, (_, markerName, scriptletName) => {
+    const name = String(markerName || scriptletName || "").trim();
+    const includePath = path.join(root, `${name}.html`);
     if (!fs.existsSync(includePath)) {
       throw new Error(`Missing include file: ${includePath}`);
     }

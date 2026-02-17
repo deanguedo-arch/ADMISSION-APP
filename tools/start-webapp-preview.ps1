@@ -2,7 +2,8 @@ param(
   [int]$Port = 5173,
   [bool]$AutoPort = $true,
   [ValidateSet("auto", "node", "powershell")]
-  [string]$Mode = "auto"
+  [string]$Mode = "auto",
+  [switch]$OpenBrowser
 )
 
 $ErrorActionPreference = "Stop"
@@ -145,10 +146,14 @@ function Resolve-HtmlIncludes {
 
   $raw = Get-Content -LiteralPath $fullPath -Raw -Encoding UTF8
   $nextStack = @($Stack + $fullPath)
-  $rx = [regex]'<!--\s*@include:([A-Za-z0-9_]+)\s*-->'
+  $rx = [regex]'(?:<!--\s*@include:([A-Za-z0-9_]+)\s*-->)|(?:<\?!=\s*includeHtml_\(\s*["'']([A-Za-z0-9_]+)["'']\s*\)\s*;?\s*\?>)'
   return $rx.Replace($raw, {
     param($m)
-    $name = [string]$m.Groups[1].Value
+    $name = if ($m.Groups[1].Success) {
+      [string]$m.Groups[1].Value
+    } else {
+      [string]$m.Groups[2].Value
+    }
     $includePath = Join-Path $Root ($name + ".html")
     return Resolve-HtmlIncludes -Path $includePath -Root $Root -Stack $nextStack
   })
@@ -173,6 +178,11 @@ function Start-PowerShellStaticServer {
   Write-Host "Starting local web app preview (PowerShell static server)..." -ForegroundColor Cyan
   Write-Host ("URL: http://localhost:{0}/WebApp.html?mock=1" -f $Port) -ForegroundColor Green
   Write-Host "Press Ctrl+C to stop." -ForegroundColor DarkGray
+  if ($OpenBrowser) {
+    try {
+      Start-Process ("http://localhost:{0}/WebApp.html?mock=1" -f $Port) | Out-Null
+    } catch {}
+  }
 
   try {
     while ($listener.IsListening) {
@@ -236,11 +246,44 @@ function Start-PowerShellStaticServer {
   }
 }
 
-$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+function Resolve-NodeExecutable {
+  $cmd = Get-Command node -ErrorAction SilentlyContinue
+  if ($cmd -and $cmd.Source) {
+    return [string]$cmd.Source
+  }
+
+  $candidates = @()
+  if ($env:ProgramFiles) {
+    $candidates += (Join-Path $env:ProgramFiles "nodejs\node.exe")
+  }
+  if (${env:ProgramFiles(x86)}) {
+    $candidates += (Join-Path ${env:ProgramFiles(x86)} "nodejs\node.exe")
+  }
+  if ($env:LOCALAPPDATA) {
+    $candidates += (Join-Path $env:LOCALAPPDATA "Programs\nodejs\node.exe")
+  }
+  if ($env:NVM_SYMLINK) {
+    $candidates += (Join-Path $env:NVM_SYMLINK "node.exe")
+  }
+
+  foreach ($candidate in $candidates) {
+    if (-not $candidate) { continue }
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+    try {
+      return (Resolve-Path -LiteralPath $candidate).Path
+    } catch {
+      return $candidate
+    }
+  }
+
+  return $null
+}
+
+$nodeExe = Resolve-NodeExecutable
 $useNode = $false
 switch ($Mode.ToLowerInvariant()) {
   "node" {
-    if (-not $nodeCmd) {
+    if (-not $nodeExe) {
       throw "Mode=node requested but Node.js is not installed or not in PATH."
     }
     $useNode = $true
@@ -249,7 +292,7 @@ switch ($Mode.ToLowerInvariant()) {
     $useNode = $false
   }
   default {
-    $useNode = [bool]$nodeCmd
+    $useNode = [bool]$nodeExe
   }
 }
 
@@ -279,12 +322,17 @@ if ($useNode) {
   Write-Host "Starting local web app preview (Node static server)..." -ForegroundColor Cyan
   Write-Host ("URL: http://localhost:{0}/WebApp.html?mock=1" -f $Port) -ForegroundColor Green
   Write-Host "Press Ctrl+C to stop." -ForegroundColor DarkGray
+  if ($OpenBrowser) {
+    try {
+      Start-Process ("http://localhost:{0}/WebApp.html?mock=1" -f $Port) | Out-Null
+    } catch {}
+  }
   Set-Location $repoRoot
-  & node $nodeServerScript --port $Port --root "apps_script"
+  & $nodeExe $nodeServerScript --port $Port --root "apps_script"
   return
 }
 
-if ($Mode -eq "auto" -and -not $nodeCmd) {
+if ($Mode -eq "auto" -and -not $nodeExe) {
   Write-Host "Node.js not found. Falling back to PowerShell static server." -ForegroundColor Yellow
 }
 Start-PowerShellStaticServer -Root $webRoot -Port $Port

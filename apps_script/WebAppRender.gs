@@ -20,7 +20,9 @@ function resolveWebAppHtmlIncludes_(html, depth, activeStack) {
   }
 
   const text = String(html || "");
-  return text.replace(/<!--\s*@include:([A-Za-z0-9_]+)\s*-->/g, function (_, includeName) {
+  const includeRx = /(?:<!--\s*@include:([A-Za-z0-9_]+)\s*-->)|(?:<\?!=\s*includeHtml_\(\s*["']([A-Za-z0-9_]+)["']\s*\)\s*;?\s*\?>)/g;
+  return text.replace(includeRx, function (_, markerName, scriptletName) {
+    const includeName = String(markerName || scriptletName || "").trim();
     const name = String(includeName || "").trim();
     if (!name) return "";
 

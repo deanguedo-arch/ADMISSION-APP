@@ -4,6 +4,11 @@ Use one of these two loops.
 
 ## Option A: Local UI preview (PowerShell/Node + mock mode)
 
+Double-click helpers (repo root):
+
+- `START_WEBAPP_PREVIEW.bat` (Node preferred, automatic PowerShell fallback)
+- `START_WEBAPP_PREVIEW_NODE.bat` (strict Node mode)
+
 1. Start local server:
 
 ```powershell
@@ -38,6 +43,12 @@ Optional explicit modes:
 ```powershell
 .\tools\start-webapp-preview.ps1 -Mode powershell
 .\tools\start-webapp-preview.ps1 -Mode node
+```
+
+Optional: auto-open browser tab after startup:
+
+```powershell
+.\tools\start-webapp-preview.ps1 -Mode auto -OpenBrowser
 ```
 
 If `5173` is already in use, start on a different port:

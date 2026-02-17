@@ -320,3 +320,79 @@ Keep entries short and append-only.
 - Added local+UTC sync stamping in Apps Script (`LAST_PROGRAMS_SYNC_LOCAL` + `LAST_PROGRAMS_SYNC_UTC`) and updated web header display.
 - Guardrails passing (`tools/validate-webapp-surface.ps1`, `tools/validate-apps-script-structure.ps1`).
 - Next chat can operate from `docs/SESSION_HANDOFF.md`.
+## 2026-02-17 (Web App UX Simplification Slice 1)
+- Reworked web app layout to a 3-panel workflow (`Student Inputs`, `Program Results`, `Program Details`) in `apps_script/WebAppBody.html`.
+- Replaced results table rendering with card-based results in `apps_script/WebAppScriptFunctions.html` to remove horizontal scrolling and improve scanability.
+- Added tab counts for `Missing`, `Eligible`, `Uncheckable`, `Shortlist`, and `All` with live updates.
+- Added transcript paste workflow (`Course mark`, `Course: mark%`, `Course,mark`) plus parsed apply/clear status.
+- Hardened marks input handling: numeric parsing with `%` stripping, 0-100 clamping, inline validation, and latest-entry dedupe in payload collection (plus named-row dedupe on course change).
+- Updated details panel with a top `What this means` summary and collapsed `Requirements`/`Elective Rules` sections.
+- Simplified header stamp to user-facing freshness/source text and moved dataset/cache diagnostics to tooltip metadata.
+- Validation results: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (One-Click Local Preview Launchers)
+- Added one-click preview launchers at repo root:
+  - `START_WEBAPP_PREVIEW.bat` (Node preferred, automatic PowerShell fallback)
+  - `START_WEBAPP_PREVIEW_NODE.bat` (strict Node mode)
+- Updated `tools/start-webapp-preview.ps1`:
+  - Added `-OpenBrowser` switch to auto-open `WebApp.html?mock=1`
+  - Added robust Node executable discovery from common install paths when PATH is missing
+  - Node launch now uses resolved executable path directly
+- Updated `docs/LOCAL_WEBAPP_DEV.md` with the new launcher and `-OpenBrowser` usage.
+## 2026-02-17 (Local Preview Blank-Page Fix)
+- Fixed local preview include resolution mismatch that caused blank `WebApp.html?mock=1` pages.
+- Updated include resolvers to support both legacy `<!-- @include:File -->` and Apps Script template includes `<?!= includeHtml_("File"); ?>` in:
+  - `tools/start-webapp-preview.ps1`
+  - `tools/local-preview-server.js`
+  - `apps_script/WebAppRender.gs`
+- Verified resolver output now inlines expected UI fragments (title + Student Inputs + Program Results) instead of leaving unresolved `includeHtml_` tags.
+## 2026-02-17 (UX Smoke Fixes from Preview)
+- Fixed visible duplicate-course issue in web inputs by adding stronger UI dedupe behavior:
+  - dedupe on course blur/change for named/elective rows
+  - full input-row dedupe pass before `runCheck` and after transcript paste apply
+- Fixed details summary bug where missing student average could show misleading `Average short by 70` text.
+  - `buildMeaningSummary_` now uses finite-number parsing for average gap messaging.
+- Re-ran guardrails: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Results Toolbar Anti-Smoosh Tuning)
+- Adjusted `apps_script/WebAppStyles.html` workflow column widths to prioritize `Program Results` horizontal space.
+- Converted results toolbar controls from rigid grid to wrapping flex layout so search/filters/sort/clear no longer compress into narrow controls.
+- Added per-control flex sizing (`#resultSearch`, `#sortSelect`, `clear`) for stable wrapping behavior across viewport widths.
+- Moved 3-panel collapse breakpoint earlier (`1480px`) so details panel drops below sooner and avoids mid-width squeeze.
+- Guardrails re-run: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Compare UX + Elective Override Sizing Fix)
+- Replaced compare drawer table (horizontal-scroll dependent) with a no-scroll stacked compare-card view in `apps_script/WebAppScriptFunctions.html`.
+  - Each compared program now shows status, avg metrics, missing/advisory/notes, and a collapsible requirement snapshot.
+- Added compare-card styling in `apps_script/WebAppStyles.html` (`.compare-stack`, `.compare-item*`) for readable right-panel comparison.
+- Fixed optional elective override control squeeze by removing inline header widths in `apps_script/WebAppBody.html` and adding dedicated elective table column sizing/min-widths in `apps_script/WebAppStyles.html`.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Inputs Collapse + Compare Placement UX)
+- Added a working `Hide Inputs` / `Show Inputs` toggle wired through `apps_script/WebAppScriptState.html`, `apps_script/WebAppScriptInit.html`, and `apps_script/WebAppScriptFunctions.html`.
+  - `workflowMain` now applies `inputs-collapsed` state to hide the Student Inputs panel and expand room for Results + Details.
+- Kept `Program Details` focused on single-program context.
+  - Removed compare-mode takeover from `renderDetailsDrawer()`.
+- Moved side-by-side compare output to the Program Results column.
+  - `renderCompareResults()` now renders compare cards into `#compareResults` under the results list when 2+ programs are selected.
+  - Compare prep strip remains in-place for add/remove/clear selection controls.
+- Improved optional elective column sizing in `apps_script/WebAppStyles.html` to reduce control squeeze in the Student Inputs table.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Panel-Local Inputs Toggle + Compare Mode Switch)
+- Moved input-collapse control from auth strip to `Student Inputs` panel header with directional text (`Hide <<`).
+- Added collapsed-state restore control in `Program Results` header (`Show Inputs >>`) so reopening remains one-click when inputs are hidden.
+- Added compare layout toggle in compare output: `Side by Side` and `List`.
+  - New state key `compareViewMode` controls compare card layout rendering.
+  - Side-by-side uses responsive multi-column compare cards; list mode uses stacked cards.
+- Wired compare mode click handling in `apps_script/WebAppScriptInit.html` + `apps_script/WebAppScriptFunctions.html`.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Elective Row Squeeze Regression Fix)
+- Fixed Optional Elective Overrides row squeeze in `apps_script/WebAppStyles.html`.
+  - Removed rigid `min-width` constraints that over-constrained course/group/mark/remove columns.
+  - Switched elective table back to stable fixed-width percentages (46/20/24/10).
+  - Made remove (`x`) control compact/full-cell so it no longer crowds adjacent inputs.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Program Compare Columns Mode)
+- Added a third Program Compare layout option: `Columns`, alongside existing `Side by Side` and `List`.
+- Updated compare mode toggle and handling in `apps_script/WebAppScriptFunctions.html`:
+  - `onCompareResultsClick` now accepts `side`, `list`, and `columns`.
+  - `renderCompareDrawer_` now renders a new field-by-field columns table in `columns` mode.
+- Added columns compare styles in `apps_script/WebAppStyles.html`:
+  - `.compare-columns-wrap`, `.compare-columns-table`, `.program-col`, and related cell/header styles.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.

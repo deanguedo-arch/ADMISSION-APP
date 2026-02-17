@@ -7,6 +7,10 @@ boot();
       document.getElementById("csvBtn").addEventListener("click", exportCsv);
       document.getElementById("pdfBtn").addEventListener("click", exportPdf);
       document.getElementById("resetBtn").addEventListener("click", resetForm);
+      document.getElementById("pasteApplyBtn").addEventListener("click", applyTranscriptPaste);
+      document.getElementById("pasteClearBtn").addEventListener("click", clearTranscriptPaste);
+      if (ui.toggleInputsBtn) ui.toggleInputsBtn.addEventListener("click", toggleInputsPanel);
+      if (ui.showInputsBtn) ui.showInputsBtn.addEventListener("click", toggleInputsPanel);
       ui.filterGroup.addEventListener("click", onFilterClick);
       ui.resultsWrap.addEventListener("click", onResultsWrapClick);
       ui.resultSearch.addEventListener("input", onResultControlChange);
@@ -15,5 +19,6 @@ boot();
       ui.sortSelect.addEventListener("change", onResultControlChange);
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
       ui.compareStrip.addEventListener("click", onCompareStripClick);
+      if (ui.compareResults) ui.compareResults.addEventListener("click", onCompareResultsClick);
 </script>
 
