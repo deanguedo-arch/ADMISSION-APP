@@ -403,3 +403,8 @@ Keep entries short and append-only.
 - Re-embedded the Next Step logo from source PNG to repair a corrupted inline base64 URI in `apps_script/WebAppBody.html`.
   - Confirmed base64 decodes successfully after replacement.
 - Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Details Card Text Overflow Containment)
+- Fixed Program Details card text overflow in `apps_script/WebAppStyles.html`.
+  - Added safer wrapping (`overflow-wrap:anywhere`, `word-break:break-word`) for summary/detail list items.
+  - Added `min-width:0` and overflow containment on details grid/blocks to prevent text bleed on narrow panel widths.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.

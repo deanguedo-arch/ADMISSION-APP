@@ -728,6 +728,8 @@
 
       .meaning-item {
         font-size: 0.86rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
       .meaning-item.ok {
@@ -746,6 +748,7 @@
         display: grid;
         gap: 8px;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
       }
 
       .detail-block {
@@ -753,6 +756,8 @@
         border-radius: 10px;
         background: #fff;
         padding: 8px;
+        min-width: 0;
+        overflow: hidden;
       }
 
       .detail-block h4 {
@@ -768,10 +773,13 @@
         padding-left: 17px;
         display: grid;
         gap: 3px;
+        min-width: 0;
       }
 
       .detail-list li {
         font-size: 0.84rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
       .requirement-line {
