@@ -408,3 +408,20 @@ Keep entries short and append-only.
   - Added safer wrapping (`overflow-wrap:anywhere`, `word-break:break-word`) for summary/detail list items.
   - Added `min-width:0` and overflow containment on details grid/blocks to prevent text bleed on narrow panel widths.
 - Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Rollout + Deploy Trace Summary)
+- Release commits pushed on `main`:
+  - `20153d6` `feat(webapp): ship workflow UX pass and local preview tooling`
+  - `1501f02` `fix(webapp): stop sending request.errors and restore logo`
+  - `23de3cd` `fix(webapp): contain details-card text overflow`
+- Deploy workflow traces (`Deploy Apps Script Web App`):
+  - `22110131634` success (manual dispatch)
+  - `22109827912` success (push)
+  - `22112376520` triggered for `1501f02`
+  - `22112537366` triggered for `23de3cd`
+- Post-deploy troubleshooting outcomes:
+  - Confirmed earlier payload sanitizer error was caused by frontend sending `request.errors` and resolved by strict request object pass-through.
+  - Confirmed missing logo was caused by corrupted inline base64; re-embedded from source PNG.
+  - Confirmed details-panel text overflow at narrow widths was resolved with wrapping/containment CSS updates.
+- Guardrails remained green throughout fixes:
+  - `tools/validate-webapp-surface.ps1` PASS
+  - `tools/validate-apps-script-structure.ps1` PASS
