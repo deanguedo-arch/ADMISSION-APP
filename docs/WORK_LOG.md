@@ -425,3 +425,9 @@ Keep entries short and append-only.
 - Guardrails remained green throughout fixes:
   - `tools/validate-webapp-surface.ps1` PASS
   - `tools/validate-apps-script-structure.ps1` PASS
+## 2026-02-17 (Program Details Height Match)
+- Matched `Program Details` panel height to `Program Results` when both are side-by-side.
+  - Added panel refs (`#resultsPanel`, `#detailsPanel`) and a resize/render sync routine in `apps_script/WebAppScriptFunctions.html`.
+  - Sync runs on render updates and window resize via `schedulePanelHeightSync()`.
+- Updated details panel layout in `apps_script/WebAppStyles.html` so the details drawer fills panel height and scrolls internally.
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.

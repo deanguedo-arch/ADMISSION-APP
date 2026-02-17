@@ -571,8 +571,14 @@
       }
 
       .panel-details {
-        display: grid;
+        display: flex;
+        flex-direction: column;
         gap: 8px;
+        min-width: 0;
+      }
+
+      .panel-details > h2 {
+        margin: 0;
       }
 
       .compare-strip {
@@ -681,7 +687,8 @@
         padding: 10px;
         display: grid;
         gap: 8px;
-        max-height: 72vh;
+        flex: 1 1 auto;
+        min-height: 0;
         overflow: auto;
       }
 

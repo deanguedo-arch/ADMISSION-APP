@@ -19,6 +19,32 @@ function boot() {
         loadPublicBootstrap();
       }
 
+      let panelHeightSyncRaf = 0;
+
+      function schedulePanelHeightSync() {
+        if (panelHeightSyncRaf) {
+          cancelAnimationFrame(panelHeightSyncRaf);
+          panelHeightSyncRaf = 0;
+        }
+        panelHeightSyncRaf = requestAnimationFrame(() => {
+          panelHeightSyncRaf = 0;
+          syncResultsDetailsPanelHeights();
+        });
+      }
+
+      function syncResultsDetailsPanelHeights() {
+        if (!ui.resultsPanel || !ui.detailsPanel) return;
+        ui.detailsPanel.style.height = "";
+
+        const resultsRect = ui.resultsPanel.getBoundingClientRect();
+        const detailsRect = ui.detailsPanel.getBoundingClientRect();
+        const sideBySide = Math.abs(resultsRect.top - detailsRect.top) <= 10;
+        if (!sideBySide) return;
+
+        const targetHeight = Math.ceil(ui.resultsPanel.offsetHeight);
+        if (targetHeight > 0) ui.detailsPanel.style.height = `${targetHeight}px`;
+      }
+
       function loadPublicBootstrap() {
         setStatus("Checking access...");
         google.script.run
@@ -166,6 +192,7 @@ function boot() {
           ui.showInputsBtn.classList.toggle("is-hidden", !next);
           ui.showInputsBtn.setAttribute("aria-expanded", next ? "false" : "true");
         }
+        schedulePanelHeightSync();
       }
 
       function addNamedRow(seed) {
@@ -1289,6 +1316,7 @@ function boot() {
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
           ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program card to inspect requirements and next steps.</div>`;
+          schedulePanelHeightSync();
           return;
         }
 
@@ -1302,10 +1330,12 @@ function boot() {
 
         if (!row) {
           ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program card to inspect requirements and next steps.</div>`;
+          schedulePanelHeightSync();
           return;
         }
 
         renderSingleProgramDetails_(row);
+        schedulePanelHeightSync();
       }
 
       function renderCompareResults() {
@@ -1314,10 +1344,12 @@ function boot() {
         if (rows.length < 2) {
           ui.compareResults.classList.add("is-empty");
           ui.compareResults.innerHTML = `<div class="ghost">Select at least 2 programs to compare.</div>`;
+          schedulePanelHeightSync();
           return;
         }
         ui.compareResults.classList.remove("is-empty");
         renderCompareDrawer_(rows);
+        schedulePanelHeightSync();
       }
 
       function renderCompareDrawer_(rows) {
