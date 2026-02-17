@@ -47,6 +47,12 @@ if ($DropNaitNonPrograms) {
 }
 
 $canonical = foreach ($r in $rows) {
+  $programUrl =
+    if ($r.PSObject.Properties["Program_URL"]) { $r.Program_URL }
+    elseif ($r.PSObject.Properties["Source_URL"]) { $r.Source_URL }
+    elseif ($r.PSObject.Properties["source_url"]) { $r.source_url }
+    else { "" }
+
   $englishReq = if (-not (Is-Blank $r.English_Req)) { $r.English_Req } else { $r.Eng_Req }
   $englishMin = if (-not (Is-Blank $r.English_Min)) { $r.English_Min } else { $r.Eng_Min }
 
@@ -55,6 +61,7 @@ $canonical = foreach ($r in $rows) {
     Program              = $r.Program
     Credential_Type      = $r.Credential_Type
     Status               = $r.Status
+    Program_URL          = $programUrl
 
     Min_Avg_Final        = $r.Min_Avg_Final
     Competitive_Final    = $r.Competitive_Final

@@ -37,6 +37,7 @@ function evaluateProgramsForStudent_(opts) {
     const program = getStr_(r, idx, "Program");
     const credential = getStr_(r, idx, "Credential_Type");
     const status = getStr_(r, idx, "Status");
+    const programUrl = getStr_(r, idx, "Program_URL");
 
     if (!institution || !program) return;
     if (status && status.toLowerCase() !== "active") return;
@@ -192,6 +193,7 @@ function evaluateProgramsForStudent_(opts) {
       institution,
       program,
       credential,
+      programUrl,
       competitiveGuidance,
       requirementTypeEffective,
       requirementSummaries,
@@ -438,6 +440,10 @@ function buildProgramDetailsForWeb_(opts) {
     institution: String((opts && opts.institution) || "").trim(),
     program: String((opts && opts.program) || "").trim(),
     credential: String((opts && opts.credential) || "").trim(),
+    programUrl: (() => {
+      const raw = String((opts && opts.programUrl) || "").trim();
+      return /^https?:\/\//i.test(raw) ? raw : "";
+    })(),
     competitiveGuidance: String((opts && opts.competitiveGuidance) || "").trim(),
     requirementText: String((opts && opts.requirementTypeEffective) || "").trim(),
     requirements: (Array.isArray(opts && opts.requirementSummaries) ? opts.requirementSummaries : []).map((x) => ({

@@ -438,3 +438,23 @@ Keep entries short and append-only.
   - Missing = red
   - Uncheckable = blue
 - Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-17 (Program Website Links in Details + Canonical URL Pipeline)
+- Added canonical URL plumbing for program links:
+  - `tools/clean-master.ps1` now includes `Program_URL` in canonical rows (preserves if present, otherwise blank).
+  - Added new mapper `tools/apply-program-urls.ps1` to fill `Program_URL` from `pipeline/program_index.cleaned.csv` using exact key matching with conservative fuzzy fallback + audit output (`out/ProgramUrlMapping.audit.csv`).
+  - Wired URL mapping into refresh flow in `tools/refresh-all.ps1` as `Step 6/9` (new skip switch: `-SkipProgramUrlApply`).
+- Updated web app details payload and UI:
+  - `apps_script/EligibilityEngine.gs` now reads `Program_URL` from `Programs` and returns `programUrl` in `detailsByKey`.
+  - `apps_script/WebAppScriptFunctions.html` now renders `Program Website` at the top of Program Details (under title/subtitle) with safe `http/https` validation and fallback text when unavailable.
+  - `apps_script/WebAppStyles.html` now styles the new details link row/button.
+- Applied URL mapping to current canonical dataset:
+  - `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv` now includes `Program_URL` with 289/369 rows filled in current pass.
+- Validation reruns:
+  - `tools/validate-webapp-surface.ps1` PASS
+  - `tools/validate-apps-script-structure.ps1` PASS
+  - `tools/validate-canonical.ps1` PASS (with existing duplicate-key warning)
+## 2026-02-17 (Mock Preview Link Corrections)
+- Updated mock `Program Website` URLs in `apps_script/WebAppScriptFunctions.html` preview payload:
+  - UAlberta `Bachelor of Music` -> undergraduate BMus program page.
+  - NAIT `Business Administration Diploma` mock -> NAIT programs landing page (valid placeholder in mock mode).
+- Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.

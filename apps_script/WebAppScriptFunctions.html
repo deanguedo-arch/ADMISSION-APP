@@ -824,6 +824,7 @@ function boot() {
               institution: "MacEwan",
               program: "Bachelor of Arts Undeclared",
               credential: "Degree",
+              programUrl: "https://calendar.macewan.ca/programs/degree-programs/bachelor-of-arts/",
               requirements: [
                 { label: "English", status: "met", requirement: "English 30-1 OR English 30-2", matched: "English 30-1=82", issues: [] },
               ],
@@ -837,6 +838,7 @@ function boot() {
               institution: "NAIT",
               program: "Business Administration Diploma",
               credential: "Diploma",
+              programUrl: "https://www.nait.ca/programs",
               requirements: [],
               average: { min: 70, student: "", totalCourses: 5, usedCourses: 1, complete: false, meetsMinimum: false, neededElectivesForAverage: 1 },
               electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
@@ -848,6 +850,7 @@ function boot() {
               institution: "UAlberta",
               program: "Bachelor of Music",
               credential: "Degree",
+              programUrl: "https://www.ualberta.ca/en/music/programs/undergraduate-programs/bachelor-of-music.html",
               requirements: [],
               average: { min: 75, student: studentAvg, totalCourses: 5, usedCourses: 5, complete: true, meetsMinimum: true, neededElectivesForAverage: 0 },
               electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
@@ -1591,6 +1594,7 @@ function boot() {
 
       function renderSingleProgramDetails_(row) {
         const detail = getProgramDetailsForRow(row);
+        const programUrl = normalizeHttpUrl_(detail.programUrl);
         const missing = (Array.isArray(detail.missingReasons) ? detail.missingReasons : []).filter(Boolean);
         const notes = (Array.isArray(detail.notes) ? detail.notes : []).filter(Boolean);
         const advisories = (Array.isArray(detail.advisories) ? detail.advisories : []).filter(Boolean);
@@ -1647,6 +1651,11 @@ function boot() {
         const selectedElectivesText = selectedElectives.length
           ? selectedElectives.map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${formatCell(e.mark)}`).join(", ")
           : "None";
+        const programLinkHtml = programUrl
+          ? `<div class="detail-link-row"><a class="detail-link" href="${escapeAttr(
+              programUrl
+            )}" target="_blank" rel="noopener noreferrer">Program Website</a></div>`
+          : `<div class="detail-link-row"><span class="detail-link-missing">Program website link unavailable.</span></div>`;
         const electiveSectionHtml = `<details class="collapsible"><summary>Elective Rules</summary>
             <ul class="detail-list">
               <li>Allowed groups: ${escapeHtml(allowedGroups.join("/") || "A/B/C/D")}</li>
@@ -1661,6 +1670,7 @@ function boot() {
             <p class="detail-sub">${escapeHtml(detail.institution || row.institution || "")} | ${escapeHtml(
               detail.credential || row.credential || ""
             )}</p>
+            ${programLinkHtml}
           </div>
           <div class="meaning-panel">
             <h4>What this means</h4>
@@ -1749,6 +1759,7 @@ function boot() {
           institution: row.institution || "",
           program: row.program || "",
           credential: row.credential || "",
+          programUrl: "",
           requirements: [],
           average: {
             min: row.minAvg,
@@ -2121,6 +2132,12 @@ function boot() {
         if (value === null || value === undefined) return NaN;
         const num = Number(String(value).trim());
         return Number.isFinite(num) ? num : NaN;
+      }
+
+      function normalizeHttpUrl_(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        return /^https?:\/\//i.test(raw) ? raw : "";
       }
 
       function countMissingIssues(missingText) {

@@ -8,6 +8,7 @@ param(
   [switch]$SkipFixtures,
   [switch]$SkipScrape,
   [switch]$SkipAvgApply,
+  [switch]$SkipProgramUrlApply,
   [switch]$SkipElectivePrefill,
   [switch]$SkipSync,
   [switch]$SkipValidation,
@@ -39,11 +40,11 @@ if ($DryRun) {
 }
 
 Write-Host ""
-Write-Host "Step 1/8: Rebuild canonical dataset"
+Write-Host "Step 1/9: Rebuild canonical dataset"
 & .\\tools\\clean-master.ps1 | Out-Host
 
 Write-Host ""
-Write-Host "Step 2/8: Build cleaned program index"
+Write-Host "Step 2/9: Build cleaned program index"
 $buildArgs = @(".\\pipeline\\build_index.py", "--in", $IndexSourcePath, "--out", $CleanIndexPath)
 foreach ($inst in @($Institution)) {
   if ([string]::IsNullOrWhiteSpace($inst)) { continue }
@@ -53,17 +54,17 @@ Invoke-PythonChecked $buildArgs
 
 if (-not $SkipFixtures) {
   Write-Host ""
-  Write-Host "Step 3/8: Run extractor/link fixture checks"
+  Write-Host "Step 3/9: Run extractor/link fixture checks"
   Invoke-PythonChecked @(".\\pipeline\\check_avg_total_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_enrichment_link_fixtures.py")
 } else {
   Write-Host ""
-  Write-Host "Step 3/8: Skipped fixture checks (-SkipFixtures)"
+  Write-Host "Step 3/9: Skipped fixture checks (-SkipFixtures)"
 }
 
 if (-not $SkipScrape) {
   Write-Host ""
-  Write-Host "Step 4/8: Run scrape/enrichment extraction"
+  Write-Host "Step 4/9: Run scrape/enrichment extraction"
   $runArgs = @(".\\pipeline\\run.py", "--index", $CleanIndexPath, "--out", $ArtifactsOut)
   if ($Limit -gt 0) {
     $runArgs += @("--limit", [string]$Limit)
@@ -75,13 +76,13 @@ if (-not $SkipScrape) {
   Invoke-PythonChecked $runArgs
 } else {
   Write-Host ""
-  Write-Host "Step 4/8: Skipped scrape/enrichment extraction (-SkipScrape)"
+  Write-Host "Step 4/9: Skipped scrape/enrichment extraction (-SkipScrape)"
 }
 
 $candidatesPath = Join-Path $ArtifactsOut "extract\\avg_total_candidates.csv"
 if (-not $SkipAvgApply) {
   Write-Host ""
-  Write-Host "Step 5/8: Apply Avg_Total candidates into canonical CSV"
+  Write-Host "Step 5/9: Apply Avg_Total candidates into canonical CSV"
   if (-not (Test-Path $candidatesPath)) {
     if ($SkipScrape) {
       Write-Host "Avg_Total candidates file not found after -SkipScrape; skipping Avg_Total apply."
@@ -95,25 +96,40 @@ if (-not $SkipAvgApply) {
   }
 } else {
   Write-Host ""
-  Write-Host "Step 5/8: Skipped Avg_Total apply (-SkipAvgApply)"
+  Write-Host "Step 5/9: Skipped Avg_Total apply (-SkipAvgApply)"
+}
+
+if (-not $SkipProgramUrlApply) {
+  Write-Host ""
+  Write-Host "Step 6/9: Apply Program_URL mappings into canonical CSV"
+  if (-not (Test-Path $CleanIndexPath)) {
+    throw "Clean index file not found: $CleanIndexPath"
+  } elseif ($DryRun) {
+    & .\\tools\\apply-program-urls.ps1 -IndexPath $CleanIndexPath -DryRun | Out-Host
+  } else {
+    & .\\tools\\apply-program-urls.ps1 -IndexPath $CleanIndexPath | Out-Host
+  }
+} else {
+  Write-Host ""
+  Write-Host "Step 6/9: Skipped Program_URL apply (-SkipProgramUrlApply)"
 }
 
 Write-Host ""
-Write-Host "Step 6/8: Regenerate ElectiveRules todo template"
+Write-Host "Step 7/9: Regenerate ElectiveRules todo template"
 & .\\tools\\generate-elective-rules-template.ps1 | Out-Host
 
 if (-not $SkipElectivePrefill) {
   Write-Host ""
-  Write-Host "Step 7/8: Prefill ElectiveRules suggestions"
+  Write-Host "Step 8/9: Prefill ElectiveRules suggestions"
   Invoke-PythonChecked @(".\\tools\\prefill-elective-rules.py")
 } else {
   Write-Host ""
-  Write-Host "Step 7/8: Skipped ElectiveRules prefill (-SkipElectivePrefill)"
+  Write-Host "Step 8/9: Skipped ElectiveRules prefill (-SkipElectivePrefill)"
 }
 
 if (-not $SkipSync) {
   Write-Host ""
-  Write-Host "Step 8/8: Sync Programs + ElectiveRules to Google Sheets"
+  Write-Host "Step 9/9: Sync Programs + ElectiveRules to Google Sheets"
   if ($SkipValidation) {
     & .\\tools\\sync-programs.ps1 -ConfigPath $ConfigPath -SkipRebuild -SkipValidation | Out-Host
   } else {
@@ -122,7 +138,7 @@ if (-not $SkipSync) {
   & .\\tools\\sync-elective-rules.ps1 -ConfigPath $ConfigPath | Out-Host
 } else {
   Write-Host ""
-  Write-Host "Step 8/8: Skipped Google Sheets sync (-SkipSync)"
+  Write-Host "Step 9/9: Skipped Google Sheets sync (-SkipSync)"
 }
 
 Write-Host ""
