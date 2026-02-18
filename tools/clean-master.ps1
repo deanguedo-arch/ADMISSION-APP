@@ -1,6 +1,10 @@
 param(
   [string]$InputPath = ".\\ALBERTA_ADMISSIONS_MASTER_FINAL_v3.csv",
   [string]$OutputPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv",
+  [string]$ProgramEvidencePath = ".\\PROGRAMS_ONLY.csv",
+  [string]$FilterRulesPath = ".\\config\\nait_non_program_rules.json",
+  [string]$NaitSeedPath = ".\\pipeline\\nait_program_seed.csv",
+  [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
   [switch]$DropNaitNonPrograms = $true,
   [switch]$DropMinors = $true,
   [switch]$DropExactDuplicates = $true
@@ -11,6 +15,69 @@ $ErrorActionPreference = "Stop"
 
 function Is-Blank([object]$v) {
   return ($null -eq $v) -or [string]::IsNullOrWhiteSpace([string]$v)
+}
+
+function Normalize-Text([object]$v) {
+  if ($null -eq $v) { return "" }
+  return ([string]$v -replace "\s+", " ").Trim()
+}
+
+function Normalize-ProgramKey([object]$v) {
+  $t = (Normalize-Text $v).ToLowerInvariant()
+  if (-not $t) { return "" }
+  $t = $t.Replace("&amp;", " and ")
+  $t = $t.Replace("&", " and ")
+  $t = [regex]::Replace($t, "[^a-z0-9]+", " ")
+  return ([string]$t -replace "\s+", " ").Trim()
+}
+
+function Normalize-UrlKey([object]$v) {
+  $t = (Normalize-Text $v).ToLowerInvariant()
+  if (-not $t) { return "" }
+  $hashIndex = $t.IndexOf("#")
+  if ($hashIndex -ge 0) {
+    $t = $t.Substring(0, $hashIndex)
+  }
+  if ($t.EndsWith("/")) {
+    $t = $t.Substring(0, $t.Length - 1)
+  }
+  return $t
+}
+
+function Add-ToSet([hashtable]$set, [string]$key) {
+  if ([string]::IsNullOrWhiteSpace($key)) { return }
+  if (-not $set.ContainsKey($key)) {
+    $set[$key] = $true
+  }
+}
+
+function To-StringArray([object]$value) {
+  $items = @()
+  if ($null -eq $value) { return ,@() }
+  if ($value -is [System.Collections.IEnumerable] -and -not ($value -is [string])) {
+    foreach ($x in $value) {
+      $s = Normalize-Text $x
+      if ($s) { $items += $s }
+    }
+    return ,$items
+  }
+  $single = Normalize-Text $value
+  if ($single) { $items += $single }
+  return ,$items
+}
+
+function Get-PropValue([object]$row, [string[]]$names) {
+  foreach ($n in $names) {
+    $prop = $row.PSObject.Properties[$n]
+    if ($prop) {
+      return [string]$prop.Value
+    }
+  }
+  return ""
+}
+
+function Get-RowProgramUrl([object]$row) {
+  return Normalize-Text (Get-PropValue -row $row -names @("Program_URL", "Source_URL", "source_url", "program_url"))
 }
 
 function Ensure-Dir([string]$path) {
@@ -31,27 +98,131 @@ if ($DropMinors) {
   $rows = $rows | Where-Object { $_.Credential_Type -ne "Minor" }
 }
 
+$naitSeedNames = @{}
+$naitAllowlistNames = @{}
+$naitAllowlistUrls = @{}
+$naitLegacyAllowlistNames = @{}
+$naitBlockedUrlPatterns = @()
+$naitBlockedNamePatterns = @()
+$naitEvidenceTokens = @("not a program page")
+$naitEvidenceByName = @{}
+$naitStats = @{
+  nait_rows_examined = 0
+  dropped_evidence_non_program = 0
+  dropped_blocked_url = 0
+  dropped_blocked_name = 0
+  dropped_not_in_seed = 0
+  kept_allowlist_override = 0
+  kept_legacy_allowlist = 0
+  kept_seed_match = 0
+}
+
+if (Test-Path $FilterRulesPath) {
+  $rulesJson = Get-Content -Raw $FilterRulesPath | ConvertFrom-Json
+  $naitBlockedUrlPatterns = To-StringArray $rulesJson.blocked_url_patterns
+  $naitBlockedNamePatterns = To-StringArray $rulesJson.blocked_name_patterns
+  $tokenValues = To-StringArray $rulesJson.evidence_not_program_tokens
+  if ($tokenValues.Count -gt 0) {
+    $naitEvidenceTokens = @($tokenValues | ForEach-Object { $_.ToLowerInvariant() })
+  }
+  foreach ($name in (To-StringArray $rulesJson.allowlist_program_names)) {
+    Add-ToSet -set $naitAllowlistNames -key (Normalize-ProgramKey $name)
+  }
+  foreach ($url in (To-StringArray $rulesJson.allowlist_urls)) {
+    Add-ToSet -set $naitAllowlistUrls -key (Normalize-UrlKey $url)
+  }
+}
+
+if (Test-Path $NaitSeedPath) {
+  foreach ($seed in (Import-Csv $NaitSeedPath)) {
+    Add-ToSet -set $naitSeedNames -key (Normalize-ProgramKey $seed.program_name)
+  }
+}
+
+if (Test-Path $NaitLegacyAllowlistPath) {
+  foreach ($allow in (Import-Csv $NaitLegacyAllowlistPath)) {
+    $name = Normalize-ProgramKey (Get-PropValue -row $allow -names @("program_name", "Program"))
+    Add-ToSet -set $naitLegacyAllowlistNames -key $name
+  }
+}
+
+if (Test-Path $ProgramEvidencePath) {
+  foreach ($e in (Import-Csv $ProgramEvidencePath)) {
+    $inst = Normalize-Text (Get-PropValue -row $e -names @("institution", "Institution"))
+    if ($inst.ToUpperInvariant() -ne "NAIT") { continue }
+    $name = Normalize-ProgramKey (Get-PropValue -row $e -names @("program_name", "Program"))
+    if (-not $name) { continue }
+    $notes = Normalize-Text (Get-PropValue -row $e -names @("notes_uncertain", "Notes_Uncertain", "notes", "Notes"))
+    if (-not $notes) { continue }
+    if ($naitEvidenceByName.ContainsKey($name)) {
+      $naitEvidenceByName[$name] = "{0} | {1}" -f $naitEvidenceByName[$name], $notes
+    } else {
+      $naitEvidenceByName[$name] = $notes
+    }
+  }
+}
+
 if ($DropNaitNonPrograms) {
   $rows = $rows | Where-Object {
     if ($_.Institution -ne "NAIT") { return $true }
-    $p = [string]$_.Program
-    if ($p -match "^\d+\.\s*") { return $false }
-    if ($p -match "government funding for expansion") { return $false }
-    if ($p -in @("About", "Accomplishments")) { return $false }
-    if ($p -match "^Alumni profile:") { return $false }
-    if ($p -match "\bForm\b") { return $false }
-    if ($p -match "Before Your Student Applies|After Your Student Applies") { return $false }
-    if ($p -match "^All other NAIT programs$") { return $false }
-    return $true
+    $naitStats.nait_rows_examined++
+
+    $programName = Normalize-Text $_.Program
+    $programKey = Normalize-ProgramKey $programName
+    $programUrl = Get-RowProgramUrl $_
+    $programUrlKey = Normalize-UrlKey $programUrl
+
+    $evidenceNotes = ""
+    if ($programKey -and $naitEvidenceByName.ContainsKey($programKey)) {
+      $evidenceNotes = [string]$naitEvidenceByName[$programKey]
+    }
+    $evidenceLow = $evidenceNotes.ToLowerInvariant()
+    foreach ($token in $naitEvidenceTokens) {
+      if ($token -and $evidenceLow.Contains($token)) {
+        $naitStats.dropped_evidence_non_program++
+        return $false
+      }
+    }
+
+    foreach ($pattern in $naitBlockedUrlPatterns) {
+      if (-not $pattern) { continue }
+      if ($programUrl -and $programUrl -match $pattern) {
+        $naitStats.dropped_blocked_url++
+        return $false
+      }
+    }
+
+    foreach ($pattern in $naitBlockedNamePatterns) {
+      if (-not $pattern) { continue }
+      if ($programName -match $pattern) {
+        $naitStats.dropped_blocked_name++
+        return $false
+      }
+    }
+
+    if (($programKey -and $naitAllowlistNames.ContainsKey($programKey)) -or
+      ($programUrlKey -and $naitAllowlistUrls.ContainsKey($programUrlKey))) {
+      $naitStats.kept_allowlist_override++
+      return $true
+    }
+
+    if ($programKey -and $naitLegacyAllowlistNames.ContainsKey($programKey)) {
+      $naitStats.kept_legacy_allowlist++
+      return $true
+    }
+
+    if ($programKey -and $naitSeedNames.ContainsKey($programKey)) {
+      $naitStats.kept_seed_match++
+      return $true
+    }
+
+    $naitStats.dropped_not_in_seed++
+    return $false
   }
 }
 
 $canonical = foreach ($r in $rows) {
-  $programUrl =
-    if ($r.PSObject.Properties["Program_URL"]) { $r.Program_URL }
-    elseif ($r.PSObject.Properties["Source_URL"]) { $r.Source_URL }
-    elseif ($r.PSObject.Properties["source_url"]) { $r.source_url }
-    else { "" }
+  $programUrl = Get-RowProgramUrl $r
 
   $englishReq = if (-not (Is-Blank $r.English_Req)) { $r.English_Req } else { $r.Eng_Req }
   $englishMin = if (-not (Is-Blank $r.English_Min)) { $r.English_Min } else { $r.Eng_Min }
@@ -119,3 +290,17 @@ try {
 }
 
 Write-Host "Wrote $($canonical.Count) rows -> $finalPath"
+if ($DropNaitNonPrograms) {
+  Write-Host "NAIT cleanup summary:"
+  Write-Host ("  nait_rows_examined: {0}" -f $naitStats.nait_rows_examined)
+  Write-Host ("  seed_names_loaded: {0}" -f $naitSeedNames.Count)
+  Write-Host ("  legacy_allowlist_names_loaded: {0}" -f $naitLegacyAllowlistNames.Count)
+  Write-Host ("  evidence_names_loaded: {0}" -f $naitEvidenceByName.Count)
+  Write-Host ("  dropped_evidence_non_program: {0}" -f $naitStats.dropped_evidence_non_program)
+  Write-Host ("  dropped_blocked_url: {0}" -f $naitStats.dropped_blocked_url)
+  Write-Host ("  dropped_blocked_name: {0}" -f $naitStats.dropped_blocked_name)
+  Write-Host ("  dropped_not_in_seed: {0}" -f $naitStats.dropped_not_in_seed)
+  Write-Host ("  kept_allowlist_override: {0}" -f $naitStats.kept_allowlist_override)
+  Write-Host ("  kept_legacy_allowlist: {0}" -f $naitStats.kept_legacy_allowlist)
+  Write-Host ("  kept_seed_match: {0}" -f $naitStats.kept_seed_match)
+}

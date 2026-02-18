@@ -1,6 +1,10 @@
 param(
   [string]$CsvPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv",
   [string]$BaselinePath = ".\\out\\last_good_programs.csv",
+  [string]$NaitSeedPath = ".\\pipeline\\nait_program_seed.csv",
+  [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
+  [string]$NaitRulesPath = ".\\config\\nait_non_program_rules.json",
+  [string]$ProgramEvidencePath = ".\\PROGRAMS_ONLY.csv",
   [int]$MinRows = 100,
   [double]$MaxRowDropPercent = 35,
   [string[]]$RequiredInstitutions = @("NAIT", "NorQuest", "MacEwan")
@@ -16,6 +20,65 @@ function Get-HeaderNames([object[]]$rows) {
 
 function Has-Column([string[]]$headers, [string]$name) {
   return $headers -contains $name
+}
+
+function Normalize-Text([object]$v) {
+  if ($null -eq $v) { return "" }
+  return ([string]$v -replace "\s+", " ").Trim()
+}
+
+function Normalize-ProgramKey([object]$v) {
+  $t = (Normalize-Text $v).ToLowerInvariant()
+  if (-not $t) { return "" }
+  $t = $t.Replace("&amp;", " and ")
+  $t = $t.Replace("&", " and ")
+  $t = [regex]::Replace($t, "[^a-z0-9]+", " ")
+  return ([string]$t -replace "\s+", " ").Trim()
+}
+
+function Normalize-UrlKey([object]$v) {
+  $t = (Normalize-Text $v).ToLowerInvariant()
+  if (-not $t) { return "" }
+  $hashIndex = $t.IndexOf("#")
+  if ($hashIndex -ge 0) {
+    $t = $t.Substring(0, $hashIndex)
+  }
+  if ($t.EndsWith("/")) {
+    $t = $t.Substring(0, $t.Length - 1)
+  }
+  return $t
+}
+
+function To-StringArray([object]$value) {
+  $items = @()
+  if ($null -eq $value) { return ,@() }
+  if ($value -is [System.Collections.IEnumerable] -and -not ($value -is [string])) {
+    foreach ($x in $value) {
+      $s = Normalize-Text $x
+      if ($s) { $items += $s }
+    }
+    return ,$items
+  }
+  $single = Normalize-Text $value
+  if ($single) { $items += $single }
+  return ,$items
+}
+
+function Add-ToSet([hashtable]$set, [string]$key) {
+  if ([string]::IsNullOrWhiteSpace($key)) { return }
+  if (-not $set.ContainsKey($key)) {
+    $set[$key] = $true
+  }
+}
+
+function Get-PropValue([object]$row, [string[]]$names) {
+  foreach ($n in $names) {
+    $prop = $row.PSObject.Properties[$n]
+    if ($prop) {
+      return [string]$prop.Value
+    }
+  }
+  return ""
 }
 
 if (-not (Test-Path $CsvPath)) {
@@ -56,13 +119,147 @@ foreach ($inst in $RequiredInstitutions) {
   }
 }
 
+$naitSeed = @{}
+if (-not (Test-Path $NaitSeedPath)) {
+  throw "Validation failed: NAIT seed file not found: $NaitSeedPath"
+}
+foreach ($seedRow in (Import-Csv $NaitSeedPath)) {
+  Add-ToSet -set $naitSeed -key (Normalize-ProgramKey (Get-PropValue -row $seedRow -names @("program_name", "Program")))
+}
+
+$naitLegacyAllowlist = @{}
+if (Test-Path $NaitLegacyAllowlistPath) {
+  foreach ($allowRow in (Import-Csv $NaitLegacyAllowlistPath)) {
+    Add-ToSet -set $naitLegacyAllowlist -key (Normalize-ProgramKey (Get-PropValue -row $allowRow -names @("program_name", "Program")))
+  }
+}
+
+if (-not (Test-Path $NaitRulesPath)) {
+  throw "Validation failed: NAIT rules file not found: $NaitRulesPath"
+}
+$rulesJson = Get-Content -Raw $NaitRulesPath | ConvertFrom-Json
+$blockedUrlPatterns = To-StringArray $rulesJson.blocked_url_patterns
+$blockedNamePatterns = To-StringArray $rulesJson.blocked_name_patterns
+$evidenceTokens = To-StringArray $rulesJson.evidence_not_program_tokens
+if ($evidenceTokens.Count -eq 0) {
+  $evidenceTokens = @("not a program page")
+}
+$allowProgram = @{}
+foreach ($name in (To-StringArray $rulesJson.allowlist_program_names)) {
+  Add-ToSet -set $allowProgram -key (Normalize-ProgramKey $name)
+}
+$allowUrl = @{}
+foreach ($url in (To-StringArray $rulesJson.allowlist_urls)) {
+  Add-ToSet -set $allowUrl -key (Normalize-UrlKey $url)
+}
+
+$evidenceByName = @{}
+if (Test-Path $ProgramEvidencePath) {
+  foreach ($e in (Import-Csv $ProgramEvidencePath)) {
+    $inst = Normalize-Text (Get-PropValue -row $e -names @("institution", "Institution"))
+    if ($inst.ToUpperInvariant() -ne "NAIT") { continue }
+    $nameKey = Normalize-ProgramKey (Get-PropValue -row $e -names @("program_name", "Program"))
+    if (-not $nameKey) { continue }
+    $notes = Normalize-Text (Get-PropValue -row $e -names @("notes_uncertain", "Notes_Uncertain", "notes", "Notes"))
+    if (-not $notes) { continue }
+    if ($evidenceByName.ContainsKey($nameKey)) {
+      $evidenceByName[$nameKey] = "{0} | {1}" -f $evidenceByName[$nameKey], $notes
+    } else {
+      $evidenceByName[$nameKey] = $notes
+    }
+  }
+}
+
+$naitViolations = @()
+$naitRows = @($rows | Where-Object { $_.Institution -eq "NAIT" })
+foreach ($r in $naitRows) {
+  $program = Normalize-Text $r.Program
+  $programKey = Normalize-ProgramKey $program
+  $url = Normalize-Text (Get-PropValue -row $r -names @("Program_URL", "Source_URL", "source_url", "program_url"))
+  $urlKey = Normalize-UrlKey $url
+  $isAllow = (($programKey -and $allowProgram.ContainsKey($programKey)) -or
+    ($urlKey -and $allowUrl.ContainsKey($urlKey)) -or
+    ($programKey -and $naitLegacyAllowlist.ContainsKey($programKey)))
+
+  $reason = ""
+  $evidenceLow = ""
+  if ($programKey -and $evidenceByName.ContainsKey($programKey)) {
+    $evidenceLow = ([string]$evidenceByName[$programKey]).ToLowerInvariant()
+  }
+  foreach ($token in $evidenceTokens) {
+    if ($token -and $evidenceLow.Contains($token.ToLowerInvariant())) {
+      $reason = "evidence_non_program"
+      break
+    }
+  }
+
+  if (-not $reason) {
+    foreach ($pattern in $blockedUrlPatterns) {
+      if ($pattern -and $url -match $pattern) {
+        $reason = "blocked_url"
+        break
+      }
+    }
+  }
+
+  if (-not $reason) {
+    foreach ($pattern in $blockedNamePatterns) {
+      if ($pattern -and $program -match $pattern) {
+        $reason = "blocked_name"
+        break
+      }
+    }
+  }
+
+  if (-not $reason -and -not $isAllow) {
+    if (-not ($programKey -and $naitSeed.ContainsKey($programKey))) {
+      $reason = "not_in_seed"
+    }
+  }
+
+  if ($reason) {
+    $naitViolations += [pscustomobject]@{
+      Program = $program
+      Reason = $reason
+    }
+  }
+}
+
+if ($naitViolations.Count -gt 0) {
+  $groups = @($naitViolations | Group-Object Reason | Sort-Object Name)
+  $summary = @($groups | ForEach-Object { "{0}={1}" -f $_.Name, $_.Count }) -join ", "
+  $examples = @($naitViolations | Select-Object -First 25 | ForEach-Object { "{0} ({1})" -f $_.Program, $_.Reason }) -join "; "
+  throw "Validation failed: NAIT non-program/seed violations found ($summary). Examples: $examples"
+}
+
 if (Test-Path $BaselinePath) {
   $baselineRows = Import-Csv $BaselinePath
   if ($baselineRows -and $baselineRows.Count -gt 0) {
     $baselineCount = [double]$baselineRows.Count
     $dropPercent = ((($baselineCount - [double]$rowCount) / $baselineCount) * 100)
     if ($dropPercent -gt $MaxRowDropPercent) {
-      throw "Validation failed: row count dropped by $([math]::Round($dropPercent,2))% (baseline=$baselineCount, current=$rowCount, max=$MaxRowDropPercent%)"
+      $baselineHeaders = Get-HeaderNames $baselineRows
+      $canCheckNaitOnlyShrink = (Has-Column $baselineHeaders "Institution") -and $countsMap.ContainsKey("NAIT")
+      if ($canCheckNaitOnlyShrink) {
+        $baselineNait = @($baselineRows | Where-Object { $_.Institution -eq "NAIT" }).Count
+        $baselineNonNait = [double]$baselineRows.Count - [double]$baselineNait
+        $currentNait = [double]$countsMap["NAIT"]
+        $currentNonNait = [double]$rowCount - $currentNait
+
+        $nonNaitDropPercent = 0.0
+        if ($baselineNonNait -gt 0) {
+          $nonNaitDropPercent = ((($baselineNonNait - $currentNonNait) / $baselineNonNait) * 100)
+        }
+
+        if ($nonNaitDropPercent -le $MaxRowDropPercent) {
+          Write-Warning ("Row count drop {0}% exceeds max {1}% but appears NAIT-driven (baseline NAIT={2}, current NAIT={3}; non-NAIT drop={4}%)." -f
+            [math]::Round($dropPercent, 2), $MaxRowDropPercent, $baselineNait, $currentNait, [math]::Round($nonNaitDropPercent, 2))
+        } else {
+          throw "Validation failed: row count dropped by $([math]::Round($dropPercent,2))% (baseline=$baselineCount, current=$rowCount, max=$MaxRowDropPercent%)"
+        }
+      } else {
+        throw "Validation failed: row count dropped by $([math]::Round($dropPercent,2))% (baseline=$baselineCount, current=$rowCount, max=$MaxRowDropPercent%)"
+      }
     }
   }
 }
@@ -77,3 +274,5 @@ Write-Host "Institution counts:"
 foreach ($g in $counts) {
   Write-Host "  $($g.Name): $($g.Count)"
 }
+Write-Host ("NAIT seed/rules check passed: {0} rows checked, seed size {1}, legacy allowlist size {2}" -f
+  $naitRows.Count, $naitSeed.Count, $naitLegacyAllowlist.Count)

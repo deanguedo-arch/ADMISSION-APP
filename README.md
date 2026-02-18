@@ -1,4 +1,4 @@
-# Alberta Admissions Checker (Edmonton-area) - MVP
+﻿# Alberta Admissions Checker (Edmonton-area) - MVP
 
 This folder contains your consolidated admissions dataset (NAIT + MacEwan + NorQuest) and a clean path to:
 
@@ -19,7 +19,7 @@ If you need one-file manual paste bundles for Apps Script, use:
 - Source of truth: `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
 - This file is produced from `ALBERTA_ADMISSIONS_MASTER_FINAL_v3.csv` by a deterministic cleaning step:
   - Unifies duplicate English fields (`English_*` vs `Eng_*`)
-  - Drops obvious NAIT non-program rows (e.g., “1. Application”)
+  - Applies NAIT seed-first non-program filtering (seed + evidence + rules)
   - Drops exact duplicate rows
 
 Script: `tools/clean-master.ps1`
@@ -38,13 +38,13 @@ Script: `tools/clean-master.ps1`
 - Logic is intentionally **separate** from scraping. You should be able to change the dataset without rewriting the checker.
 
 ### 3) Scrape / enrich / extract pipeline (Python later)
-Network scraping isn’t run from here (and programs change), but the pipeline structure you want is:
+Network scraping isnâ€™t run from here (and programs change), but the pipeline structure you want is:
 
 1. **Index**: program list + program URL
 2. **Fetch**: HTML + rendered text (if needed)
-3. **Enrich**: follow “Admissions / Entrance Requirements / How to Apply” links
+3. **Enrich**: follow â€œAdmissions / Entrance Requirements / How to Applyâ€ links
 4. **Extract**: normalize into the locked schema (per-program structured fields)
-5. **QA gates**: invalid URLs, missing reqs, suspicious “unknowns”, duplicates
+5. **QA gates**: invalid URLs, missing reqs, suspicious â€œunknownsâ€, duplicates
 6. **Publish**: overwrite the canonical CSV + push to Sheets
 
 Institution nuance scaffold:
@@ -53,7 +53,16 @@ Institution nuance scaffold:
 - `pipeline/run.py` now records `avg_total_confidence`, `avg_total_rule`, and `avg_total_adapter`.
 - adapter regression fixtures: `python .\pipeline\check_avg_total_fixtures.py`
 - enrichment-link fixtures: `python .\pipeline\check_enrichment_link_fixtures.py`
+- NAIT filter fixtures: `python .\pipeline\check_nait_program_filter_fixtures.py`
 - apply extracted averages into canonical: `.\tools\apply-avg-total-candidates.ps1 -CandidatesPath .\pipeline_artifacts\extract\avg_total_candidates.csv` (use `-DryRun` first)
+
+NAIT seed-first index filtering:
+- build seed from card-capture file: `python .\pipeline\build_nait_seed_from_element.py`
+- seed output: `pipeline/nait_program_seed.csv`
+- rules file: `config/nait_non_program_rules.json`
+- build legacy fallback allowlist: `python .\pipeline\build_nait_legacy_allowlist.py`
+- legacy allowlist output: `config/nait_legacy_allowlist.csv`
+- `pipeline/build_index.py` supports `--nait-seed`, `--nait-rules`, `--nait-legacy-allowlist`, and `--evidence`
 
 Before expanding full automation, lock the current baseline:
 - `docs/V1_LOCK_CHECKLIST.md`
@@ -148,7 +157,7 @@ Notes:
 - Core-required subjects in `A:B` are never double-counted as electives.
 
 ### Optional: auto-sync Programs tab from local pipeline
-If you want local scraping to automatically overwrite the Sheet’s `Programs` tab, set up the webhook:
+If you want local scraping to automatically overwrite the Sheetâ€™s `Programs` tab, set up the webhook:
 
 - Instructions: `docs/SHEETS_SYNC.md`
 - Apps Script webhook: `apps_script/SyncPrograms.gs`
@@ -251,9 +260,10 @@ In the `Results` tab:
 
 ## Notes / known limits (MVP)
 - Admission average is computed **per program**:
-  - If `Elective_Qty` is present (e.g., “Three”), average uses: required named courses + that many elective marks (best marks from allowed groups).
+  - If `Elective_Qty` is present (e.g., â€œThreeâ€), average uses: required named courses + that many elective marks (best marks from allowed groups).
   - Core-required courses are consumed first and not reused as electives; elective picks are optimized from available grouped courses.
   - Note-derived group rules are applied when present (example: `max 1 Group B`).
-  - If `Elective_Qty` is blank but the program has a minimum average, the checker uses `Avg_Total` (if present) or `AvgRules` (if present); otherwise it falls back to a **5-course average** (and notes that it’s a default, except for NAIT where 5 is treated as the standard default).
-- Rows like “See Degree / Refer to Degree” are treated as **not checkable** until you decide how to model inheritance.
+  - If `Elective_Qty` is blank but the program has a minimum average, the checker uses `Avg_Total` (if present) or `AvgRules` (if present); otherwise it falls back to a **5-course average** (and notes that itâ€™s a default, except for NAIT where 5 is treated as the standard default).
+- Rows like â€œSee Degree / Refer to Degreeâ€ are treated as **not checkable** until you decide how to model inheritance.
+
 

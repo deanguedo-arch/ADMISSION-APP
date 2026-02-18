@@ -1,0 +1,41 @@
+{
+  "blocked_url_patterns": [
+    "/about/newsroom/",
+    "/news-and-events/",
+    "/news-stories-events/",
+    "/events-programs/",
+    "/forms/",
+    "/contact/faq/",
+    "/program-preview",
+    "/program-previews",
+    "/tours-events-and-info-sessions/",
+    "/nait-authorized-agents/",
+    "/admissions/programs$",
+    "/admissions/programs/"
+  ],
+  "blocked_name_patterns": [
+    "^\\d+\\.\\s*",
+    "^alumni profile:",
+    "\\bform\\b",
+    "^about$",
+    "^accomplishments$",
+    "before your student applies",
+    "after your student applies",
+    "^all other nait programs$",
+    "government funding for expansion",
+    "\\bthank you page\\b",
+    "\\bceremony schedule\\b",
+    "^microsoft power platform$",
+    "^power platform for sharepoint online owners$",
+    "^school of media and information technology$",
+    "^events?\\s*&\\s*programs$",
+    "^nait event check in$",
+    "^nait surveying and geospatial events$",
+    "^skilled trades events form$"
+  ],
+  "evidence_not_program_tokens": [
+    "not a program page"
+  ],
+  "allowlist_program_names": [],
+  "allowlist_urls": []
+}

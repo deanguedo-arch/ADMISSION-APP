@@ -28,6 +28,38 @@ Different institutions put “average based on X courses” in different places 
 
 For the full pipeline spec, see `docs/PIPELINE.md`.
 
+## NAIT seed-first index filtering
+NAIT program discovery is now seed-first to prevent newsroom/event/form pages from entering the index.
+
+Authoritative seed source:
+- `Nait course list element.md` (captured program-card section from NAIT site)
+
+Seed build command:
+
+```powershell
+python .\pipeline\build_nait_seed_from_element.py
+```
+
+This writes:
+- `pipeline/nait_program_seed.csv`
+
+Legacy fallback allowlist build command:
+
+```powershell
+python .\pipeline\build_nait_legacy_allowlist.py
+```
+
+This writes:
+- `config/nait_legacy_allowlist.csv`
+
+Index cleaning now supports:
+- `--nait-seed` (default: `pipeline/nait_program_seed.csv`)
+- `--nait-rules` (default: `config/nait_non_program_rules.json`)
+- `--nait-legacy-allowlist` (default: `config/nait_legacy_allowlist.csv`)
+- `--evidence` (default: `PROGRAMS_ONLY.csv`)
+
+NAIT rows are dropped when evidence/rules indicate non-program content. Remaining rows are kept by seed match, explicit rules allowlist, or legacy fallback allowlist.
+
 ## Institution adapters (scaffold)
 `pipeline/adapters/` now provides adapter classes for:
 - `NAIT`
@@ -67,6 +99,16 @@ Fixture cases live in:
 - `pipeline/fixtures/enrichment_link_cases.json`
 
 This catches regressions when tweaking enrichment link scoring rules.
+
+## NAIT program-filter fixtures
+Use fixtures to lock NAIT non-program filtering behavior:
+
+```powershell
+python .\pipeline\check_nait_program_filter_fixtures.py
+```
+
+Fixture cases live in:
+- `pipeline/fixtures/nait_program_filter_cases.json`
 
 ## Apply extracted `Avg_Total` into canonical
 After `pipeline/run.py` writes `pipeline_artifacts/extract/avg_total_candidates.csv`, apply confident values into the freshest canonical file (`.csv` vs `.csv.new`):

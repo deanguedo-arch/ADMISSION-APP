@@ -1,442 +1,311 @@
-institution,program_name,credential,admission_type,source_url
-MacEwan,Academic Upgrading,nan,,https://calendar.macewan.ca/programs/university-entrance/university-preparation/
-MacEwan,Accounting (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-accounting/
-MacEwan,Accounting Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-accounting/
-MacEwan,Accounting Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-accounting/
-MacEwan,Accounting and Strategic Measurement,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/accounting-strategic-measurement/
-MacEwan,Acupuncture,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/acupuncture/
-MacEwan,Alberta Foundation Program (AFP),nan,,https://calendar.macewan.ca/programs/university-entrance/foundation-alberta/
-MacEwan,Anthropology (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-anthropology/
-MacEwan,Anthropology Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-anthropology/
-MacEwan,Applied Statistics (Major/Honours),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-applied-statistics/
-MacEwan,Arts and Cultural Management,nan,,https://calendar.macewan.ca/programs/min-babs-arts-cultural-management/
-MacEwan,Arts and Cultural Management (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-arts-and-cultural-management/
-MacEwan,Asia Pacific Management,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/asia-pacific-management/
-MacEwan,Aviation Management (Major),Business Management Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/aviation-management/
-MacEwan,Bachelor of Arts Undeclared,Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-undeclared/
-MacEwan,Bachelor of Commerce Undeclared,Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-undeclared/
-MacEwan,Bachelor of Physical Education Transfer,nan,,https://calendar.macewan.ca/programs/university-transfer/bpe-physical-education-transfer/
-MacEwan,Bachelor of Public Safety and Justice,Bachelor of Public Safety and Justice,,https://calendar.macewan.ca/programs/degree-programs/bpsj-public-safety-and-justice/
-MacEwan,Bachelor of Science Undeclared,Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-undeclared/
-MacEwan,Behaviour Analysis,Post-Baccalaureate Certificate,,https://calendar.macewan.ca/programs/post-baccalaureate-certificate-programs/behaviour-analysis/
-MacEwan,Behavioural Interventions Certificate,Certificate of Achievement,,https://calendar.macewan.ca/programs/certificates-achievement/behavioural-intervention/
-MacEwan,Biological Sciences,Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-biological-sciences/
-MacEwan,Bridge to Canadian Nursing,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/bridge-canadian-nursing/
-MacEwan,Business Intelligence Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-business-intelligence/
-MacEwan,Business Law Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-business-law/
-MacEwan,Business Management,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/business-management-certificate/
-MacEwan,Business Management,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/business-management-diploma/
-MacEwan,Business Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-business-studies/
-MacEwan,Chemistry (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-chemistry/
-MacEwan,Child and Youth Care,Bachelor of Child and Youth Care,,https://calendar.macewan.ca/programs/degree-programs/bcyc-child-youth-care/
-MacEwan,"Childhood, Youth, and Family Studies Minor",Minor,,https://calendar.macewan.ca/programs/degree-programs/childhood-youth-family-studies/
-MacEwan,Classics Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-classics/
-MacEwan,Community Justice and Corrections,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/community-justice-and-corrections
-MacEwan,Community Justice and Corrections,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/community-justice-and-corrections/
-MacEwan,Composition Major – Bachelor of Music,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/bmus-composition/
-MacEwan,Computer Science (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-computer-science/
-MacEwan,Creative Writing Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-creative-writing/
-MacEwan,Cybersecurity Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-cybersecurity-studies/
-MacEwan,Cybersecurity Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-cybersecurity-studies/
-MacEwan,Cybersecurity Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-bpsj-cybersecurity-studies/
-MacEwan,Data Science (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-data-science/
-MacEwan,Design,Bachelor of Design,,https://calendar.macewan.ca/programs/degree-programs/bdes-design/
-MacEwan,Digital Experience Design,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/digital-experience-design/
-MacEwan,Digital Experience Design,nan,,https://calendar.macewan.ca/programs/min-babs-digital-experience-design/
-MacEwan,Digital Experience Design (Major),Bachelor of Design,,https://calendar.macewan.ca/programs/degree-programs/bdes-digital-experience-design/
-MacEwan,Digital Experience Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-digital-experience-design/
-MacEwan,Digital Experience Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-digital-experience-design/
-MacEwan,Early Childhood Curriculum Studies (BECCS),Bachelor of Early Childhood Curriculum Studies,,https://calendar.macewan.ca/programs/degree-programs/beccs-early-childhood-curriculum-studies/
-MacEwan,Early Learning and Child Care,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/early-learning-child-care/
-MacEwan,Earth and Planetary Sciences Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-earth-planetary-sciences/
-MacEwan,Economics (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-economics/
-MacEwan,Economics Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-economics/
-MacEwan,Educational Assistant,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/educational-assistant/
-MacEwan,Emergency Communications and Response,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/emergency-communications-response/
-MacEwan,English (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-english/
-MacEwan,English as an Additional Language (EAL),nan,,https://calendar.macewan.ca/programs/university-entrance/eal/
-MacEwan,Environmental Sciences (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-environmental-science/
-MacEwan,Environmental Sciences Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-environmental-sciences/
-MacEwan,Film Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-film/
-MacEwan,Film Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-film/
-MacEwan,Finance Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-finance/
-MacEwan,Finance Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-finance/
-MacEwan,Foundation Program International,nan,,https://calendar.macewan.ca/programs/university-entrance/foundation-international/
-MacEwan,French Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-french/
-MacEwan,French Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-french/
-MacEwan,Gender Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-gender-studies/
-MacEwan,General (Major),Bachelor of Music,,https://calendar.macewan.ca/programs/degree-programs/bmus-general/
-MacEwan,Gerontology,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/gerontology/
-MacEwan,Graphic Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-graphic-design
-MacEwan,Graphic Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-graphic-design/
-MacEwan,Hearing Aid Practitioner,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/hearing-aid-practitioner/
-MacEwan,Hospice Palliative Care,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/hospice-palliative-care/
-MacEwan,Human Resources Management,Certificate and Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/human-resources-management/
-MacEwan,Human Resources Management (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-human-resources-management/
-MacEwan,Human Resources Management Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-human-resource-management/
-MacEwan,Human Resources Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-human-resources-management/
-MacEwan,Human Service Administration,Bachelor of Applied Human Service Administration,,https://calendar.macewan.ca/programs/applied-degree-programs/bahsa-human-service-admin/
-MacEwan,Indigegogy Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-indigegogy/
-MacEwan,Innovation and Entrepreneurship Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-innovation-and-entrepreneurship/
-MacEwan,Insurance and Risk Management,Business Management Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/insurance-risk-management/
-MacEwan,International Business (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-international-business/
-MacEwan,International Business Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-international-business/
-MacEwan,Investigative Studies,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/investigative-studies/
-MacEwan,Journalism (Major),Bachelor of Communication Studies,,https://calendar.macewan.ca/programs/degree-programs/bcs-journalism/
-MacEwan,Journalism Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-journalism/
-MacEwan,Journalism Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-journalism/
-MacEwan,Legal Studies in Business (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-legal-studies-business/
-MacEwan,Legal Studies in Business Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-legal-studies-in-business/
-MacEwan,Library and Information Technology,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/library-information-technology/
-MacEwan,Management (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-management/
-MacEwan,Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-management/
-MacEwan,Marketing (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-marketing/
-MacEwan,Marketing Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-marketing/
-MacEwan,Marketing Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-marketing/
-MacEwan,Massage Therapy,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/massage-therapy/
-MacEwan,Mathematical Sciences (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-mathematical-sciences/
-MacEwan,Mathematics (Major/Honours),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-mathematics/
-MacEwan,Minors - Bachelor of Arts,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/ba-minors/
-MacEwan,Minors - Bachelor of Commerce,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/bcom-minors/
-MacEwan,Minors - Bachelor of Science,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/bsc-minors/
-MacEwan,Minors - Fine Arts and Communication,nan,,https://calendar.macewan.ca/programs/degree-programs/ffac-minors/
-MacEwan,Music Career Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-music-career-management/
-MacEwan,Music Education Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-music-education/
-MacEwan,Music Technology and Production Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-music-technology-production/
-MacEwan,Music Theatre Performance (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-music-theatre-performance/
-MacEwan,Nursing,Bachelor of Science in Nursing,,https://calendar.macewan.ca/programs/degree-programs/bscn-nursing/
-MacEwan,Occupational Health Nursing (OHN),Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/occupational-health-nursing/
-MacEwan,Office Assistant - Administrative major,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-administrative/
-MacEwan,Office Assistant - Legal major,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-legal/
-MacEwan,Office Assistant - Medical major,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-medical/
-MacEwan,Paralegal Studies,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/paralegal-studies/
-MacEwan,Performance (Major),Bachelor of Music,,https://calendar.macewan.ca/programs/degree-programs/bmus-performance/
-MacEwan,Perioperative Nursing,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/perioperative-nursing/
-MacEwan,Philosophy (Major/Minor),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-philosophy/
-MacEwan,Physical Sciences (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-physical-sciences/
-MacEwan,Physical Therapist Assistant / Occupational Therapist Assistant,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/physical-occupational-therapist-assistant/
-MacEwan,Physics Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-physics/
-MacEwan,Planetary Physics Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-planetary-physics/
-MacEwan,Police Studies,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/police-studies/
-MacEwan,Political Science (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-political-science/
-MacEwan,Political Science Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-political-science/
-MacEwan,Professional Communication (Major),Bachelor of Communication Studies,,https://calendar.macewan.ca/programs/degree-programs/bcs-professional-communication/
-MacEwan,Professional Communication Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-professional-communication/
-MacEwan,Property Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-property-management/
-MacEwan,Psychiatric Nursing,Bachelor of Psychiatric Nursing,,https://calendar.macewan.ca/programs/degree-programs/bpn-psychiatric-nursing/
-MacEwan,Psychology (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-psychology/
-MacEwan,Psychology (Major/Minor/Honours),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-psychology/
-MacEwan,Psychology Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-psychology/
-MacEwan,Public Relations,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/public-relations/
-MacEwan,Public Relations (Major),Bachelor of Communication Studies,,https://calendar.macewan.ca/programs/degree-programs/bcs-public-relations/
-MacEwan,Recording and Production (Major),Bachelor of Music,,https://calendar.macewan.ca/programs/degree-programs/bmus-recording-production/
-MacEwan,Social Work,Bachelor of Social Work,,https://calendar.macewan.ca/programs/degree-programs/bsw-social-work/
-MacEwan,Social Work,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/social-work/
-MacEwan,Sociology (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-sociology/
-MacEwan,Sociology Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-sociology/
-MacEwan,Songwriting Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-songwriting/
-MacEwan,Spanish Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-spanish/
-MacEwan,Spanish Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-spanish/
-MacEwan,Speech Language Pathologist Assistant,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/speech-language-pathologist-assistant/
-MacEwan,Statistics Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-statistics/
-MacEwan,Studio Arts (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-studio-arts/
-MacEwan,Supply Chain Management (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-supply-chain-management/
-MacEwan,Supply Chain Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-supply-chain-management/
-MacEwan,Sustainability Studies,Certificate of Achievement,,https://calendar.macewan.ca/programs/certificates-achievement/sustainability/
-MacEwan,Theatre Production (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-theatre-production/
-MacEwan,Travel and Tourism,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/travel/
-MacEwan,Urban Wellness Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-urban-wellness/
-MacEwan,pimâcihisowin Foundation Program (PFP),nan,,https://calendar.macewan.ca/programs/university-entrance/foundation-pimacihisowin/
-NAIT,AI and Data Governance for Innovation and Impact,Certificate,,https://www.nait.ca/nait/continuing-education/programs/ai-and-data-governance-certificate
-NAIT,AI-Driven Project Management,nan,,https://www.nait.ca/nait/continuing-education/programs/ai-driven-project-management
-NAIT,AWS Academy Cloud,nan,,https://www.nait.ca/nait/continuing-education/programs/computer-training-centre/aws-academy-cloud-foundations
-NAIT,Advanced Healthcare Leadership,nan,,https://www.nait.ca/nait/continuing-education/programs/advanced-healthcare-leadership
-NAIT,Advanced Machining Centre Programming - Milling,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach206-advanced-machining-centre-programming
-NAIT,Advanced Turning Centre Programming - Lathe,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach306-advanced-turning-centre-programming
-NAIT,Agentic AI Foundation,Certificate,,https://www.nait.ca/nait/continuing-education/programs/agentic-ai-foundation
-NAIT,Alberta Advantage Immigration Program,nan,,https://www.nait.ca/nait/international/immigration-visa-requirements/alberta-advantage-immigration-program
-NAIT,Animation (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/animation
-NAIT,Apple iOS iPhone/iPad Mobile Developer,Certificate of Achievement,,https://www.nait.ca/nait/continuing-education/programs/apple-ios-iphone-ipad-mobile-developer-certificate
-NAIT,Apprentice Sponsorship,nan,,https://www.nait.ca/nait/schools-programs/forms/apprentice-sponsorship
-NAIT,Apprenticeship Pathways,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship/apprenticeship-pathways
-NAIT,Artisanal Food Market,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/artisanal-food-market
-NAIT,Bachelor of Business Administration (BBA) Co-operative Education,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/experiential-learning/bachelor-of-business-administration-co-op-educatio
-NAIT,Basic Machine Centre Programming - Milling,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach204-basic-machine-centre-programming
-NAIT,Basic Turning Centre Programming - Lathe,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach304-basic-turning-centre-programming
-NAIT,Become a Certified Digital Marketing Professional,nan,,https://www.nait.ca/online-digital-marketing-program
-NAIT,Blockchain Smart Contract,nan,,https://www.nait.ca/nait/continuing-education/programs/blockchain-smart-contract
-NAIT,Breast Sonography,Certificate,,https://www.nait.ca/nait/continuing-education/programs/breast-sonography
-NAIT,Business Continuity Management Program (BCMP) Sustainment,Course / part of Business Continuity Certificate or Business Risk Management,,https://www.nait.ca/nait/continuing-education/courses/cdem306-business-continuity-management-program-(bc
-NAIT,Business Degree and Diploma Programs,nan,,https://www.nait.ca/schools/jrssb/programs
-NAIT,Business Innovation Showcase,nan,,https://www.nait.ca/nait/business-industry/mawji-centre/events-programs/business-innovation-showcase
-NAIT,Business Innovation Showcase,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/mawji-centre/events-programs/business-innovation-showcase
-NAIT,Business Risk Management,nan,,https://www.nait.ca/nait/continuing-education/programs/business-risk-management
-NAIT,C/C++ Programming Language,nan,,https://www.nait.ca/coned/c-cpp-programming-language
-NAIT,CLA: Programming Essentials in C,Course / part of C/C++ Programming Language group,,https://www.nait.ca/nait/continuing-education/courses/cctp135-cla-programming-essentials-in-c
-NAIT,CPA: Programming Essentials in C++,Course / part of C/C++ Programming Language group,,https://www.nait.ca/nait/continuing-education/courses/cctp136-cpa-programming-essentials-in-c
-NAIT,Canadian Registered Safety Technician (CRST),nan,,https://www.nait.ca/nait/continuing-education/programs/canadian-registered-safety-technician
-NAIT,Career Mentorship,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/peer-mentorship-program/career-mentorship
-NAIT,Certified Risk Management Professional (CRMP),nan,,https://www.nait.ca/nait/continuing-education/programs/certified-risk-management-professional
-NAIT,Chef in Residence,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/chef-in-residence
-NAIT,Choosing Your NAIT Program,nan,,https://www.nait.ca/nait/admissions/programs/choosing-your-nait-program
-NAIT,Clean Energy,nan,,https://www.nait.ca/nait/continuing-education/programs/clean-energy
-NAIT,Club Culinaire,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/club-culinaire
-NAIT,Competitive Entrance,nan,,https://www.nait.ca/nait/admissions/applying-to-nait/entrance-requirements/how-does-nait-evaluate-my-application/competitive-entrance-programs
-NAIT,Computer Software Development (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/computer-software-development
-NAIT,Construction Leadership and Supervision (CLS),Certificate,,https://www.nait.ca/coned/construction-leadership-and-supervision-program
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/coned/career-programs
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/continuing-education/programs-and-courses
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/business-leadership
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/construction-trades-and-manufacturing
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/energy-and-environment
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/health
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/how-to-register-for-non-credit-programs-and-course
-NAIT,Continuing Education Programs & Courses,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/productivity-and-project-management
-NAIT,Core Programming,nan,,https://www.nait.ca/coned/core-programming
-NAIT,Corporate Training Inquiry,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/how-to-register-for-non-credit-programs-and-course/group-registration-and-corporate-training
-NAIT,Credit Program Students,nan,,https://www.nait.ca/nait-authorized-agents/credit-program-students
-NAIT,Culinary Arts and Professional Food Studies,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food
-NAIT,Culinary Programs,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/culinary-programs
-NAIT,Dental and Denture Clinic,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/dental-and-denture-clinic
-NAIT,Digital Cinema (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/digital-cinema
-NAIT,Digital Marketing,Professional Certificate,,https://www.nait.ca/coned/digital-marketing-program
-NAIT,Digital Marketing Associate Tracks,nan,,https://www.nait.ca/nait/continuing-education/programs/digital-marketing-associate-tracks
-NAIT,Digital Marketing Professional Certification,nan,,https://www.nait.ca/nait/continuing-education/programs/digital-marketing-professional-certification
-NAIT,Digital Marketing Specialist,nan,,https://www.nait.ca/nait/continuing-education/programs/digital-marketing-specialist
-NAIT,Driving Net Zero,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/industry-engagement/news-and-events/driving-net-zero
-NAIT,Drone Training,Certificate of Completion,,https://www.nait.ca/nait/continuing-education/programs/drone-training-certificate
-NAIT,Emergency Medical Responder (EMR),nan,,https://www.nait.ca/nait/continuing-education/forms/emr-program-completion
-NAIT,Energy Process Operator,Certificate,,https://www.nait.ca/nait/continuing-education/programs/energy-process-operator
-NAIT,Engineering Students to Craft Rope Suspension Bridges across Whitemud Creek,nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/beyond-the-classroom/students/engineering-students-to-craft-rope-suspension-brid
-NAIT,English Summer Language Program,Certificate of Completion,,https://www.nait.ca/nait/marketing/english-summer-language-program
-NAIT,Entrepreneurship Blue Book Program,nan,,https://www.nait.ca/nait/business-industry/mawji-centre/events-programs/entrepreneurial-blue-book-program
-NAIT,Entrepreneurship Blue Book Program,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/mawji-centre/events-programs/entrepreneurial-blue-book-program
-NAIT,Entrepreneurship and Business Management,nan,,https://www.nait.ca/nait/continuing-education/programs/entrepreneurship
-NAIT,"Equity, Diversity, and Inclusion",Certificate,,https://www.nait.ca/nait/continuing-education/programs/equity-diversity-and-inclusion
-NAIT,Explore your options,nan,,https://www.nait.ca/schools-programs/explore
-NAIT,FAQ - Applying to a Program at NAIT,nan,,https://www.nait.ca/nait/contact/faq/applying-to-a-program-at-nait
-NAIT,Find a Program,nan,,https://www.nait.ca/nait/admissions/programs
-NAIT,Fitness & Recreation Programs,nan,,https://www.nait.ca/nait/student-life/health-well-being/fitness-programs
-NAIT,Full Stack Development Bootcamp,nan,,https://www.nait.ca/nait/continuing-education/programs/full-stack-development
-NAIT,Fundamentals of Cloud Programming,Course / part of Data Engineer Certificate,,https://www.nait.ca/nait/continuing-education/courses/cctb673-fundamentals-of-cloud-programming
-NAIT,Game Design (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/game-design
-NAIT,Game Programming (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/game-programming
-NAIT,Generative AI: From Concepts to Real-World Solution,nan,,https://www.nait.ca/nait/continuing-education/programs/generative-ai-from-concepts-to-real-world-solutio
-NAIT,Get hands-on with NAIT programs at Open House,nan,,https://www.nait.ca/nait/about/newsroom/2018/get-hands-on-with-nait-programs-at-open-house
-NAIT,Glossary of NAIT Terms - MyNAIT,nan,,https://www.nait.ca/nait-authorized-agents/credit-program-students/definition-of-nait-terms
-NAIT,Guest Chef in Residence 2024,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/chef-in-residence/guest-chefs-in-residence-2024
-NAIT,Hazard Assessment Program,nan,,https://www.nait.ca/nait/student-life/on-campus/health-services/hazard-assessment-program
-NAIT,Health Science,nan,,https://www.nait.ca/nait/admissions/applying-to-nait/entrance-requirements/english-language-proficiency/formal-assessment/most-health-science-programs
-NAIT,Home Inspection Training Program: Air Conditioning and Heat Pumps,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp204-home-inspection-training-program-air-condi
-NAIT,Home Inspection Training Program: Communication and Professional Practice,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp101-home-inspection-training-program-communica
-NAIT,Home Inspection Training Program: Electrical,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp201-home-inspection-training-program-electrica
-NAIT,Home Inspection Training Program: Exterior,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp104-home-inspection-training-program-exterior
-NAIT,Home Inspection Training Program: Heating I,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp202-home-inspection-training-program-heating-i
-NAIT,Home Inspection Training Program: Heating II,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp203-home-inspection-training-program-heating-i
-NAIT,Home Inspection Training Program: Insulation and Interior,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp103-home-inspection-training-program-insulatio
-NAIT,Home Inspection Training Program: Plumbing,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp205-home-inspection-training-program-plumbing
-NAIT,Home Inspection Training Program: Roofing,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp105-home-inspection-training-program-roofing
-NAIT,Home Inspection Training Program: Structure,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp102-home-inspection-training-program-structure
-NAIT,How To Apply,nan,,https://www.nait.ca/nait-authorized-agents/credit-program-students/how-to-apply
-NAIT,ICON Student Managed Investment Fund,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/experiential-learning/icon-student-managed-investment-fund
-NAIT,IGNITE Program,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/nisohkamatotan-centre/the-prospective-aboriginal-youth-program
-NAIT,IT Business Analysis (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/it-business-analysis
-NAIT,IT System Administration (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/it-system-administration
-NAIT,Implementing a Crisis Management Program,Course / part of Advanced Healthcare Leadership or Crisis Management Essentials Certificate,,https://www.nait.ca/nait/continuing-education/courses/cdem605-implementing-a-crisis-management-program
-NAIT,Industry Engagement,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship/industry-engagement
-NAIT,Industry Engagement,nan,,https://www.nait.ca/nait/schools-programs/school-of-construction-and-building-sciences/industry-engagement
-NAIT,Industry Engagement,nan,,https://www.nait.ca/nait/schools-programs/school-of-energy-and-natural-resources/industry-engagement
-NAIT,Industry Engagement,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/industry-engagement
-NAIT,Industry Engagement,nan,,https://www.nait.ca/nait/schools-programs/school-of-manufacturing-automation/industry-engagement
-NAIT,Industry Engagement,nan,,https://www.nait.ca/nait/schools-programs/school-of-media-and-information-technology/industry-engagement
-NAIT,Industry Engagement,nan,,https://www.nait.ca/nait/schools-programs/school-of-transportation/industry-engagement
-NAIT,Innovation Challenge,nan,,https://www.nait.ca/nait/business-industry/mawji-centre/events-programs/innovation-challenge
-NAIT,Innovation Challenge,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/mawji-centre/events-programs/innovation-challenge
-NAIT,Interior Design Business Tools,nan,,https://www.nait.ca/nait/continuing-education/programs/interior-design-entrepreneurship
-NAIT,Intermediate Machine Centre Programming - Milling,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach205-intermediate-machine-centre-programming
-NAIT,Intermediate Turning Centre Programming - Lathe,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach305-intermediate-turning-centre-programming
-NAIT,International Peer Group,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/peer-mentorship-program/international-peer-mentors
-NAIT,International Society of Automation Courses,nan,,https://www.nait.ca/nait/continuing-education/programs/international-society-of-automation
-NAIT,International Student Program Changes,nan,,https://www.nait.ca/nait/international/immigration-visa-requirements/international-student-program-changes
-NAIT,Interprofessional Education,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/interprofessional-education
-NAIT,Introduction to CNC Programming,"Course / part of Industrial Automation and Controls or Robotics, Automation and Control Certificate",,https://www.nait.ca/nait/continuing-education/courses/iacc106-introduction-to-cnc-programming
-NAIT,Introduction to Programming,Course / part of Core Programming or Python Developer,,https://www.nait.ca/nait/continuing-education/courses/cctp10-introduction-to-programming
-NAIT,Introduction to Reforestation,Certificate,,https://www.nait.ca/nait/continuing-education/programs/introduction-to-reforestation
-NAIT,JR Shaw,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business-old/jrssb-news-and-events/jr-shaw
-NAIT,JR Shaw School of Business,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business
-NAIT,"JR Shaw School of Business Info Session - June 27, 2023",nan,,https://www.nait.ca/nait/schools-programs/forms/nait-campus-tours-registration-june-23-2023-(1)
-NAIT,Jill of All Trades,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship/jill-of-all-trades
-NAIT,Join the ICON team,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/experiential-learning/icon-student-managed-investment-fund/icon-club-contact-form
-NAIT,Logo Design and Visual Identity,Certificate,,https://www.nait.ca/nait/continuing-education/programs/logo-design
-NAIT,Machine Learning and Artificial Intelligence Bootcamp,nan,,https://www.nait.ca/nait/continuing-education/programs/machine-learning-and-artificial-intelligence
-NAIT,Mastering Power BI,Certificate,,https://www.nait.ca/nait/continuing-education/programs/mastering-power-bi
-NAIT,Materials Testing Labs,nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/beyond-the-classroom/locations/materials-testing-labs
-NAIT,Mawji Centre for New Venture and Student Entrepreneurship,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/mawji-centre
-NAIT,Mawji Centre for New Venture and Student Entrepreneurship,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/industry-engagement/news-and-events/entrepreneurship
-NAIT,Mawji Student Ambassador Program,nan,,https://www.nait.ca/nait/business-industry/mawji-centre/events-programs/student-ambassador-program
-NAIT,Mental Health and Well-Being,nan,,https://www.nait.ca/nait/continuing-education/programs/mental-health-and-well-being
-NAIT,Mentorship,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/mawji-centre/mentorship
-NAIT,Mentorship at NAIT,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/peer-mentorship-program
-NAIT,Microsoft Full-Stack Web Developer,Certificate,,https://www.nait.ca/nait/continuing-education/programs/microsoft-full-stack-web-developer-certificate
-NAIT,NAIT Bakes,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/nait-bakes
-NAIT,NAIT Hiring Fair,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/industry-engagement/news-and-events/nait-hiring-career-fair
-NAIT,NAIT International Culinary Exchange,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/nait-international-culinary-exchange
-NAIT,NAIT International Sign Up,nan,,https://www.nait.ca/nait/schools-programs/forms/nait-international-sign-up
-NAIT,NAIT Jill of all Trades Registration,nan,,https://www.nait.ca/nait/schools-programs/forms/nait-jill-of-all-trades-registration
-NAIT,NAIT Launches Engagement Phase for Paused Programs,nan,,https://www.nait.ca/nait/about/newsroom/2025/nait-launches-engagement-phase-for-paused-programs
-NAIT,NAIT Next In Trades Registration,nan,,https://www.nait.ca/nait/schools-programs/forms/nait-next-in-trades-registration
-NAIT,NAIT Olympic Culinary Team,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/department-of-culinary-arts-and-professional-food/nait-olympic-culinary-team
-NAIT,NAIT Open House Contest,nan,,https://www.nait.ca/nait/schools-programs/forms/nait-open-house-contest
-NAIT,NAIT Work-Integrated Learning Project Chosen as One of 13 BHER-CEWIL Grant Initiative Recipients,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business-old/jrssb-news-and-events/nait-work-integrated-learning-project-chosen-as-on
-NAIT,NAIT joins program launch to help students from the Philippines study in Canada,nan,,https://www.nait.ca/nait/about/newsroom/2017/nait-joins-program-launch-to-help-students-from-th
-NAIT,NAIT launches 5 new programs,nan,,https://www.nait.ca/nait/about/newsroom/2024/nait-launches-5-new-programs
-NAIT,NAIT reviews programs for future growth and innovation,nan,,https://www.nait.ca/nait/about/newsroom/2025/nait-reviews-programs-for-future-growth-and-innova
-NAIT,NAIT shifts to online lecture and theory program delivery until at least Jan. 21,nan,,https://www.nait.ca/nait/about/newsroom/2021/nait-shifts-to-online-lecture-and-theory-program-d
-NAIT,NAIT’s JR Shaw School of Business launches Accountant-in-Residence program,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/experiential-learning/promos/nait-s-jr-shaw-school-of-business-launches-account
-NAIT,National Payroll Institute Designation Programs,PCP and PLP designations,,https://www.nait.ca/coned/national-payroll-institute-program
-NAIT,Network Security,Certificate,,https://www.nait.ca/nait/continuing-education/programs/network-security-certificate
-NAIT,"New NAIT program to bring more women-identifying individuals to construction, energy and manufacturi",nan,,https://www.nait.ca/nait/about/newsroom/2024/new-nait-program-to-bring-more-women-identifying-i
-NAIT,New drill rig operator program launched at NAIT,nan,,https://www.nait.ca/nait/about/newsroom/2017/new-drill-rig-operator-program-launched-at-nait
-NAIT,New pilot program aims to fast-track medical device innovation,nan,,https://www.nait.ca/nait/about/newsroom/2025/new-pilot-program-aims-to-fast-track-medical-devic
-NAIT,Next in Trades,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship/next-in-trades
-NAIT,Next in Trades,nan,,https://www.nait.ca/nait/schools-programs/school-of-construction-and-building-sciences/news-stories-events/next-in-trades
-NAIT,Next in Trades,nan,,https://www.nait.ca/nait/schools-programs/school-of-manufacturing-automation/news-stories-events/next-in-trades
-NAIT,Nokia Bell Labs 5G Certification,nan,,https://www.nait.ca/nait/corporate-continuing-education/programs/nokia-bell-labs-5g-certification
-NAIT,Office of Apprenticeship,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship
-NAIT,Online Professional Development,nan,,https://www.nait.ca/nait/continuing-education/programs-and-courses/online-professional-development
-NAIT,Open House,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/news-stories-events/open-house
-NAIT,Open House,nan,,https://www.nait.ca/nait/schools-programs/school-of-energy-and-natural-resources/news-stories-events/open-house
-NAIT,Open House,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/news-stories-events/open-house-(1)
-NAIT,Open House,nan,,https://www.nait.ca/nait/schools-programs/school-of-media-and-information-technology/news-stories-events/open-house
-NAIT,Open Studies Pathway (School of Health and Life Sciences),nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/open-studies-pathway
-NAIT,Outreach and Well-being Leaders (OWLs) Program,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/outreach-and-well-being-leaders-program
-NAIT,Outreach and Well-being Leaders Engagement Team (OWLET),nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/outreach-and-well-being-leaders-program/outreach-and-well-being-leaders-engagement-team
-NAIT,Paramedicine Training at NAIT,nan,,https://www.nait.ca/paramedic-programs
-NAIT,Patient partners,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/interprofessional-education/patient-partners
-NAIT,Payroll Professional Program,Course / part of National Payroll Institute Designation Programs,,https://www.nait.ca/nait/continuing-education/courses/cpay500-payroll-professional-program
-NAIT,Peer Mentorship,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/peer-mentorship-program/peer-mentorship
-NAIT,Pitch it to Me,nan,,https://www.nait.ca/nait/business-industry/mawji-centre/events-programs/pitch-it-to-me
-NAIT,Pitch it to Me,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/mawji-centre/events-programs/pitch-it-to-me
-NAIT,Point-of-Care Ultrasound (POCUS),nan,,https://www.nait.ca/nait/continuing-education/programs/point-of-care-ultrasound-(pocus)
-NAIT,Pre-Apprenticeship Courses,nan,,https://www.nait.ca/nait/continuing-education/programs/pre-apprenticeship-courses
-NAIT,Professional Development for Real Estate Professionals,nan,,https://www.nait.ca/nait/continuing-education/programs/real-estate-professional-development
-NAIT,Program Availability,nan,,https://www.nait.ca/nait/admissions/programs/program-availability-domestic
-NAIT,Program Availability,nan,,https://www.nait.ca/nait/admissions/programs/program-availability-international
-NAIT,Program Preview Registration - School of Health & Life Sciences,nan,,https://www.nait.ca/nait/schools-programs/forms/program-preview-registration-school-of-health-life
-NAIT,Program Preview Registration - School of Skilled Trades,nan,,https://www.nait.ca/nait/schools-programs/forms/program-preview-registration-sst
-NAIT,Program Previews,nan,,https://www.nait.ca/nait/admissions/tours-events-and-info-sessions/program-previews
-NAIT,Programmable Logic Controller Level I,Certificate of Achievement,,https://www.nait.ca/coned/programmable-logic-controller
-NAIT,Programmable Logic Controller Level II,Certificate of Achievement,,https://www.nait.ca/coned/programmable-logic-controller-ii
-NAIT,Programming Python Web Applications,Course / part of Core Programming or Python Developer,,https://www.nait.ca/nait/continuing-education/courses/cctp21-programming-python-web-applications
-NAIT,Programs,nan,,https://www.nait.ca/nait/schools-programs/school-of-construction-and-building-sciences/programs
-NAIT,Programs,nan,,https://www.nait.ca/nait/schools-programs/school-of-energy-and-natural-resources/programs
-NAIT,Programs,nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/programs
-NAIT,Programs,nan,,https://www.nait.ca/nait/schools-programs/school-of-manufacturing-automation/programs
-NAIT,Programs,nan,,https://www.nait.ca/nait/schools-programs/school-of-media-and-information-technology/programs
-NAIT,Programs,nan,,https://www.nait.ca/nait/schools-programs/school-of-transportation/programs
-NAIT,Python Developer,Certificate,,https://www.nait.ca/nait/continuing-education/programs/python-developer
-NAIT,Quantum for Engineers,Certificate,,https://www.nait.ca/nait/continuing-education/programs/quantum-for-engineers
-NAIT,Quantum for Executives,Certificate,,https://www.nait.ca/nait/continuing-education/programs/quantum-for-executives
-NAIT,Questions,nan,,https://www.nait.ca/nait/schools-programs/school-of-skilled-trades/applying-for-apprenticeship-programs/questions-about-the-application-process
-NAIT,QuickBooks Online Accounting,Certificate,,https://www.nait.ca/nait/continuing-education/programs/computer-training-centre/quickbooks-online-accounting
-NAIT,Real Estate Licensing Alberta,nan,,https://www.nait.ca/nait/continuing-education/programs/real-estate-licensing-alberta-(rela)
-NAIT,Risk Management for Cybersecurity,nan,,https://www.nait.ca/nait/continuing-education/programs/risk-management-for-cybersecurity
-NAIT,Risk Management in Project & Quality Management,nan,,https://www.nait.ca/nait/continuing-education/programs/risk-management-in-project-quality-management
-NAIT,School of Construction and Building Sciences,nan,,https://www.nait.ca/schools-programs/school-of-construction-and-building-sciences
-NAIT,School of Energy and Natural Resources,nan,,https://www.nait.ca/schools-programs/school-of-energy-and-natural-resources
-NAIT,School of Health and Life Sciences,nan,,https://www.nait.ca/schools-programs/school-of-health-and-life-sciences
-NAIT,School of Manufacturing and Automation,nan,,https://www.nait.ca/schools-programs/school-of-manufacturing-and-automation
-NAIT,School of Transportation,nan,,https://www.nait.ca/nait/schools-programs/school-of-transportation
-NAIT,Schools & Programs,nan,,https://www.nait.ca/nait/schools-programs
-NAIT,Search for Programs,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship/apprenticeship-programs
-NAIT,Search for Programs,nan,,https://www.nait.ca/programs
-NAIT,Siemens Digital Fundamentals and Programmable Logic Controllers,Course,,https://www.nait.ca/nait/continuing-education/courses/smec140-siemens-digital-fundamentals-and-programma
-NAIT,Skilled Trades Diploma and Certificate Programs,nan,,https://www.nait.ca/nait/schools-programs/school-of-skilled-trades/programs/trades-diplomas-certificates
-NAIT,Software Testing Associate,Certificate,,https://www.nait.ca/nait/continuing-education/programs/computer-training-centre/software-testing-associate-certificate
-NAIT,"Solar panels shine despite winter's blast, NAIT study finds",nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/beyond-the-classroom/news/solar-panels-shine-despite-winters-blast-nait-st
-NAIT,Sponsoring & Hiring Apprentices,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship/industry-engagement/sponsoring-hiring-apprentices
-NAIT,Student Case Competition Highlights 2017/18,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business-old/jrssb-news-and-events/jrssb-student-case-competition-highlights-2017-18
-NAIT,Student Promotional Awards 2018,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business-old/jrssb-news-and-events/student-promotional-awards-2018
-NAIT,Student Promotional Awards 2019,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business-old/jrssb-news-and-events/student-promotional-awards-2019
-NAIT,Student Success,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/mawji-centre/student-success
-NAIT,Students receive industry recognition and job placement for project,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business-old/jrssb-news-and-events/students-receive-industry-recognition-and-job-plac
-NAIT,Summer Programs,nan,,https://www.nait.ca/nait/international/global-learning/study-abroad-opportunities/summer-programs
-NAIT,Supply Chain Management,nan,,https://www.nait.ca/nait/continuing-education/programs/supply-chain-management
-NAIT,Technical Drawing and Interpretation,nan,,https://www.nait.ca/nait/continuing-education/programs/technical-drawing-and-interpretation-courses
-NAIT,Tips for Mature Students,nan,,https://www.nait.ca/nait/admissions/programs/mature-students
-NAIT,Unique “Queers and Peers Mentorship” program celebrates 3 years at NAIT,nan,,https://www.nait.ca/nait/about/newsroom/2024/unique-queers-and-peers-mentorship-program-celebra
-NAIT,Unlocking the Power of AI: Practical Insights,Certificate of Completion,,https://www.nait.ca/nait/continuing-education/programs/unlocking-the-power-of-ai-practical-insights
-NAIT,Visual Communications (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/visual-communications
-NAIT,Water and Wastewater Technician,Specialized Certificate,,https://www.nait.ca/coned/water-wastewater-tech-programming-distance
-NAIT,Web Design and Development (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/web-design-and-development
-NAIT,Women Leading and Building Canada’s Future,nan,,https://www.nait.ca/nait/schools-programs/office-of-apprenticeship/women-leading-and-building-canada-s-future
-NAIT,Women of Steel™: Forging Forward Program Comes to Edmonton,nan,,https://www.nait.ca/nait/about/newsroom/2023/women-of-steel™-forging-forward-program-comes-to-e
-NAIT,Work Integrated Learning,nan,,https://www.nait.ca/nait/schools-programs/work-integrated-learning
-NAIT,n-Tier Development Programming Architecture,Course / part of Database Administrator program,,https://www.nait.ca/nait/continuing-education/courses/cctb140-n-tier-development-programming-architect
-NorQuest,Academic Program Advisors,nan,,http://www.norquest.ca/student-resources/academic-program-advisors/
-NorQuest,Applied Research for Innovation Badge Selector,nan,,http://www.norquest.ca/programs-courses/introduction-to-applied-research-for-innovation/applied-research-for-innovation-badge-selector/
-NorQuest,Bring your own device,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/bring-your-own-device/
-NorQuest,Browse programs and courses,nan,,http://www.norquest.ca/international-student/browse-programs-and-courses/
-NorQuest,Browse programs and courses,nan,,http://www.norquest.ca/programs-courses/browse-programs-and-courses/
-NorQuest,Business Administration to Bachelor of Commerce,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/business-administration-to-bachelor-of-commerce/
-NorQuest,Content Creation Volunteer,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/norquest-international-volunteer-program/content-creation-volunteer/
-NorQuest,Continuing Education,nan,,http://www.norquest.ca/programs-courses/continuing-education/
-NorQuest,Continuing Education programs and courses,nan,,http://www.norquest.ca/continuing-education/continuing-education-programs-and-courses/
-NorQuest,Definitions,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/definitions/
-NorQuest,Digital badges from NorQuest College.,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/definitions/digital-badges/
-NorQuest,Discover your perfect career path,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/discover-your-perfect-career-path/
-NorQuest,Dual Credit partnering,nan,,http://www.norquest.ca/programs-courses/dual-credit-programs/dual-credit-partnering/
-NorQuest,Dual Credit students,nan,,http://www.norquest.ca/programs-courses/dual-credit-programs/dual-credit-students/
-NorQuest,Dual credit programs,nan,,http://www.norquest.ca/programs-courses/dual-credit-programs/
-NorQuest,Emerging Leaders Program,Certificate of Recognition,,http://www.norquest.ca/international-student/international-student-services/get-involved/emerging-leaders-program/
-NorQuest,Explore NorQuest College,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/explore-norquest-college/
-NorQuest,Family Caregiver Wellness Workshops,nan,,http://www.norquest.ca/programs-courses/family-caregiver-wellness-workshops/
-NorQuest,Foster the next generation of data analysts,nan,,http://www.norquest.ca/programs-courses/upskilling-for-data-analytics-and-business-intelligence/foster-the-next-generation-of-data-analysts/
-NorQuest,Foundational Learning Hub,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/foundational-learning-hub/
-NorQuest,Foundational programs,nan,,http://www.norquest.ca/foundational-programs/
-NorQuest,Frequently asked questions,nan,,http://www.norquest.ca/programs-courses/microcredentials/frequently-asked-questions/
-NorQuest,Health programs for rural students,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/health-programs-for-rural-students/
-NorQuest,International Peer Mentorship Program,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/peer-mentorship-program/
-NorQuest,Learning at NorQuest,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/
-NorQuest,Marketing & Promotions Volunteer,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/norquest-international-volunteer-program/marketing-promotions-volunteer/
-NorQuest,Microcredentials,nan,,http://www.norquest.ca/programs-courses/microcredentials/
-NorQuest,NorQuest International Volunteer Program,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/norquest-international-volunteer-program/
-NorQuest,Obrigado,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/brasil/obrigado/
-NorQuest,Online delivery information,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/online-delivery-information/
-NorQuest,Open Admissions Pathways,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/open-admissions-pathways/
-NorQuest,Open Studies,nan,,http://www.norquest.ca/programs-courses/open-studies/
-NorQuest,Our program,nan,,http://www.norquest.ca/student-services/child-care-centre/our-program/
-NorQuest,Page not found,nan,,http://www.norquest.ca/x/workstyles-program-policy/
-NorQuest,Program Availability,nan,,http://www.norquest.ca/program-availability/
-NorQuest,Programs and courses,nan,,http://www.norquest.ca/programs-courses/
-NorQuest,RBC Indigenous Mentorship Program,nan,,http://www.norquest.ca/student-services/indigenous-student-services/rbc-indigenous-mentorship-program/
-NorQuest,Ready to score a new career?,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/ready-to-score-a-new-career/
-NorQuest,Request information,nan,,http://www.norquest.ca/programs-courses/microcredentials/request-information/
-NorQuest,Start a business career,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/start-a-business-career/
-NorQuest,Sua nova carreira começa aqui — no NorQuest College,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/brasil/
-NorQuest,Take your healthcare career in a new direction,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/take-your-healthcare-career-in-a-new-direction/
-NorQuest,Your new career starts at NorQuest College,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/your-new-career-starts-at-norquest-college/
-UAlberta,About,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17516
-UAlberta,About,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17532
-UAlberta,Academic,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17524
-UAlberta,Calendar,nan,,https://calendar.ualberta.ca/misc/catalog_list.php?catoid=56
-UAlberta,Calendar,nan,,https://calendar.ualberta.ca/search_advanced.php?catoid=56
-UAlberta,Colleges,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17522
-UAlberta,Composition (Major),Bachelor of Music,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17354&print
-UAlberta,Course,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17518
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/embedded-undergraduate-certificates/index.html
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/inclusive-education/index.html
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/index.html
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/online-courses/index.html
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/online-learning.html
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/education/programs/english-language-school/index.html
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/graduate-programs/index.html
-UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/graduate-studies/admissions-programs/apply/index.html
-UAlberta,Graduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17527
-UAlberta,Graduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17535
-UAlberta,Graduate Programs (General),nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17533
-UAlberta,Inquiries,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17523
-UAlberta,Undergraduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17521
-UAlberta,Undergraduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17526
-UAlberta,University,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17520
-UAlberta,University,nan,,https://calendar.ualberta.ca/index.php?catoid=56
+institution,program_name,credential,admission_type,source_url,notes_uncertain
+MacEwan,Academic Upgrading,nan,,https://calendar.macewan.ca/programs/university-entrance/university-preparation/,
+MacEwan,Accounting (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-accounting/,
+MacEwan,Accounting Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-accounting/,
+MacEwan,Accounting Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-accounting/,
+MacEwan,Accounting and Strategic Measurement,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/accounting-strategic-measurement/,
+MacEwan,Acupuncture,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/acupuncture/,
+MacEwan,Alberta Foundation Program (AFP),nan,,https://calendar.macewan.ca/programs/university-entrance/foundation-alberta/,
+MacEwan,Anthropology (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-anthropology/,
+MacEwan,Anthropology Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-anthropology/,
+MacEwan,Applied Statistics (Major/Honours),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-applied-statistics/,
+MacEwan,Arts and Cultural Management,nan,,https://calendar.macewan.ca/programs/min-babs-arts-cultural-management/,
+MacEwan,Arts and Cultural Management (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-arts-and-cultural-management/,
+MacEwan,Asia Pacific Management,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/asia-pacific-management/,
+MacEwan,Aviation Management (Major),Business Management Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/aviation-management/,
+MacEwan,Bachelor of Arts Undeclared,Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-undeclared/,
+MacEwan,Bachelor of Commerce Undeclared,Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-undeclared/,
+MacEwan,Bachelor of Physical Education Transfer,nan,,https://calendar.macewan.ca/programs/university-transfer/bpe-physical-education-transfer/,
+MacEwan,Bachelor of Public Safety and Justice,Bachelor of Public Safety and Justice,,https://calendar.macewan.ca/programs/degree-programs/bpsj-public-safety-and-justice/,
+MacEwan,Bachelor of Science Undeclared,Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-undeclared/,
+MacEwan,Behaviour Analysis,Post-Baccalaureate Certificate,,https://calendar.macewan.ca/programs/post-baccalaureate-certificate-programs/behaviour-analysis/,
+MacEwan,Behavioural Interventions Certificate,Certificate of Achievement,,https://calendar.macewan.ca/programs/certificates-achievement/behavioural-intervention/,
+MacEwan,Biological Sciences,Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-biological-sciences/,
+MacEwan,Bridge to Canadian Nursing,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/bridge-canadian-nursing/,
+MacEwan,Business Intelligence Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-business-intelligence/,
+MacEwan,Business Law Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-business-law/,
+MacEwan,Business Management,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/business-management-certificate/,
+MacEwan,Business Management,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/business-management-diploma/,
+MacEwan,Business Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-business-studies/,
+MacEwan,Chemistry (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-chemistry/,
+MacEwan,Child and Youth Care,Bachelor of Child and Youth Care,,https://calendar.macewan.ca/programs/degree-programs/bcyc-child-youth-care/,
+MacEwan,"Childhood, Youth, and Family Studies Minor",Minor,,https://calendar.macewan.ca/programs/degree-programs/childhood-youth-family-studies/,
+MacEwan,Classics Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-classics/,
+MacEwan,Community Justice and Corrections,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/community-justice-and-corrections,
+MacEwan,Community Justice and Corrections,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/community-justice-and-corrections/,
+MacEwan,Composition Major – Bachelor of Music,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/bmus-composition/,
+MacEwan,Computer Science (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-computer-science/,
+MacEwan,Creative Writing Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-creative-writing/,
+MacEwan,Cybersecurity Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-cybersecurity-studies/,
+MacEwan,Cybersecurity Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-cybersecurity-studies/,
+MacEwan,Cybersecurity Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-bpsj-cybersecurity-studies/,
+MacEwan,Data Science (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-data-science/,
+MacEwan,Design,Bachelor of Design,,https://calendar.macewan.ca/programs/degree-programs/bdes-design/,
+MacEwan,Digital Experience Design,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/digital-experience-design/,
+MacEwan,Digital Experience Design,nan,,https://calendar.macewan.ca/programs/min-babs-digital-experience-design/,
+MacEwan,Digital Experience Design (Major),Bachelor of Design,,https://calendar.macewan.ca/programs/degree-programs/bdes-digital-experience-design/,
+MacEwan,Digital Experience Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-digital-experience-design/,
+MacEwan,Digital Experience Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-digital-experience-design/,
+MacEwan,Early Childhood Curriculum Studies (BECCS),Bachelor of Early Childhood Curriculum Studies,,https://calendar.macewan.ca/programs/degree-programs/beccs-early-childhood-curriculum-studies/,
+MacEwan,Early Learning and Child Care,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/early-learning-child-care/,
+MacEwan,Earth and Planetary Sciences Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-earth-planetary-sciences/,
+MacEwan,Economics (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-economics/,
+MacEwan,Economics Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-economics/,
+MacEwan,Educational Assistant,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/educational-assistant/,
+MacEwan,Emergency Communications and Response,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/emergency-communications-response/,
+MacEwan,English (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-english/,
+MacEwan,English as an Additional Language (EAL),nan,,https://calendar.macewan.ca/programs/university-entrance/eal/,
+MacEwan,Environmental Sciences (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-environmental-science/,
+MacEwan,Environmental Sciences Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-environmental-sciences/,
+MacEwan,Film Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-film/,
+MacEwan,Film Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-film/,
+MacEwan,Finance Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-finance/,
+MacEwan,Finance Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-finance/,
+MacEwan,Foundation Program International,nan,,https://calendar.macewan.ca/programs/university-entrance/foundation-international/,
+MacEwan,French Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-french/,
+MacEwan,French Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-french/,
+MacEwan,Gender Studies Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-gender-studies/,
+MacEwan,General (Major),Bachelor of Music,,https://calendar.macewan.ca/programs/degree-programs/bmus-general/,
+MacEwan,Gerontology,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/gerontology/,
+MacEwan,Graphic Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-graphic-design,
+MacEwan,Graphic Design Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-graphic-design/,
+MacEwan,Hearing Aid Practitioner,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/hearing-aid-practitioner/,
+MacEwan,Hospice Palliative Care,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/hospice-palliative-care/,
+MacEwan,Human Resources Management,Certificate and Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/human-resources-management/,
+MacEwan,Human Resources Management (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-human-resources-management/,
+MacEwan,Human Resources Management Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-human-resource-management/,
+MacEwan,Human Resources Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-human-resources-management/,
+MacEwan,Human Service Administration,Bachelor of Applied Human Service Administration,,https://calendar.macewan.ca/programs/applied-degree-programs/bahsa-human-service-admin/,
+MacEwan,Indigegogy Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-indigegogy/,
+MacEwan,Innovation and Entrepreneurship Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-innovation-and-entrepreneurship/,
+MacEwan,Insurance and Risk Management,Business Management Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/insurance-risk-management/,
+MacEwan,International Business (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-international-business/,
+MacEwan,International Business Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-international-business/,
+MacEwan,Investigative Studies,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/investigative-studies/,
+MacEwan,Journalism (Major),Bachelor of Communication Studies,,https://calendar.macewan.ca/programs/degree-programs/bcs-journalism/,
+MacEwan,Journalism Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-journalism/,
+MacEwan,Journalism Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-journalism/,
+MacEwan,Legal Studies in Business (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-legal-studies-business/,
+MacEwan,Legal Studies in Business Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-legal-studies-in-business/,
+MacEwan,Library and Information Technology,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/library-information-technology/,
+MacEwan,Management (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-management/,
+MacEwan,Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-management/,
+MacEwan,Marketing (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-marketing/,
+MacEwan,Marketing Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-marketing/,
+MacEwan,Marketing Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-marketing/,
+MacEwan,Massage Therapy,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/massage-therapy/,
+MacEwan,Mathematical Sciences (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-mathematical-sciences/,
+MacEwan,Mathematics (Major/Honours),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-mathematics/,
+MacEwan,Minors - Bachelor of Arts,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/ba-minors/,
+MacEwan,Minors - Bachelor of Commerce,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/bcom-minors/,
+MacEwan,Minors - Bachelor of Science,Bachelor,,https://calendar.macewan.ca/programs/degree-programs/bsc-minors/,
+MacEwan,Minors - Fine Arts and Communication,nan,,https://calendar.macewan.ca/programs/degree-programs/ffac-minors/,
+MacEwan,Music Career Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-music-career-management/,
+MacEwan,Music Education Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-music-education/,
+MacEwan,Music Technology and Production Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-music-technology-production/,
+MacEwan,Music Theatre Performance (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-music-theatre-performance/,
+MacEwan,Nursing,Bachelor of Science in Nursing,,https://calendar.macewan.ca/programs/degree-programs/bscn-nursing/,
+MacEwan,Occupational Health Nursing (OHN),Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/occupational-health-nursing/,
+MacEwan,Office Assistant - Administrative major,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-administrative/,
+MacEwan,Office Assistant - Legal major,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-legal/,
+MacEwan,Office Assistant - Medical major,Certificate,,https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-medical/,
+MacEwan,Paralegal Studies,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/paralegal-studies/,
+MacEwan,Performance (Major),Bachelor of Music,,https://calendar.macewan.ca/programs/degree-programs/bmus-performance/,
+MacEwan,Perioperative Nursing,Post-Diploma Certificate,,https://calendar.macewan.ca/programs/post-diploma-certificate-programs/perioperative-nursing/,
+MacEwan,Philosophy (Major/Minor),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-philosophy/,
+MacEwan,Physical Sciences (Major),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-physical-sciences/,
+MacEwan,Physical Therapist Assistant / Occupational Therapist Assistant,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/physical-occupational-therapist-assistant/,
+MacEwan,Physics Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-physics/,
+MacEwan,Planetary Physics Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-planetary-physics/,
+MacEwan,Police Studies,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/police-studies/,
+MacEwan,Political Science (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-political-science/,
+MacEwan,Political Science Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-political-science/,
+MacEwan,Professional Communication (Major),Bachelor of Communication Studies,,https://calendar.macewan.ca/programs/degree-programs/bcs-professional-communication/,
+MacEwan,Professional Communication Minor,Minor,,https://calendar.macewan.ca/programs/min-bcs-professional-communication/,
+MacEwan,Property Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-property-management/,
+MacEwan,Psychiatric Nursing,Bachelor of Psychiatric Nursing,,https://calendar.macewan.ca/programs/degree-programs/bpn-psychiatric-nursing/,
+MacEwan,Psychology (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-psychology/,
+MacEwan,Psychology (Major/Minor/Honours),Bachelor of Science,,https://calendar.macewan.ca/programs/degree-programs/bsc-psychology/,
+MacEwan,Psychology Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-psychology/,
+MacEwan,Public Relations,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/public-relations/,
+MacEwan,Public Relations (Major),Bachelor of Communication Studies,,https://calendar.macewan.ca/programs/degree-programs/bcs-public-relations/,
+MacEwan,Recording and Production (Major),Bachelor of Music,,https://calendar.macewan.ca/programs/degree-programs/bmus-recording-production/,
+MacEwan,Social Work,Bachelor of Social Work,,https://calendar.macewan.ca/programs/degree-programs/bsw-social-work/,
+MacEwan,Social Work,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/social-work/,
+MacEwan,Sociology (Major/Minor/Honours),Bachelor of Arts,,https://calendar.macewan.ca/programs/degree-programs/ba-sociology/,
+MacEwan,Sociology Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-sociology/,
+MacEwan,Songwriting Minor,Minor,,https://calendar.macewan.ca/programs/min-bmus-songwriting/,
+MacEwan,Spanish Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-spanish/,
+MacEwan,Spanish Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-spanish/,
+MacEwan,Speech Language Pathologist Assistant,Diploma,,https://calendar.macewan.ca/programs/certificates-diplomas/speech-language-pathologist-assistant/,
+MacEwan,Statistics Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-statistics/,
+MacEwan,Studio Arts (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-studio-arts/,
+MacEwan,Supply Chain Management (Major),Bachelor of Commerce,,https://calendar.macewan.ca/programs/degree-programs/bcom-supply-chain-management/,
+MacEwan,Supply Chain Management Minor,Minor,,https://calendar.macewan.ca/programs/min-bcom-supply-chain-management/,
+MacEwan,Sustainability Studies,Certificate of Achievement,,https://calendar.macewan.ca/programs/certificates-achievement/sustainability/,
+MacEwan,Theatre Production (Major),Bachelor of Fine Arts,,https://calendar.macewan.ca/programs/degree-programs/bfa-theatre-production/,
+MacEwan,Travel and Tourism,nan,,https://calendar.macewan.ca/programs/certificates-diplomas/travel/,
+MacEwan,Urban Wellness Minor,Minor,,https://calendar.macewan.ca/programs/min-babs-urban-wellness/,
+MacEwan,pimâcihisowin Foundation Program (PFP),nan,,https://calendar.macewan.ca/programs/university-entrance/foundation-pimacihisowin/,
+NAIT,AI and Data Governance for Innovation and Impact,Certificate,,https://www.nait.ca/nait/continuing-education/programs/ai-and-data-governance-certificate,
+NAIT,AI-Driven Project Management,nan,,https://www.nait.ca/nait/continuing-education/programs/ai-driven-project-management,
+NAIT,AWS Academy Cloud,nan,,https://www.nait.ca/nait/continuing-education/programs/computer-training-centre/aws-academy-cloud-foundations,
+NAIT,Advanced Healthcare Leadership,nan,,https://www.nait.ca/nait/continuing-education/programs/advanced-healthcare-leadership,
+NAIT,Advanced Machining Centre Programming - Milling,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach206-advanced-machining-centre-programming,
+NAIT,Advanced Turning Centre Programming - Lathe,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach306-advanced-turning-centre-programming,
+NAIT,Agentic AI Foundation,Certificate,,https://www.nait.ca/nait/continuing-education/programs/agentic-ai-foundation,
+NAIT,Animation (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/animation,
+NAIT,Apple iOS iPhone/iPad Mobile Developer,Certificate of Achievement,,https://www.nait.ca/nait/continuing-education/programs/apple-ios-iphone-ipad-mobile-developer-certificate,
+NAIT,Bachelor of Business Administration (BBA) Co-operative Education,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/experiential-learning/bachelor-of-business-administration-co-op-educatio,
+NAIT,Basic Machine Centre Programming - Milling,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach204-basic-machine-centre-programming,
+NAIT,Basic Turning Centre Programming - Lathe,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach304-basic-turning-centre-programming,
+NAIT,Blockchain Smart Contract,nan,,https://www.nait.ca/nait/continuing-education/programs/blockchain-smart-contract,
+NAIT,Breast Sonography,Certificate,,https://www.nait.ca/nait/continuing-education/programs/breast-sonography,
+NAIT,Business Continuity Management Program (BCMP) Sustainment,Course / part of Business Continuity Certificate or Business Risk Management,,https://www.nait.ca/nait/continuing-education/courses/cdem306-business-continuity-management-program-(bc,
+NAIT,Business Risk Management,nan,,https://www.nait.ca/nait/continuing-education/programs/business-risk-management,
+NAIT,C/C++ Programming Language,nan,,https://www.nait.ca/coned/c-cpp-programming-language,
+NAIT,CLA: Programming Essentials in C,Course / part of C/C++ Programming Language group,,https://www.nait.ca/nait/continuing-education/courses/cctp135-cla-programming-essentials-in-c,
+NAIT,CPA: Programming Essentials in C++,Course / part of C/C++ Programming Language group,,https://www.nait.ca/nait/continuing-education/courses/cctp136-cpa-programming-essentials-in-c,
+NAIT,Canadian Registered Safety Technician (CRST),nan,,https://www.nait.ca/nait/continuing-education/programs/canadian-registered-safety-technician,
+NAIT,Certified Risk Management Professional (CRMP),nan,,https://www.nait.ca/nait/continuing-education/programs/certified-risk-management-professional,
+NAIT,Clean Energy,nan,,https://www.nait.ca/nait/continuing-education/programs/clean-energy,
+NAIT,Computer Software Development (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/computer-software-development,
+NAIT,Construction Leadership and Supervision (CLS),Certificate,,https://www.nait.ca/coned/construction-leadership-and-supervision-program,
+NAIT,Core Programming,nan,,https://www.nait.ca/coned/core-programming,
+NAIT,Digital Cinema (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/digital-cinema,
+NAIT,Digital Marketing,Professional Certificate,,https://www.nait.ca/coned/digital-marketing-program,
+NAIT,Digital Marketing Associate Tracks,nan,,https://www.nait.ca/nait/continuing-education/programs/digital-marketing-associate-tracks,
+NAIT,Digital Marketing Professional Certification,nan,,https://www.nait.ca/nait/continuing-education/programs/digital-marketing-professional-certification,
+NAIT,Digital Marketing Specialist,nan,,https://www.nait.ca/nait/continuing-education/programs/digital-marketing-specialist,
+NAIT,Drone Training,Certificate of Completion,,https://www.nait.ca/nait/continuing-education/programs/drone-training-certificate,
+NAIT,Energy Process Operator,Certificate,,https://www.nait.ca/nait/continuing-education/programs/energy-process-operator,
+NAIT,Entrepreneurship and Business Management,nan,,https://www.nait.ca/nait/continuing-education/programs/entrepreneurship,
+NAIT,"Equity, Diversity, and Inclusion",Certificate,,https://www.nait.ca/nait/continuing-education/programs/equity-diversity-and-inclusion,
+NAIT,Full Stack Development Bootcamp,nan,,https://www.nait.ca/nait/continuing-education/programs/full-stack-development,
+NAIT,Fundamentals of Cloud Programming,Course / part of Data Engineer Certificate,,https://www.nait.ca/nait/continuing-education/courses/cctb673-fundamentals-of-cloud-programming,
+NAIT,Game Design (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/game-design,
+NAIT,Game Programming (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/game-programming,
+NAIT,Generative AI: From Concepts to Real-World Solution,nan,,https://www.nait.ca/nait/continuing-education/programs/generative-ai-from-concepts-to-real-world-solutio,
+NAIT,Home Inspection Training Program: Air Conditioning and Heat Pumps,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp204-home-inspection-training-program-air-condi,
+NAIT,Home Inspection Training Program: Communication and Professional Practice,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp101-home-inspection-training-program-communica,
+NAIT,Home Inspection Training Program: Electrical,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp201-home-inspection-training-program-electrica,
+NAIT,Home Inspection Training Program: Exterior,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp104-home-inspection-training-program-exterior,
+NAIT,Home Inspection Training Program: Heating I,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp202-home-inspection-training-program-heating-i,
+NAIT,Home Inspection Training Program: Heating II,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp203-home-inspection-training-program-heating-i,
+NAIT,Home Inspection Training Program: Insulation and Interior,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp103-home-inspection-training-program-insulatio,
+NAIT,Home Inspection Training Program: Plumbing,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp205-home-inspection-training-program-plumbing,
+NAIT,Home Inspection Training Program: Roofing,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp105-home-inspection-training-program-roofing,
+NAIT,Home Inspection Training Program: Structure,Course / part of Home Inspection Certificate,,https://www.nait.ca/nait/continuing-education/courses/insp102-home-inspection-training-program-structure,
+NAIT,ICON Student Managed Investment Fund,nan,,https://www.nait.ca/nait/schools-programs/jr-shaw-school-of-business/experiential-learning/icon-student-managed-investment-fund,
+NAIT,IGNITE Program,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/nisohkamatotan-centre/the-prospective-aboriginal-youth-program,
+NAIT,IT Business Analysis (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/it-business-analysis,
+NAIT,IT System Administration (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/it-system-administration,
+NAIT,Implementing a Crisis Management Program,Course / part of Advanced Healthcare Leadership or Crisis Management Essentials Certificate,,https://www.nait.ca/nait/continuing-education/courses/cdem605-implementing-a-crisis-management-program,
+NAIT,Interior Design Business Tools,nan,,https://www.nait.ca/nait/continuing-education/programs/interior-design-entrepreneurship,
+NAIT,Intermediate Machine Centre Programming - Milling,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach205-intermediate-machine-centre-programming,
+NAIT,Intermediate Turning Centre Programming - Lathe,Course / part of Computer Numerical Control (CNC) Certificate,,https://www.nait.ca/nait/continuing-education/courses/mach305-intermediate-turning-centre-programming,
+NAIT,International Society of Automation Courses,nan,,https://www.nait.ca/nait/continuing-education/programs/international-society-of-automation,
+NAIT,Introduction to CNC Programming,"Course / part of Industrial Automation and Controls or Robotics, Automation and Control Certificate",,https://www.nait.ca/nait/continuing-education/courses/iacc106-introduction-to-cnc-programming,
+NAIT,Introduction to Programming,Course / part of Core Programming or Python Developer,,https://www.nait.ca/nait/continuing-education/courses/cctp10-introduction-to-programming,
+NAIT,Introduction to Reforestation,Certificate,,https://www.nait.ca/nait/continuing-education/programs/introduction-to-reforestation,
+NAIT,Logo Design and Visual Identity,Certificate,,https://www.nait.ca/nait/continuing-education/programs/logo-design,
+NAIT,Machine Learning and Artificial Intelligence Bootcamp,nan,,https://www.nait.ca/nait/continuing-education/programs/machine-learning-and-artificial-intelligence,
+NAIT,Mastering Power BI,Certificate,,https://www.nait.ca/nait/continuing-education/programs/mastering-power-bi,
+NAIT,Mental Health and Well-Being,nan,,https://www.nait.ca/nait/continuing-education/programs/mental-health-and-well-being,
+NAIT,Microsoft Full-Stack Web Developer,Certificate,,https://www.nait.ca/nait/continuing-education/programs/microsoft-full-stack-web-developer-certificate,
+NAIT,National Payroll Institute Designation Programs,PCP and PLP designations,,https://www.nait.ca/coned/national-payroll-institute-program,
+NAIT,Network Security,Certificate,,https://www.nait.ca/nait/continuing-education/programs/network-security-certificate,
+NAIT,Nokia Bell Labs 5G Certification,nan,,https://www.nait.ca/nait/corporate-continuing-education/programs/nokia-bell-labs-5g-certification,
+NAIT,Open Studies Pathway (School of Health and Life Sciences),nan,,https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/open-studies-pathway,
+NAIT,Outreach and Well-being Leaders (OWLs) Program,nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/outreach-and-well-being-leaders-program,
+NAIT,Outreach and Well-being Leaders Engagement Team (OWLET),nan,,https://www.nait.ca/nait/student-life/clubs-groups-community/outreach-and-well-being-leaders-program/outreach-and-well-being-leaders-engagement-team,
+NAIT,Payroll Professional Program,Course / part of National Payroll Institute Designation Programs,,https://www.nait.ca/nait/continuing-education/courses/cpay500-payroll-professional-program,
+NAIT,Point-of-Care Ultrasound (POCUS),nan,,https://www.nait.ca/nait/continuing-education/programs/point-of-care-ultrasound-(pocus),
+NAIT,Pre-Apprenticeship Courses,nan,,https://www.nait.ca/nait/continuing-education/programs/pre-apprenticeship-courses,
+NAIT,Professional Development for Real Estate Professionals,nan,,https://www.nait.ca/nait/continuing-education/programs/real-estate-professional-development,
+NAIT,Programmable Logic Controller Level I,Certificate of Achievement,,https://www.nait.ca/coned/programmable-logic-controller,
+NAIT,Programmable Logic Controller Level II,Certificate of Achievement,,https://www.nait.ca/coned/programmable-logic-controller-ii,
+NAIT,Programming Python Web Applications,Course / part of Core Programming or Python Developer,,https://www.nait.ca/nait/continuing-education/courses/cctp21-programming-python-web-applications,
+NAIT,Python Developer,Certificate,,https://www.nait.ca/nait/continuing-education/programs/python-developer,
+NAIT,Quantum for Engineers,Certificate,,https://www.nait.ca/nait/continuing-education/programs/quantum-for-engineers,
+NAIT,Quantum for Executives,Certificate,,https://www.nait.ca/nait/continuing-education/programs/quantum-for-executives,
+NAIT,QuickBooks Online Accounting,Certificate,,https://www.nait.ca/nait/continuing-education/programs/computer-training-centre/quickbooks-online-accounting,
+NAIT,Real Estate Licensing Alberta,nan,,https://www.nait.ca/nait/continuing-education/programs/real-estate-licensing-alberta-(rela),
+NAIT,Risk Management for Cybersecurity,nan,,https://www.nait.ca/nait/continuing-education/programs/risk-management-for-cybersecurity,
+NAIT,Risk Management in Project & Quality Management,nan,,https://www.nait.ca/nait/continuing-education/programs/risk-management-in-project-quality-management,
+NAIT,Siemens Digital Fundamentals and Programmable Logic Controllers,Course,,https://www.nait.ca/nait/continuing-education/courses/smec140-siemens-digital-fundamentals-and-programma,
+NAIT,Software Testing Associate,Certificate,,https://www.nait.ca/nait/continuing-education/programs/computer-training-centre/software-testing-associate-certificate,
+NAIT,Supply Chain Management,nan,,https://www.nait.ca/nait/continuing-education/programs/supply-chain-management,
+NAIT,Technical Drawing and Interpretation,nan,,https://www.nait.ca/nait/continuing-education/programs/technical-drawing-and-interpretation-courses,
+NAIT,Unlocking the Power of AI: Practical Insights,Certificate of Completion,,https://www.nait.ca/nait/continuing-education/programs/unlocking-the-power-of-ai-practical-insights,
+NAIT,Visual Communications (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/visual-communications,
+NAIT,Water and Wastewater Technician,Specialized Certificate,,https://www.nait.ca/coned/water-wastewater-tech-programming-distance,
+NAIT,Web Design and Development (Area of Emphasis),nan,,https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/web-design-and-development,
+NAIT,n-Tier Development Programming Architecture,Course / part of Database Administrator program,,https://www.nait.ca/nait/continuing-education/courses/cctb140-n-tier-development-programming-architect,
+NorQuest,Academic Program Advisors,nan,,http://www.norquest.ca/student-resources/academic-program-advisors/,
+NorQuest,Applied Research for Innovation Badge Selector,nan,,http://www.norquest.ca/programs-courses/introduction-to-applied-research-for-innovation/applied-research-for-innovation-badge-selector/,
+NorQuest,Bring your own device,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/bring-your-own-device/,
+NorQuest,Browse programs and courses,nan,,http://www.norquest.ca/international-student/browse-programs-and-courses/,
+NorQuest,Browse programs and courses,nan,,http://www.norquest.ca/programs-courses/browse-programs-and-courses/,
+NorQuest,Business Administration to Bachelor of Commerce,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/business-administration-to-bachelor-of-commerce/,
+NorQuest,Content Creation Volunteer,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/norquest-international-volunteer-program/content-creation-volunteer/,
+NorQuest,Continuing Education,nan,,http://www.norquest.ca/programs-courses/continuing-education/,
+NorQuest,Continuing Education programs and courses,nan,,http://www.norquest.ca/continuing-education/continuing-education-programs-and-courses/,
+NorQuest,Definitions,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/definitions/,
+NorQuest,Digital badges from NorQuest College.,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/definitions/digital-badges/,
+NorQuest,Discover your perfect career path,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/discover-your-perfect-career-path/,
+NorQuest,Dual Credit partnering,nan,,http://www.norquest.ca/programs-courses/dual-credit-programs/dual-credit-partnering/,
+NorQuest,Dual Credit students,nan,,http://www.norquest.ca/programs-courses/dual-credit-programs/dual-credit-students/,
+NorQuest,Dual credit programs,nan,,http://www.norquest.ca/programs-courses/dual-credit-programs/,
+NorQuest,Emerging Leaders Program,Certificate of Recognition,,http://www.norquest.ca/international-student/international-student-services/get-involved/emerging-leaders-program/,
+NorQuest,Explore NorQuest College,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/explore-norquest-college/,
+NorQuest,Family Caregiver Wellness Workshops,nan,,http://www.norquest.ca/programs-courses/family-caregiver-wellness-workshops/,
+NorQuest,Foster the next generation of data analysts,nan,,http://www.norquest.ca/programs-courses/upskilling-for-data-analytics-and-business-intelligence/foster-the-next-generation-of-data-analysts/,
+NorQuest,Foundational Learning Hub,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/foundational-learning-hub/,
+NorQuest,Foundational programs,nan,,http://www.norquest.ca/foundational-programs/,
+NorQuest,Frequently asked questions,nan,,http://www.norquest.ca/programs-courses/microcredentials/frequently-asked-questions/,
+NorQuest,Health programs for rural students,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/health-programs-for-rural-students/,
+NorQuest,International Peer Mentorship Program,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/peer-mentorship-program/,
+NorQuest,Learning at NorQuest,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/,
+NorQuest,Marketing & Promotions Volunteer,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/norquest-international-volunteer-program/marketing-promotions-volunteer/,
+NorQuest,Microcredentials,nan,,http://www.norquest.ca/programs-courses/microcredentials/,
+NorQuest,NorQuest International Volunteer Program,nan,,http://www.norquest.ca/international-student/international-student-services/get-involved/norquest-international-volunteer-program/,
+NorQuest,Obrigado,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/brasil/obrigado/,
+NorQuest,Online delivery information,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/online-delivery-information/,
+NorQuest,Open Admissions Pathways,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/open-admissions-pathways/,
+NorQuest,Open Studies,nan,,http://www.norquest.ca/programs-courses/open-studies/,
+NorQuest,Our program,nan,,http://www.norquest.ca/student-services/child-care-centre/our-program/,
+NorQuest,Page not found,nan,,http://www.norquest.ca/x/workstyles-program-policy/,
+NorQuest,Program Availability,nan,,http://www.norquest.ca/program-availability/,
+NorQuest,Programs and courses,nan,,http://www.norquest.ca/programs-courses/,
+NorQuest,RBC Indigenous Mentorship Program,nan,,http://www.norquest.ca/student-services/indigenous-student-services/rbc-indigenous-mentorship-program/,
+NorQuest,Ready to score a new career?,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/ready-to-score-a-new-career/,
+NorQuest,Request information,nan,,http://www.norquest.ca/programs-courses/microcredentials/request-information/,
+NorQuest,Start a business career,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/start-a-business-career/,
+NorQuest,Sua nova carreira começa aqui — no NorQuest College,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/brasil/,
+NorQuest,Take your healthcare career in a new direction,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/take-your-healthcare-career-in-a-new-direction/,
+NorQuest,Your new career starts at NorQuest College,nan,,http://www.norquest.ca/programs-courses/learning-at-norquest/your-new-career-starts-at-norquest-college/,
+UAlberta,About,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17516,
+UAlberta,About,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17532,
+UAlberta,Academic,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17524,
+UAlberta,Calendar,nan,,https://calendar.ualberta.ca/misc/catalog_list.php?catoid=56,
+UAlberta,Calendar,nan,,https://calendar.ualberta.ca/search_advanced.php?catoid=56,
+UAlberta,Colleges,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17522,
+UAlberta,Composition (Major),Bachelor of Music,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17354&print,
+UAlberta,Course,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17518,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/embedded-undergraduate-certificates/index.html,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/inclusive-education/index.html,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/index.html,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/online-courses/index.html,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/admissions-programs/online-learning.html,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/education/programs/english-language-school/index.html,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/graduate-programs/index.html,
+UAlberta,ERROR: The request could not be satisfied,nan,,https://www.ualberta.ca/en/graduate-studies/admissions-programs/apply/index.html,
+UAlberta,Graduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17527,
+UAlberta,Graduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17535,
+UAlberta,Graduate Programs (General),nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17533,
+UAlberta,Inquiries,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17523,
+UAlberta,Undergraduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17521,
+UAlberta,Undergraduate,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17526,
+UAlberta,University,nan,,https://calendar.ualberta.ca/content.php?catoid=56&navoid=17520,
+UAlberta,University,nan,,https://calendar.ualberta.ca/index.php?catoid=56,

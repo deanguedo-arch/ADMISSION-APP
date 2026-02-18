@@ -1,0 +1,53 @@
+[
+  {
+    "id": "keep-seed-match",
+    "program_name": "Academic Upgrading",
+    "source_url": "https://www.nait.ca/programs/academic-upgrading",
+    "evidence_notes": "",
+    "expected_keep": true,
+    "expected_reason": "kept_seed_match"
+  },
+  {
+    "id": "drop-evidence-not-program",
+    "program_name": "NAIT Hiring Fair",
+    "source_url": "https://www.nait.ca/nait/schools-programs/school-of-health-and-life-sciences/industry-engagement/news-and-events/nait-hiring-career-fair",
+    "evidence_notes": "['not a program page']",
+    "expected_keep": false,
+    "expected_reason": "dropped_evidence_non_program"
+  },
+  {
+    "id": "drop-blocked-url",
+    "program_name": "Sample Program",
+    "source_url": "https://www.nait.ca/nait/about/newsroom/2025/sample-story",
+    "evidence_notes": "",
+    "expected_keep": false,
+    "expected_reason": "dropped_blocked_url"
+  },
+  {
+    "id": "drop-blocked-name",
+    "program_name": "1. Application",
+    "source_url": "https://www.nait.ca/nait/schools-programs/apply",
+    "evidence_notes": "",
+    "expected_keep": false,
+    "expected_reason": "dropped_blocked_name"
+  },
+  {
+    "id": "drop-not-in-seed",
+    "program_name": "AI and Data Governance for Innovation and Impact",
+    "source_url": "https://www.nait.ca/nait/continuing-education/programs/ai-and-data-governance-certificate",
+    "evidence_notes": "",
+    "expected_keep": false,
+    "expected_reason": "dropped_not_in_seed"
+  },
+  {
+    "id": "keep-allowlist-override",
+    "program_name": "AI and Data Governance for Innovation and Impact",
+    "source_url": "https://www.nait.ca/nait/continuing-education/programs/ai-and-data-governance-certificate",
+    "evidence_notes": "",
+    "extra_allowlist_program_names": [
+      "AI and Data Governance for Innovation and Impact"
+    ],
+    "expected_keep": true,
+    "expected_reason": "kept_allowlist_override"
+  }
+]

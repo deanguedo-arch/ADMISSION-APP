@@ -458,3 +458,53 @@ Keep entries short and append-only.
   - UAlberta `Bachelor of Music` -> undergraduate BMus program page.
   - NAIT `Business Administration Diploma` mock -> NAIT programs landing page (valid placeholder in mock mode).
 - Validation rerun: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+## 2026-02-18 (NAIT Seed-First Program Filtering)
+- Added NAIT seed extractor `pipeline/build_nait_seed_from_element.py` and generated `pipeline/nait_program_seed.csv` (131 seed rows) from `Nait course list element.md`.
+- Added NAIT filtering config `config/nait_non_program_rules.json` (blocked URL/name patterns, evidence token checks, allowlist slots).
+- Added shared NAIT filter logic module `pipeline/nait_program_filter.py` and upgraded `pipeline/build_index.py` with new flags:
+  - `--nait-seed` (default `pipeline/nait_program_seed.csv`)
+  - `--nait-rules` (default `config/nait_non_program_rules.json`)
+  - `--evidence` (default `PROGRAMS_ONLY.csv`)
+  - emits NAIT filter reason counts (`dropped_evidence_non_program`, `dropped_blocked_url`, `dropped_blocked_name`, `dropped_not_in_seed`, `kept_allowlist_override`).
+- Added NAIT filter fixtures:
+  - `pipeline/fixtures/nait_program_filter_cases.json`
+  - `pipeline/check_nait_program_filter_fixtures.py`
+  - wired into `tools/refresh-all.ps1` Step 3 fixture run.
+- Upgraded `tools/clean-master.ps1` to apply NAIT seed/rules/evidence filtering with new params:
+  - `-ProgramEvidencePath`
+  - `-FilterRulesPath`
+  - `-NaitSeedPath`
+  - emits NAIT cleanup summary counts.
+- Upgraded `tools/validate-canonical.ps1` with NAIT-specific enforcement (seed/rules/evidence checks) and explicit offending-name failure details.
+- Baseline row-drop guard now allows NAIT-driven contractions when non-NAIT row drop remains within threshold.
+- Updated docs for NAIT seed-first flow and fixtures:
+  - `README.md`
+  - `pipeline/README.md`
+  - `docs/PIPELINE.md`
+- Validation/results run:
+  - `python .\pipeline\build_nait_seed_from_element.py` -> `131` rows
+  - `python .\pipeline\check_nait_program_filter_fixtures.py` PASS (6/6)
+  - `python .\pipeline\build_index.py --in .\PROGRAMS_INDEX.csv --out .\pipeline\program_index.cleaned.csv` -> 216 total rows; NAIT filter summary printed
+  - `tools\clean-master.ps1` -> 158 canonical rows; NAIT cleanup summary printed
+  - `tools\validate-canonical.ps1` PASS (with expected NAIT-driven row-drop warning)
+  - `python .\pipeline\check_avg_total_fixtures.py` PASS (8/8)
+  - `python .\pipeline\check_enrichment_link_fixtures.py` PASS (5/5)
+## 2026-02-18 (NAIT Legacy Allowlist Recovery Layer)
+- Added controlled NAIT legacy fallback allowlist generator `pipeline/build_nait_legacy_allowlist.py`.
+  - Reads `ALBERTA_ADMISSIONS_MASTER_FINAL_v3.csv` + `PROGRAMS_ONLY.csv` + `config/nait_non_program_rules.json`.
+  - Writes `config/nait_legacy_allowlist.csv` with NAIT names that pass non-program evidence/rule checks.
+- Generated `config/nait_legacy_allowlist.csv` (102 rows) to restore legitimate NAIT coverage while keeping junk-blocking rules first.
+- Updated NAIT filtering stack to support legacy fallback allowlist:
+  - `pipeline/nait_program_filter.py`: added `load_allowlist_program_names(...)`.
+  - `pipeline/build_index.py`: new flag `--nait-legacy-allowlist` (default `config/nait_legacy_allowlist.csv`) and new reason counter `kept_legacy_allowlist`.
+  - `tools/clean-master.ps1`: new parameter `-NaitLegacyAllowlistPath`; keeps NAIT names in legacy allowlist only after evidence/url/name non-program checks.
+  - `tools/validate-canonical.ps1`: new parameter `-NaitLegacyAllowlistPath`; NAIT seed/rules validation now accepts legacy allowlist names.
+- Rerun outcomes after recovery layer:
+  - `python .\pipeline\build_nait_legacy_allowlist.py` -> wrote 102 rows.
+  - `python .\pipeline\build_index.py --in .\PROGRAMS_INDEX.csv --out .\pipeline\program_index.cleaned.csv` -> 310 total rows, NAIT=95.
+  - `tools\clean-master.ps1` -> 260 canonical rows, NAIT=103.
+  - `tools\validate-canonical.ps1` PASS.
+  - `python .\pipeline\check_nait_program_filter_fixtures.py` PASS (6/6).
+  - `python .\pipeline\check_avg_total_fixtures.py` PASS (8/8).
+  - `python .\pipeline\check_enrichment_link_fixtures.py` PASS (5/5).
+- Verified user-reported NAIT junk rows are absent from both cleaned index and canonical outputs.

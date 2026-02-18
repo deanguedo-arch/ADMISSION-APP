@@ -1,9 +1,9 @@
-# Repeatable scrape → enrich → extract pipeline (for NAIT/MacEwan/NorQuest + future UAlberta)
+﻿# Repeatable scrape -> enrich -> extract pipeline (for NAIT/MacEwan/NorQuest + future UAlberta)
 
-The goal is **never** to hand-fix “Unknown” fields again. Instead, you keep a pipeline that can be rerun whenever admissions pages change.
+The goal is **never** to hand-fix "Unknown" fields again. Instead, you keep a pipeline that can be rerun whenever admissions pages change.
 
 ## 0) Locked schema (contract)
-Pick a single “locked” output schema and keep it stable.
+Pick a single "locked" output schema and keep it stable.
 
 For this MVP the canonical CSV produced by `tools/clean-master.ps1` is your contract:
 
@@ -30,7 +30,18 @@ Create/maintain an index table with:
 - `source` (catalog, admissions site, etc.)
 - `last_seen` (date)
 
-This is what prevents “1. Application / 2. Schedule” type junk from ever entering the dataset again.
+This is what prevents "1. Application / 2. Schedule" type junk from entering the dataset.
+
+### NAIT seed-first guardrail (implemented)
+For NAIT, index acceptance is now seed-first:
+- Build seed from `Nait course list element.md` using `pipeline/build_nait_seed_from_element.py`
+- Generated seed file: `pipeline/nait_program_seed.csv`
+- Build legacy fallback allowlist from current NAIT admissions dataset using `pipeline/build_nait_legacy_allowlist.py`
+- Generated legacy allowlist: `config/nait_legacy_allowlist.csv`
+- Rules file: `config/nait_non_program_rules.json` (blocked URL/name patterns + allowlist overrides)
+- Evidence file: `PROGRAMS_ONLY.csv` (`notes_uncertain` token checks like `not a program page`)
+
+`pipeline/build_index.py` keeps NAIT rows only when they survive evidence/rule drops and then match seed, explicit allowlist, or legacy fallback allowlist.
 
 ## 2) Fetch stage (raw capture)
 For each `program_url`, store:
@@ -49,7 +60,7 @@ For each program, follow and capture a small set of likely links:
 
 - contains keywords: `admission`, `entrance`, `requirements`, `apply`, `how to apply`, `academic requirements`, `english`, `math`
 - same-domain first (then allow known subdomains)
-- stop after N pages (e.g., 5–10) to avoid crawls
+- stop after N pages (e.g., 5-10) to avoid crawls
 
 Store these enriched pages alongside the base page.
 
@@ -69,18 +80,24 @@ Keep two outputs:
 1) **Structured fields** (the canonical schema)
 2) **Audit fields**: raw snippets + which page produced the value
 
-Audit fields are what makes “why did it extract this?” answerable.
+Audit fields are what makes "why did it extract this?" answerable.
 
 ## 5) QA gates (fail fast)
 Before publishing, run QA checks like:
 
 - Program count changed unexpectedly (big drop/spike)
 - Too many `unknown` fields for an institution
-- Suspicious program names (numbers, “Schedule”, “Register”, etc.)
+- Suspicious program names (numbers, "Schedule", "Register", etc.)
 - Duplicate programs
 - Requirements outside expected domain (e.g. grades > 100)
 
 If a gate fails, the pipeline should stop and produce a report.
+
+For NAIT index filtering, run:
+
+```powershell
+python .\pipeline\check_nait_program_filter_fixtures.py
+```
 
 ## 6) Publish stage (to Sheets + CSV)
 Publish artifacts:
