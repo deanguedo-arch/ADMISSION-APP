@@ -511,3 +511,7 @@ Keep entries short and append-only.
 
 ## 2026-02-18 (NAIT Source Capture Artifact)
 - Added Nait course list element.md to version control as the captured NAIT program-card element used by the seed extractor.
+
+## 2026-02-18 (Post-Refresh Publish Run)
+- Ran full local refresh and sync publish (REFRESH_ALL.cmd + scripts/SYNC_ALL.cmd).
+- Canonical rebuilt and synced with 260 rows (NAIT 103, MacEwan 93, NorQuest 50, UAlberta 14).
