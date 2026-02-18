@@ -508,3 +508,6 @@ Keep entries short and append-only.
   - `python .\pipeline\check_avg_total_fixtures.py` PASS (8/8).
   - `python .\pipeline\check_enrichment_link_fixtures.py` PASS (5/5).
 - Verified user-reported NAIT junk rows are absent from both cleaned index and canonical outputs.
+
+## 2026-02-18 (NAIT Source Capture Artifact)
+- Added Nait course list element.md to version control as the captured NAIT program-card element used by the seed extractor.
