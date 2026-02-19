@@ -1,0 +1,20 @@
+{
+  "map_path": "config/ualberta_canonical_url_map.csv",
+  "expected_row_count": 14,
+  "expected_program_names": [
+    "Arts (First-Year)",
+    "Science (First-Year)",
+    "Engineering (First-Year)",
+    "Education (First-Year)",
+    "Kinesiology (BScKin) (First-Year)",
+    "Nursing (First-Year)",
+    "Agricultural, Life and Environmental Sciences (ALES) (First-Year)",
+    "Native Studies (First-Year)",
+    "Augustana (First-Year)",
+    "Campus Saint-Jean (First-Year)",
+    "Art & Design (First-Year)",
+    "Music (First-Year)",
+    "Open Studies (First-Year)",
+    "Business (Preprofessional Entry)"
+  ]
+}

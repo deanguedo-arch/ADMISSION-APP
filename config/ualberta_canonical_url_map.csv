@@ -1,0 +1,15 @@
+program_name,credential,program_url,link_type,map_source
+Arts (First-Year),Degree,https://www.ualberta.ca/en/arts/programs/undergraduate-programs/admissions/index.html,faculty-admissions,ualberta-locked-map
+Science (First-Year),Degree,https://www.ualberta.ca/en/science/programs/bachelor-of-science/admission-to-science/index.html,faculty-admissions,ualberta-locked-map
+Engineering (First-Year),Degree,https://www.ualberta.ca/en/engineering/admissions-programs/undergraduate/admissions/index.html,faculty-admissions,ualberta-locked-map
+Education (First-Year),Degree,https://www.ualberta.ca/en/education/programs/undergraduate-programs/admission-requirements.html,faculty-admissions,ualberta-locked-map
+Kinesiology (BScKin) (First-Year),Degree,https://www.ualberta.ca/en/kinesiology-sport-recreation/programs/undergraduate-programs/admissions/index.html,faculty-admissions,ualberta-locked-map
+Nursing (First-Year),Degree,https://www.ualberta.ca/en/nursing/programs/undergraduate-programs-and-their-admissions-requirements/index.html,faculty-admissions,ualberta-locked-map
+"Agricultural, Life and Environmental Sciences (ALES) (First-Year)",Degree,https://www.ualberta.ca/en/agriculture-life-environment-sciences/programs/undergraduate-programs/admissions/index.html,faculty-admissions,ualberta-locked-map
+Native Studies (First-Year),Degree,https://www.ualberta.ca/en/native-studies/students/undergraduate.html,faculty-admissions,ualberta-locked-map
+Augustana (First-Year),Degree,https://www.ualberta.ca/en/augustana/programs/admissions/index.html,faculty-admissions,ualberta-locked-map
+Campus Saint-Jean (First-Year),Degree,https://www.ualberta.ca/en/campus-saint-jean/programs/undergraduate/admissions/index.html,faculty-admissions,ualberta-locked-map
+Art & Design (First-Year),Degree,https://www.ualberta.ca/en/art-design/admissions/undergraduate-application/index.html,department-admissions,ualberta-locked-map
+Music (First-Year),Degree,https://www.ualberta.ca/en/music/admissions/undergraduate-admissions/index.html,department-admissions,ualberta-locked-map
+Open Studies (First-Year),Other,https://www.ualberta.ca/en/registrar/registration-and-courses/special-registrations/open-studies/index.html,registrar-page,ualberta-locked-map
+Business (Preprofessional Entry),Other,https://www.ualberta.ca/en/business/programs/bachelor-of-commerce/degrees/bcom/admissions.html,faculty-admissions,ualberta-locked-map

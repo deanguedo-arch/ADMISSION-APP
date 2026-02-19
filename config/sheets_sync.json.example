@@ -7,5 +7,5 @@
   "min_rows": 100,
   "max_row_drop_percent": 35,
   "baseline_path": "out/last_good_programs.csv",
-  "required_institutions": ["NAIT", "NorQuest", "MacEwan"]
+  "required_institutions": ["NAIT", "NorQuest", "MacEwan", "UAlberta"]
 }

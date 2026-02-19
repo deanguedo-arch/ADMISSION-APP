@@ -46,18 +46,40 @@ function Expand-Institutions([string[]]$Values) {
   return ,$expanded
 }
 
+function Resolve-CanonicalPath([string]$canonicalPath, [string]$fallbackPath) {
+  $canonicalExists = Test-Path $canonicalPath
+  $fallbackExists = Test-Path $fallbackPath
+  if ($canonicalExists -and $fallbackExists) {
+    $a = Get-Item $canonicalPath
+    $b = Get-Item $fallbackPath
+    if ($b.LastWriteTimeUtc -gt $a.LastWriteTimeUtc) { return $fallbackPath }
+    return $canonicalPath
+  }
+  if ($canonicalExists) { return $canonicalPath }
+  if ($fallbackExists) { return $fallbackPath }
+  throw "Could not find canonical CSV at $canonicalPath or $fallbackPath"
+}
+
 if ($DryRun) {
   $SkipSync = $true
   Write-Host "DryRun enabled: sync/publish steps will be skipped."
 }
 
+$canonicalPrimaryPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv"
+$canonicalFallbackPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new"
+$activeCanonicalPath = ""
+
 Write-Host ""
 Write-Host "Step 1/9: Rebuild canonical dataset"
 & .\\tools\\clean-master.ps1 | Out-Host
+$activeCanonicalPath = Resolve-CanonicalPath -canonicalPath $canonicalPrimaryPath -fallbackPath $canonicalFallbackPath
+Write-Host "Active canonical path: $activeCanonicalPath"
 
 Write-Host ""
-Write-Host "Step 2/9: Refresh NorQuest seed + build cleaned program index"
+Write-Host "Step 2/9: Refresh NorQuest + MacEwan + UAlberta seeds + build cleaned program index"
 Invoke-PythonChecked @(".\\pipeline\\build_norquest_seed_from_api.py")
+Invoke-PythonChecked @(".\\pipeline\\build_macewan_seed_from_element.py")
+Invoke-PythonChecked @(".\\pipeline\\build_ualberta_seed_from_coveo.py")
 $buildArgs = @(".\\pipeline\\build_index.py", "--in", $IndexSourcePath, "--out", $CleanIndexPath)
 $institutionFilters = Expand-Institutions -Values $Institution
 foreach ($inst in @($institutionFilters)) {
@@ -72,6 +94,8 @@ if (-not $SkipFixtures) {
   Invoke-PythonChecked @(".\\pipeline\\check_avg_total_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_enrichment_link_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_nait_program_filter_fixtures.py")
+  Invoke-PythonChecked @(".\\pipeline\\check_macewan_seed_fixtures.py")
+  Invoke-PythonChecked @(".\\pipeline\\check_ualberta_url_map_fixtures.py")
 } else {
   Write-Host ""
   Write-Host "Step 3/9: Skipped fixture checks (-SkipFixtures)"
@@ -105,9 +129,22 @@ if (-not $SkipAvgApply) {
       throw "Avg_Total candidates file not found: $candidatesPath"
     }
   } elseif ($DryRun) {
-    & .\\tools\\apply-avg-total-candidates.ps1 -CandidatesPath $candidatesPath -DryRun | Out-Host
+    $avgFallbackPath = "$activeCanonicalPath.next"
+    & .\\tools\\apply-avg-total-candidates.ps1 `
+      -CandidatesPath $candidatesPath `
+      -CanonicalPath $activeCanonicalPath `
+      -CanonicalFallbackPath $avgFallbackPath `
+      -DryRun | Out-Host
+    $activeCanonicalPath = Resolve-CanonicalPath -canonicalPath $activeCanonicalPath -fallbackPath $avgFallbackPath
+    Write-Host "Active canonical path: $activeCanonicalPath"
   } else {
-    & .\\tools\\apply-avg-total-candidates.ps1 -CandidatesPath $candidatesPath | Out-Host
+    $avgFallbackPath = "$activeCanonicalPath.next"
+    & .\\tools\\apply-avg-total-candidates.ps1 `
+      -CandidatesPath $candidatesPath `
+      -CanonicalPath $activeCanonicalPath `
+      -CanonicalFallbackPath $avgFallbackPath | Out-Host
+    $activeCanonicalPath = Resolve-CanonicalPath -canonicalPath $activeCanonicalPath -fallbackPath $avgFallbackPath
+    Write-Host "Active canonical path: $activeCanonicalPath"
   }
 } else {
   Write-Host ""
@@ -120,9 +157,22 @@ if (-not $SkipProgramUrlApply) {
   if (-not (Test-Path $CleanIndexPath)) {
     throw "Clean index file not found: $CleanIndexPath"
   } elseif ($DryRun) {
-    & .\\tools\\apply-program-urls.ps1 -IndexPath $CleanIndexPath -DryRun | Out-Host
+    $urlFallbackPath = "$activeCanonicalPath.next"
+    & .\\tools\\apply-program-urls.ps1 `
+      -IndexPath $CleanIndexPath `
+      -CanonicalPath $activeCanonicalPath `
+      -CanonicalFallbackPath $urlFallbackPath `
+      -DryRun | Out-Host
+    $activeCanonicalPath = Resolve-CanonicalPath -canonicalPath $activeCanonicalPath -fallbackPath $urlFallbackPath
+    Write-Host "Active canonical path: $activeCanonicalPath"
   } else {
-    & .\\tools\\apply-program-urls.ps1 -IndexPath $CleanIndexPath | Out-Host
+    $urlFallbackPath = "$activeCanonicalPath.next"
+    & .\\tools\\apply-program-urls.ps1 `
+      -IndexPath $CleanIndexPath `
+      -CanonicalPath $activeCanonicalPath `
+      -CanonicalFallbackPath $urlFallbackPath | Out-Host
+    $activeCanonicalPath = Resolve-CanonicalPath -canonicalPath $activeCanonicalPath -fallbackPath $urlFallbackPath
+    Write-Host "Active canonical path: $activeCanonicalPath"
   }
 } else {
   Write-Host ""

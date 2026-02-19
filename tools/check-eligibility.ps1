@@ -1,5 +1,6 @@
 param(
   [string]$MasterPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv",
+  [string]$FallbackMasterPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new",
   [string]$StudentPath = "",
   [double]$AdmissionAverage = [double]::NaN,
   [string]$Institution = "",
@@ -33,6 +34,20 @@ function CanonCourseKey([string]$s) {
   $t = $t -replace "\.", ""
   $t = $t -replace "\s+", " "
   return $t
+}
+
+function Resolve-CanonicalPath([string]$canonicalPath, [string]$fallbackPath) {
+  $canonicalExists = Test-Path $canonicalPath
+  $fallbackExists = Test-Path $fallbackPath
+  if ($canonicalExists -and $fallbackExists) {
+    $a = Get-Item $canonicalPath
+    $b = Get-Item $fallbackPath
+    if ($b.LastWriteTimeUtc -gt $a.LastWriteTimeUtc) { return $fallbackPath }
+    return $canonicalPath
+  }
+  if ($canonicalExists) { return $canonicalPath }
+  if ($fallbackExists) { return $fallbackPath }
+  return $canonicalPath
 }
 
 function Build-CourseMapFromStudentFile([string]$path) {
@@ -149,6 +164,7 @@ function Check-CourseRequirement($courseMap, [string[]]$courses, [double]$minMar
   return @{ ok=$true; reason=""; detail="$bestCourse=$best" }
 }
 
+$MasterPath = Resolve-CanonicalPath -canonicalPath $MasterPath -fallbackPath $FallbackMasterPath
 if (-not (Test-Path $MasterPath)) {
   throw "Master file not found: $MasterPath. Run .\\tools\\clean-master.ps1 first."
 }

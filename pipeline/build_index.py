@@ -53,6 +53,13 @@ def norm(value: str) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip())
 
 
+def norm_or_blank(value: object) -> str:
+    token = norm(value)
+    if token.lower() in {"nan", "none", "null"}:
+        return ""
+    return token
+
+
 def parse_institution_filters(raw_values: list[str]) -> list[str]:
     parsed: list[str] = []
     seen: set[str] = set()
@@ -66,6 +73,79 @@ def parse_institution_filters(raw_values: list[str]) -> list[str]:
     return parsed
 
 
+def load_macewan_seed(seed_path: Path) -> list[dict[str, str]]:
+    if not seed_path.exists():
+        return []
+
+    seed_df = pd.read_csv(seed_path)
+    if seed_df.empty:
+        return []
+
+    cols = {c.lower(): c for c in seed_df.columns}
+    name_col = cols.get("program_name")
+    requirements_col = cols.get("requirements_url")
+    seed_url_col = cols.get("program_url_seed") or cols.get("program_url")
+    if not name_col:
+        raise ValueError(f"MacEwan seed missing program_name column: {seed_path}")
+    if not seed_url_col and not requirements_col:
+        raise ValueError(
+            f"MacEwan seed missing requirements_url/program_url_seed columns: {seed_path}"
+        )
+
+    rows: list[dict[str, str]] = []
+    for _, raw in seed_df.iterrows():
+        program_name = norm_or_blank(raw.get(name_col))
+        requirements_url = norm_or_blank(raw.get(requirements_col, "")) if requirements_col else ""
+        program_url_seed = norm_or_blank(raw.get(seed_url_col, "")) if seed_url_col else ""
+        source_url = requirements_url or program_url_seed
+        if not program_name or not source_url:
+            continue
+        rows.append({"program_name": program_name, "source_url": source_url})
+    return rows
+
+
+def load_ualberta_seed(seed_path: Path) -> list[dict[str, str]]:
+    if not seed_path.exists():
+        return []
+
+    seed_df = pd.read_csv(seed_path)
+    if seed_df.empty:
+        return []
+
+    cols = {c.lower(): c for c in seed_df.columns}
+    name_col = cols.get("program_name")
+    url_col = cols.get("program_url") or cols.get("source_url")
+    credential_col = cols.get("credential")
+    if not name_col:
+        raise ValueError(f"UAlberta seed missing program_name column: {seed_path}")
+    if not url_col:
+        raise ValueError(f"UAlberta seed missing program_url/source_url column: {seed_path}")
+
+    rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for _, raw in seed_df.iterrows():
+        program_name = norm_or_blank(raw.get(name_col))
+        source_url = norm_or_blank(raw.get(url_col))
+        credential = norm_or_blank(raw.get(credential_col, "")) if credential_col else ""
+        if not program_name or not source_url:
+            continue
+        if not credential:
+            credential = "Other"
+        key = (program_name.lower(), source_url.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(
+            {
+                "program_name": program_name,
+                "credential": credential,
+                "source_url": source_url,
+            }
+        )
+    rows.sort(key=lambda row: (row["program_name"].lower(), row["source_url"].lower()))
+    return rows
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--in", dest="in_path", default="PROGRAMS_INDEX.csv")
@@ -77,6 +157,10 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--norquest-seed", default="pipeline/norquest_program_seed.csv")
     ap.add_argument("--norquest-rules", default="config/norquest_non_program_rules.json")
     ap.add_argument("--no-norquest-seed-backfill", action="store_true")
+    ap.add_argument("--macewan-seed", default="pipeline/macewan_program_seed.csv")
+    ap.add_argument("--no-macewan-seed-replace", action="store_true")
+    ap.add_argument("--ualberta-seed", default="config/ualberta_canonical_url_map.csv")
+    ap.add_argument("--no-ualberta-seed-replace", action="store_true")
     ap.add_argument("--evidence", default="PROGRAMS_ONLY.csv")
     args = ap.parse_args(argv)
 
@@ -87,6 +171,8 @@ def main(argv: list[str]) -> int:
     nait_legacy_allowlist_path = Path(args.nait_legacy_allowlist)
     norquest_seed_path = Path(args.norquest_seed)
     norquest_rules_path = Path(args.norquest_rules)
+    macewan_seed_path = Path(args.macewan_seed)
+    ualberta_seed_path = Path(args.ualberta_seed)
     evidence_path = Path(args.evidence)
 
     df = pd.read_csv(in_path)
@@ -127,6 +213,8 @@ def main(argv: list[str]) -> int:
     nait_legacy_allowlist_names = load_allowlist_program_names(nait_legacy_allowlist_path)
     norquest_rules = load_norquest_filter_rules(norquest_rules_path)
     norquest_seed_names, norquest_seed_urls, norquest_seed_rows = load_norquest_seed(norquest_seed_path)
+    macewan_seed_rows = load_macewan_seed(macewan_seed_path)
+    ualberta_seed_rows = load_ualberta_seed(ualberta_seed_path)
     evidence_lookup = load_evidence_notes_by_key(evidence_path)
     nait_evidence_found = 0
     norquest_evidence_found = 0
@@ -235,7 +323,48 @@ def main(argv: list[str]) -> int:
             norquest_backfill_added = len(additions)
             norquest_reason_counts["kept_seed_backfill"] += norquest_backfill_added
 
-    cleaned = cleaned.drop_duplicates(subset=["institution", "program_name", "source_url"]).reset_index(drop=True)
+    should_process_macewan = (not allowed_institutions) or ("MacEwan" in allowed_institutions)
+    if should_process_macewan and not args.no_macewan_seed_replace and macewan_seed_rows:
+        cleaned = cleaned.loc[cleaned["institution"] != "MacEwan"].copy()
+        additions: list[dict[str, str]] = []
+        for seed_row in macewan_seed_rows:
+            new_row: dict[str, str] = {col: "" for col in cleaned.columns}
+            new_row["institution"] = "MacEwan"
+            new_row["program_name"] = seed_row["program_name"]
+            new_row["credential"] = "Other"
+            new_row["source_url"] = seed_row["source_url"]
+            if "notes_uncertain" in cleaned.columns:
+                new_row["notes_uncertain"] = ""
+            additions.append(new_row)
+        if additions:
+            cleaned = pd.concat([cleaned, pd.DataFrame(additions)], ignore_index=True)
+
+    should_process_ualberta = (not allowed_institutions) or ("UAlberta" in allowed_institutions)
+    if should_process_ualberta and not args.no_ualberta_seed_replace and ualberta_seed_rows:
+        cleaned = cleaned.loc[cleaned["institution"] != "UAlberta"].copy()
+        additions: list[dict[str, str]] = []
+        for seed_row in ualberta_seed_rows:
+            new_row: dict[str, str] = {col: "" for col in cleaned.columns}
+            new_row["institution"] = "UAlberta"
+            new_row["program_name"] = seed_row["program_name"]
+            new_row["credential"] = seed_row["credential"] or "Other"
+            new_row["source_url"] = seed_row["source_url"]
+            if "notes_uncertain" in cleaned.columns:
+                new_row["notes_uncertain"] = ""
+            additions.append(new_row)
+        if additions:
+            cleaned = pd.concat([cleaned, pd.DataFrame(additions)], ignore_index=True)
+
+    if should_process_macewan and not args.no_macewan_seed_replace and macewan_seed_rows:
+        non_macewan = (
+            cleaned.loc[cleaned["institution"] != "MacEwan"]
+            .drop_duplicates(subset=["institution", "program_name", "source_url"])
+            .reset_index(drop=True)
+        )
+        macewan_rows = cleaned.loc[cleaned["institution"] == "MacEwan"].reset_index(drop=True)
+        cleaned = pd.concat([non_macewan, macewan_rows], ignore_index=True)
+    else:
+        cleaned = cleaned.drop_duplicates(subset=["institution", "program_name", "source_url"]).reset_index(drop=True)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     cleaned.to_csv(out_path, index=False)
@@ -271,6 +400,28 @@ def main(argv: list[str]) -> int:
             "kept_seed_backfill",
         ]:
             print(f"  {reason}: {norquest_reason_counts.get(reason, 0)}")
+    if should_process_macewan:
+        macewan_mask = cleaned["institution"] == "MacEwan"
+        macewan_rows_written = int(macewan_mask.sum())
+        macewan_rows_with_source_url = int(
+            (macewan_mask & (cleaned["source_url"].astype(str).str.strip() != "")).sum()
+        )
+        print("MacEwan seed summary:")
+        print(f"  seed_rows_loaded: {len(macewan_seed_rows)}")
+        print(f"  seed_replace_enabled: {not args.no_macewan_seed_replace}")
+        print(f"  rows_written: {macewan_rows_written}")
+        print(f"  rows_with_source_url: {macewan_rows_with_source_url}")
+    if should_process_ualberta:
+        ualberta_mask = cleaned["institution"] == "UAlberta"
+        ualberta_rows_written = int(ualberta_mask.sum())
+        ualberta_rows_with_source_url = int(
+            (ualberta_mask & (cleaned["source_url"].astype(str).str.strip() != "")).sum()
+        )
+        print("UAlberta seed summary:")
+        print(f"  seed_rows_loaded: {len(ualberta_seed_rows)}")
+        print(f"  seed_replace_enabled: {not args.no_ualberta_seed_replace}")
+        print(f"  rows_written: {ualberta_rows_written}")
+        print(f"  rows_with_source_url: {ualberta_rows_with_source_url}")
     if dropped_missing_required:
         print(f"Global filter summary: dropped_missing_required={dropped_missing_required}")
     return 0

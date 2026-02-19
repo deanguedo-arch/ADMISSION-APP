@@ -1,5 +1,6 @@
 param(
   [string]$MasterPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv",
+  [string]$FallbackMasterPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new",
   [string]$OutPath = ".\\out\\AvgRules.todo.csv"
 )
 
@@ -15,6 +16,20 @@ function Ensure-Dir([string]$path) {
 
 function Is-Blank([object]$v) {
   return ($null -eq $v) -or [string]::IsNullOrWhiteSpace([string]$v)
+}
+
+function Resolve-CanonicalPath([string]$canonicalPath, [string]$fallbackPath) {
+  $canonicalExists = Test-Path $canonicalPath
+  $fallbackExists = Test-Path $fallbackPath
+  if ($canonicalExists -and $fallbackExists) {
+    $a = Get-Item $canonicalPath
+    $b = Get-Item $fallbackPath
+    if ($b.LastWriteTimeUtc -gt $a.LastWriteTimeUtc) { return $fallbackPath }
+    return $canonicalPath
+  }
+  if ($canonicalExists) { return $canonicalPath }
+  if ($fallbackExists) { return $fallbackPath }
+  return $canonicalPath
 }
 
 function Try-ParseElectiveQty([string]$s) {
@@ -44,6 +59,7 @@ function Try-ParseDouble([string]$s) {
   return $null
 }
 
+$MasterPath = Resolve-CanonicalPath -canonicalPath $MasterPath -fallbackPath $FallbackMasterPath
 if (-not (Test-Path $MasterPath)) {
   throw "Master file not found: $MasterPath. Run .\\tools\\clean-master.ps1 first."
 }

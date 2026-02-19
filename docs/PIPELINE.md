@@ -43,6 +43,21 @@ For NAIT, index acceptance is now seed-first:
 
 `pipeline/build_index.py` keeps NAIT rows only when they survive evidence/rule drops and then match seed, explicit allowlist, or legacy fallback allowlist.
 
+### MacEwan 114 seed guardrail (implemented)
+For MacEwan, index rows are now seeded from the captured link-list element:
+- Build seed from `macewan course list elements.md` using `pipeline/build_macewan_seed_from_element.py`
+- Generated seed file: `pipeline/macewan_program_seed.csv`
+- `build_index.py` replaces MacEwan index rows with seed rows by default (disable with `--no-macewan-seed-replace`)
+- `source_url` is set to `requirements_url` when resolved, otherwise `program_url_seed`
+
+This keeps MacEwan discovery pinned to the 114 real program-card rows while excluding helper/button anchors.
+
+Fixture check:
+
+```powershell
+python .\pipeline\check_macewan_seed_fixtures.py
+```
+
 ## 2) Fetch stage (raw capture)
 For each `program_url`, store:
 

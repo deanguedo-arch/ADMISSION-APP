@@ -524,3 +524,63 @@ Keep entries short and append-only.
 - Upgraded `tools/refresh-all.ps1` to refresh NorQuest seed each run and normalize institution filter inputs.
 - Test run: `tools/refresh-all.ps1 -Institution NAIT,NorQuest -SkipSync` produced cleaned index NAIT=95, NorQuest=77 with zero NorQuest noise hits from prior headline/navigation leakage.
 
+## 2026-02-19 (MacEwan 114 Seed Integration + Uncheckable Fallback)
+- Added MacEwan seed builder `pipeline/build_macewan_seed_from_element.py`.
+  - Parses only anchor rows containing `link-title` blocks from `macewan course list elements.md`.
+  - Excludes helper/button anchors (for example `Admission Requirements` snippet rows).
+  - Resolves `requirements_url` with bounded fetch logic (direct `admissions/requirements/` link first, then `/academics/programs/<slug>/` root fallback for `/academics/...` subpaths).
+- Added MacEwan seed fixtures:
+  - `pipeline/fixtures/macewan_seed_cases.json`
+  - `pipeline/check_macewan_seed_fixtures.py`
+- Upgraded `pipeline/build_index.py`:
+  - New flags: `--macewan-seed` (default `pipeline/macewan_program_seed.csv`), `--no-macewan-seed-replace`.
+  - Default behavior replaces MacEwan index rows with seed rows and preserves all 114 seed rows (no MacEwan dedupe collapse).
+  - Emits MacEwan summary counters (`seed_rows_loaded`, `rows_written`, `rows_with_source_url`).
+- Upgraded `tools/clean-master.ps1`:
+  - New params: `-MacewanSeedPath`, `-MacewanMatchMinScore`, `-MacewanMatchMinGap`, `-MacewanRequireFullSeedCoverage`.
+  - Rebuilds MacEwan canonical rows from seed (1 row per seed row).
+  - Confident matches copy existing admissions fields and keep calendar URL when present.
+  - Unresolved/ambiguous rows are emitted as safe rows with `Requirement_Type=See Degree`, `Status=Active`, and seed/fallback URL.
+  - Final exact-dedup now preserves MacEwan seed rows while still deduping non-MacEwan rows.
+- Upgraded `tools/validate-canonical.ps1` with MacEwan checks:
+  - seed file existence and row-count parity
+  - no missing/non-http `Program_URL` for MacEwan rows
+  - no MacEwan rows outside seed name set
+  - unresolved (no structured requirement signals) rows must have `Requirement_Type=See Degree`
+- Upgraded `tools/refresh-all.ps1`:
+  - Step 2 now refreshes MacEwan seed (`build_macewan_seed_from_element.py`) in addition to NorQuest seed.
+  - Step 3 now runs `check_macewan_seed_fixtures.py`.
+- Docs updated:
+  - `pipeline/README.md`
+  - `docs/PIPELINE.md`
+  - `README.md`
+- Validation/results:
+  - `python .\pipeline\build_macewan_seed_from_element.py` -> 114 rows, 114/114 URLs, 109 unique URLs, `requirements_url_found=67`.
+  - `python .\pipeline\check_macewan_seed_fixtures.py` PASS (7/7).
+  - `python .\pipeline\build_index.py --in .\PROGRAMS_INDEX.csv --out .\pipeline\program_index.cleaned.csv` -> MacEwan rows written 114, rows with source_url 114.
+  - `tools\clean-master.ps1` -> canonical rebuilt with MacEwan 114; wrote `.\data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new` because canonical CSV was file-locked.
+  - `tools\validate-canonical.ps1 -CsvPath .\data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new` PASS (MacEwan seed checks passed).
+  - `tools\refresh-all.ps1 -Institution MacEwan -SkipSync` PASS; Step 2 kept MacEwan 114 and all fixture checks passed.
+- Follow-up: `tools/validate-canonical.ps1` now auto-resolves to a newer `.csv.new` sibling when present, so default validation still passes during file-lock fallback writes.
+
+## 2026-02-19 (UAlberta Link Hardening: 14 URL map + 231 audit seed)
+- Added pipeline/build_ualberta_seed_from_coveo.py to fetch UAlberta General/Major results from Coveo and write pipeline/ualberta_program_seed.csv.
+- Added locked map config/ualberta_canonical_url_map.csv for the 14 canonical UAlberta rows.
+- Added fixtures: pipeline/fixtures/ualberta_url_map_cases.json and checker pipeline/check_ualberta_url_map_fixtures.py.
+- Updated pipeline/build_index.py with --ualberta-seed and --no-ualberta-seed-replace; default now replaces UAlberta index rows from the map and prints UAlberta summary counters.
+- Updated tools/clean-master.ps1 with -UalbertaMapPath and -UalbertaRequireFullCoverage; UAlberta Program_URL now mapped directly from locked map with hard-fail coverage checks.
+- Updated tools/validate-canonical.ps1 with UAlberta map checks (row-count parity, membership, non-http/missing URLs, mismatch vs mapped URL) and added UAlberta to default required institutions.
+- Updated orchestration: tools/refresh-all.ps1 (UAlberta seed + fixture check), tools/sync-programs.ps1 (refresh MacEwan/UAlberta seeds), and config/sheets_sync.json.example required institutions now include UAlberta.
+- Validation: check_ualberta_url_map_fixtures PASS, build_ualberta_seed_from_coveo wrote 231 rows, build_index wrote UAlberta 14/14 with URLs, clean-master mapped UAlberta 14/14 URLs, validate-canonical PASS, refresh-all -Institution UAlberta -SkipSync PASS.
+
+## 2026-02-19 (Canonical path pinning + NAIT non-program removal finalized)
+- Verified NAIT non-program headlines are removed from active canonical output (`data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new`) via NAIT seed/rules cleanup.
+- Updated `tools/refresh-all.ps1` to resolve and pin an active canonical path immediately after clean, then pass that explicit path through Avg_Total apply and Program_URL apply (with deterministic fallback), preventing `.csv` vs `.csv.new` drift.
+- Updated `tools/sync-programs.ps1` to use the same active canonical path model for Program_URL apply, validation, and Sheets upload.
+- Validation run: `tools/validate-canonical.ps1 -CsvPath .\data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new` PASS.
+- Coverage check on active canonical: MacEwan `114/114` URL, NAIT `95/95`, NorQuest `77/77`, UAlberta `14/14`.
+- Note: base `.csv` remains file-locked by another process; active truth is currently `.csv.new` until lock is released.
+- Extended canonical fallback auto-resolution to helper scripts that previously read only base `.csv`:
+  - `tools/check-eligibility.ps1` now supports `-FallbackMasterPath` and resolves newest canonical between `.csv`/`.csv.new`.
+  - `tools/generate-avg-rules-template.ps1` now supports `-FallbackMasterPath` and resolves newest canonical between `.csv`/`.csv.new`.
+- Result: refresh/sync/validate/check-eligibility/avg-rules-template now consistently use active canonical output even during file-lock fallback writes.

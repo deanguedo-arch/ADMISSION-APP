@@ -4,12 +4,15 @@ param(
   [string]$NaitSeedPath = ".\\pipeline\\nait_program_seed.csv",
   [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
   [string]$NaitRulesPath = ".\\config\\nait_non_program_rules.json",
+  [string]$MacewanSeedPath = ".\\pipeline\\macewan_program_seed.csv",
+  [string]$UalbertaMapPath = ".\\config\\ualberta_canonical_url_map.csv",
   [string]$NorquestSeedPath = ".\\pipeline\\norquest_program_seed.csv",
   [string]$NorquestRulesPath = ".\\config\\norquest_non_program_rules.json",
   [string]$ProgramEvidencePath = ".\\PROGRAMS_ONLY.csv",
+  [switch]$RequireUalbertaMap = $true,
   [int]$MinRows = 100,
   [double]$MaxRowDropPercent = 35,
-  [string[]]$RequiredInstitutions = @("NAIT", "NorQuest", "MacEwan")
+  [string[]]$RequiredInstitutions = @("NAIT", "NorQuest", "MacEwan", "UAlberta")
 )
 
 Set-StrictMode -Version Latest
@@ -51,6 +54,12 @@ function Normalize-UrlKey([object]$v) {
   return $t
 }
 
+function Is-HttpUrl([object]$value) {
+  $t = Normalize-Text $value
+  if (-not $t) { return $false }
+  return ($t -match "^(?i:https?)://")
+}
+
 function To-StringArray([object]$value) {
   $items = @()
   if ($null -eq $value) { return ,@() }
@@ -83,6 +92,26 @@ function Get-PropValue([object]$row, [string[]]$names) {
   return ""
 }
 
+function Resolve-CanonicalPath([string]$path) {
+  $primary = $path
+  if ($primary.ToLowerInvariant().EndsWith(".new")) {
+    return $primary
+  }
+  $fallback = "$primary.new"
+  $primaryExists = Test-Path $primary
+  $fallbackExists = Test-Path $fallback
+  if ($primaryExists -and $fallbackExists) {
+    $a = Get-Item $primary
+    $b = Get-Item $fallback
+    if ($b.LastWriteTimeUtc -gt $a.LastWriteTimeUtc) { return $fallback }
+    return $primary
+  }
+  if ($primaryExists) { return $primary }
+  if ($fallbackExists) { return $fallback }
+  return $primary
+}
+
+$CsvPath = Resolve-CanonicalPath $CsvPath
 if (-not (Test-Path $CsvPath)) {
   throw "Validation failed: file not found: $CsvPath"
 }
@@ -135,6 +164,63 @@ if (-not (Test-Path $NorquestSeedPath)) {
 }
 foreach ($seedRow in (Import-Csv $NorquestSeedPath)) {
   Add-ToSet -set $norquestSeed -key (Normalize-ProgramKey (Get-PropValue -row $seedRow -names @("program_name", "Program")))
+}
+
+$macewanSeed = @{}
+$macewanSeedRowCount = 0
+if (-not (Test-Path $MacewanSeedPath)) {
+  throw "Validation failed: MacEwan seed file not found: $MacewanSeedPath"
+}
+foreach ($seedRow in (Import-Csv $MacewanSeedPath)) {
+  $nameKey = Normalize-ProgramKey (Get-PropValue -row $seedRow -names @("program_name", "Program"))
+  $requirementsUrl = Normalize-Text (Get-PropValue -row $seedRow -names @("requirements_url"))
+  $seedProgramUrl = Normalize-Text (Get-PropValue -row $seedRow -names @("program_url_seed", "program_url", "Program_URL", "url"))
+  $seedUrl = if ($requirementsUrl) { $requirementsUrl } else { $seedProgramUrl }
+  if (-not $nameKey -or -not $seedUrl) { continue }
+  $macewanSeedRowCount++
+  Add-ToSet -set $macewanSeed -key $nameKey
+}
+
+$ualbertaMap = @{}
+$ualbertaMapProgramByKey = @{}
+$ualbertaMapRowCount = 0
+$ualbertaMapDuplicateNames = @()
+$ualbertaMapInvalidUrls = @()
+if ($RequireUalbertaMap -and -not (Test-Path $UalbertaMapPath)) {
+  throw "Validation failed: UAlberta URL map file not found: $UalbertaMapPath"
+}
+if (Test-Path $UalbertaMapPath) {
+  foreach ($mapRow in (Import-Csv $UalbertaMapPath)) {
+    $name = Normalize-Text (Get-PropValue -row $mapRow -names @("program_name", "Program"))
+    $nameKey = Normalize-ProgramKey $name
+    if (-not $nameKey) { continue }
+
+    $url = Normalize-Text (Get-PropValue -row $mapRow -names @("program_url", "Program_URL", "source_url", "url"))
+    if ($ualbertaMap.ContainsKey($nameKey)) {
+      $ualbertaMapDuplicateNames += $name
+      continue
+    }
+
+    $ualbertaMap[$nameKey] = $url
+    $ualbertaMapProgramByKey[$nameKey] = $name
+    $ualbertaMapRowCount++
+    if (-not (Is-HttpUrl $url)) {
+      $ualbertaMapInvalidUrls += $name
+    }
+  }
+}
+if ($RequireUalbertaMap) {
+  if ($ualbertaMapRowCount -eq 0) {
+    throw "Validation failed: UAlberta URL map has no rows: $UalbertaMapPath"
+  }
+  if ($ualbertaMapDuplicateNames.Count -gt 0) {
+    $examples = @($ualbertaMapDuplicateNames | Select-Object -First 25) -join "; "
+    throw "Validation failed: UAlberta URL map contains duplicate program_name keys ($($ualbertaMapDuplicateNames.Count)). Examples: $examples"
+  }
+  if ($ualbertaMapInvalidUrls.Count -gt 0) {
+    $examples = @($ualbertaMapInvalidUrls | Select-Object -First 25) -join "; "
+    throw "Validation failed: UAlberta URL map contains missing/non-http program_url rows ($($ualbertaMapInvalidUrls.Count)). Examples: $examples"
+  }
 }
 
 $naitLegacyAllowlist = @{}
@@ -335,6 +421,128 @@ if ($norquestViolations.Count -gt 0) {
   throw "Validation failed: NorQuest non-program/seed violations found ($summary). Examples: $examples"
 }
 
+$macewanRows = @($rows | Where-Object { $_.Institution -eq "MacEwan" })
+if ($macewanRows.Count -ne $macewanSeedRowCount) {
+  throw (
+    "Validation failed: MacEwan row count mismatch. seed_rows={0}, canonical_rows={1}" -f
+    $macewanSeedRowCount, $macewanRows.Count
+  )
+}
+
+$macewanMissingUrl = @()
+$macewanOutOfSeed = @()
+$macewanUnresolvedMissingSeeDegree = @()
+foreach ($r in $macewanRows) {
+  $program = Normalize-Text $r.Program
+  $programKey = Normalize-ProgramKey $program
+  if (-not ($programKey -and $macewanSeed.ContainsKey($programKey))) {
+    $macewanOutOfSeed += $program
+  }
+
+  $url = Normalize-Text (Get-PropValue -row $r -names @("Program_URL", "Source_URL", "source_url", "program_url"))
+  if (-not (Is-HttpUrl $url)) {
+    $macewanMissingUrl += $program
+  }
+
+  $hasStructuredSignals = $false
+  foreach ($value in @(
+      (Normalize-Text $r.Min_Avg_Final),
+      (Normalize-Text $r.English_Req),
+      (Normalize-Text $r.Math_Req),
+      (Normalize-Text $r.Social_Req),
+      (Normalize-Text $r.Science_Req),
+      (Normalize-Text $r.Elective_Qty)
+    )) {
+    if ($value) {
+      $hasStructuredSignals = $true
+      break
+    }
+  }
+
+  if (-not $hasStructuredSignals) {
+    $reqType = Normalize-Text $r.Requirement_Type
+    if ($reqType -ne "See Degree") {
+      $macewanUnresolvedMissingSeeDegree += $program
+    }
+  }
+}
+
+if ($macewanMissingUrl.Count -gt 0) {
+  $examples = @($macewanMissingUrl | Select-Object -First 25) -join "; "
+  throw "Validation failed: MacEwan rows missing/non-http Program_URL found ($($macewanMissingUrl.Count)). Examples: $examples"
+}
+
+if ($macewanOutOfSeed.Count -gt 0) {
+  $examples = @($macewanOutOfSeed | Select-Object -First 25) -join "; "
+  throw "Validation failed: MacEwan rows outside seed found ($($macewanOutOfSeed.Count)). Examples: $examples"
+}
+
+if ($macewanUnresolvedMissingSeeDegree.Count -gt 0) {
+  $examples = @($macewanUnresolvedMissingSeeDegree | Select-Object -First 25) -join "; "
+  throw "Validation failed: MacEwan unresolved rows missing Requirement_Type=See Degree ($($macewanUnresolvedMissingSeeDegree.Count)). Examples: $examples"
+}
+
+$ualbertaRows = @($rows | Where-Object { $_.Institution -eq "UAlberta" })
+if ($RequireUalbertaMap -and ($ualbertaRows.Count -ne $ualbertaMapRowCount)) {
+  throw (
+    "Validation failed: UAlberta row count mismatch. map_rows={0}, canonical_rows={1}" -f
+    $ualbertaMapRowCount, $ualbertaRows.Count
+  )
+}
+
+$ualbertaMissingUrl = @()
+$ualbertaOutOfMap = @()
+$ualbertaMismatchedUrl = @()
+$ualbertaSeenMapKeys = @{}
+foreach ($r in $ualbertaRows) {
+  $program = Normalize-Text $r.Program
+  $programKey = Normalize-ProgramKey $program
+  $url = Normalize-Text (Get-PropValue -row $r -names @("Program_URL", "Source_URL", "source_url", "program_url"))
+
+  if (-not ($programKey -and $ualbertaMap.ContainsKey($programKey))) {
+    $ualbertaOutOfMap += $program
+  } else {
+    Add-ToSet -set $ualbertaSeenMapKeys -key $programKey
+    $expectedUrl = Normalize-Text $ualbertaMap[$programKey]
+    if ((Is-HttpUrl $url) -and (Is-HttpUrl $expectedUrl)) {
+      if ((Normalize-UrlKey $url) -ne (Normalize-UrlKey $expectedUrl)) {
+        $ualbertaMismatchedUrl += ("{0} (expected: {1} | got: {2})" -f $program, $expectedUrl, $url)
+      }
+    }
+  }
+
+  if (-not (Is-HttpUrl $url)) {
+    $ualbertaMissingUrl += $program
+  }
+}
+
+if ($RequireUalbertaMap -and $ualbertaOutOfMap.Count -gt 0) {
+  $examples = @($ualbertaOutOfMap | Select-Object -First 25) -join "; "
+  throw "Validation failed: UAlberta rows outside URL map found ($($ualbertaOutOfMap.Count)). Examples: $examples"
+}
+
+if ($ualbertaMissingUrl.Count -gt 0) {
+  $examples = @($ualbertaMissingUrl | Select-Object -First 25) -join "; "
+  throw "Validation failed: UAlberta rows missing/non-http Program_URL found ($($ualbertaMissingUrl.Count)). Examples: $examples"
+}
+
+if ($RequireUalbertaMap -and $ualbertaMismatchedUrl.Count -gt 0) {
+  $examples = @($ualbertaMismatchedUrl | Select-Object -First 25) -join "; "
+  throw "Validation failed: UAlberta Program_URL mismatch vs URL map ($($ualbertaMismatchedUrl.Count)). Examples: $examples"
+}
+
+if ($RequireUalbertaMap) {
+  $mapMissingFromCanonical = @()
+  foreach ($key in $ualbertaMap.Keys) {
+    if ($ualbertaSeenMapKeys.ContainsKey($key)) { continue }
+    $mapMissingFromCanonical += (Normalize-Text $ualbertaMapProgramByKey[$key])
+  }
+  if ($mapMissingFromCanonical.Count -gt 0) {
+    $examples = @($mapMissingFromCanonical | Select-Object -First 25) -join "; "
+    throw "Validation failed: UAlberta URL map rows missing from canonical ($($mapMissingFromCanonical.Count)). Examples: $examples"
+  }
+}
+
 if (Test-Path $BaselinePath) {
   $baselineRows = Import-Csv $BaselinePath
   if ($baselineRows -and $baselineRows.Count -gt 0) {
@@ -381,3 +589,7 @@ Write-Host ("NAIT seed/rules check passed: {0} rows checked, seed size {1}, lega
   $naitRows.Count, $naitSeed.Count, $naitLegacyAllowlist.Count)
 Write-Host ("NorQuest seed/rules check passed: {0} rows checked, seed size {1}" -f
   $norquestRows.Count, $norquestSeed.Count)
+Write-Host ("MacEwan seed checks passed: {0} rows checked, seed rows {1}, unique seed names {2}" -f
+  $macewanRows.Count, $macewanSeedRowCount, $macewanSeed.Count)
+Write-Host ("UAlberta URL map checks passed: {0} rows checked, map rows {1}" -f
+  $ualbertaRows.Count, $ualbertaMapRowCount)

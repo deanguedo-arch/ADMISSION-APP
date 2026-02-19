@@ -1,0 +1,31 @@
+{
+  "element_case": {
+    "input_path": "macewan course list elements.md",
+    "expected_row_count": 114,
+    "expected_unique_url_count": 109,
+    "forbidden_program_names": [
+      "Admission Requirements"
+    ]
+  },
+  "resolver_cases": [
+    {
+      "id": "direct-requirements-link",
+      "page_url": "https://www.macewan.ca/academics/programs/sample-program/",
+      "page_html": "<a class=\"btn dark clean\" href=\"admissions/requirements/\" title=\"ADMISSION REQUIREMENTS\">Admission Requirements</a>",
+      "expected_requirements_url": "https://www.macewan.ca/academics/programs/sample-program/admissions/requirements/"
+    },
+    {
+      "id": "root-fallback-requirements-link",
+      "page_url": "https://www.macewan.ca/academics/programs/sample-program/academics/sample-major/",
+      "page_html": "<a href=\"/apply-enrol/admissions/application/apply-now/index.html\">Apply now</a>",
+      "root_html": "<a class=\"btn dark clean\" href=\"admissions/requirements/index.html\" title=\"ADMISSION REQUIREMENTS\">Admission Requirements</a>",
+      "expected_requirements_url": "https://www.macewan.ca/academics/programs/sample-program/admissions/requirements/index.html"
+    },
+    {
+      "id": "no-requirements-link-found",
+      "page_url": "https://www.macewan.ca/academics/academic-departments/psychology/academics/psychology-major/",
+      "page_html": "<a href=\"/apply-enrol/admissions/application/apply-now/index.html\">Apply now</a>",
+      "expected_requirements_url": ""
+    }
+  ]
+}

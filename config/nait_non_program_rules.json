@@ -31,7 +31,9 @@
     "^events?\\s*&\\s*programs$",
     "^nait event check in$",
     "^nait surveying and geospatial events$",
-    "^skilled trades events form$"
+    "^skilled trades events form$",
+    "\\s-\\s*giving$",
+    "^thank you!?$"
   ],
   "evidence_not_program_tokens": [
     "not a program page"

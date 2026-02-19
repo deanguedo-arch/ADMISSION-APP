@@ -64,6 +64,13 @@ NAIT seed-first index filtering:
 - legacy allowlist output: `config/nait_legacy_allowlist.csv`
 - `pipeline/build_index.py` supports `--nait-seed`, `--nait-rules`, `--nait-legacy-allowlist`, and `--evidence`
 
+MacEwan seed-first index filtering:
+- build seed from captured list element: `python .\pipeline\build_macewan_seed_from_element.py`
+- seed output: `pipeline/macewan_program_seed.csv`
+- `pipeline/build_index.py` supports `--macewan-seed` and `--no-macewan-seed-replace`
+- default behavior replaces MacEwan index rows with the 114 seed rows and keeps `source_url` populated from `requirements_url` or `program_url_seed`
+- fixture check: `python .\pipeline\check_macewan_seed_fixtures.py`
+
 Before expanding full automation, lock the current baseline:
 - `docs/V1_LOCK_CHECKLIST.md`
 

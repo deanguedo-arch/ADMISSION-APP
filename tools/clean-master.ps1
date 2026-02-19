@@ -4,6 +4,12 @@ param(
   [string]$ProgramEvidencePath = ".\\PROGRAMS_ONLY.csv",
   [string]$FilterRulesPath = ".\\config\\nait_non_program_rules.json",
   [string]$NaitSeedPath = ".\\pipeline\\nait_program_seed.csv",
+  [string]$MacewanSeedPath = ".\\pipeline\\macewan_program_seed.csv",
+  [double]$MacewanMatchMinScore = 0.55,
+  [double]$MacewanMatchMinGap = 0.08,
+  [switch]$MacewanRequireFullSeedCoverage = $true,
+  [string]$UalbertaMapPath = ".\\config\\ualberta_canonical_url_map.csv",
+  [switch]$UalbertaRequireFullCoverage = $true,
   [string]$NorquestRulesPath = ".\\config\\norquest_non_program_rules.json",
   [string]$NorquestSeedPath = ".\\pipeline\\norquest_program_seed.csv",
   [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
@@ -45,6 +51,72 @@ function Normalize-UrlKey([object]$v) {
     $t = $t.Substring(0, $t.Length - 1)
   }
   return $t
+}
+
+function Is-HttpUrl([object]$value) {
+  $t = Normalize-Text $value
+  if (-not $t) { return $false }
+  return ($t -match "^(?i:https?)://")
+}
+
+function Normalize-ProgramText([object]$v) {
+  $s = Normalize-Text $v
+  if (-not $s) { return "" }
+  $t = $s.ToLowerInvariant()
+  $t = [regex]::Replace($t, "\(.*?\)", " ")
+  $t = [regex]::Replace($t, "[\u2010-\u2015]", " ")
+  $t = [regex]::Replace($t, "[^a-z0-9 ]", " ")
+  $t = [regex]::Replace($t, "\s+", " ").Trim()
+  return $t
+}
+
+function Get-Tokens([object]$value) {
+  $norm = Normalize-ProgramText $value
+  if (-not $norm) { return @() }
+  return @($norm.Split(" ") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+}
+
+function Score-Jaccard([string[]]$a, [string[]]$b) {
+  if (-not $a -or -not $b) { return 0.0 }
+  $setA = @{}
+  foreach ($x in @($a)) {
+    if ([string]::IsNullOrWhiteSpace($x)) { continue }
+    $setA[$x] = $true
+  }
+  $setB = @{}
+  foreach ($x in @($b)) {
+    if ([string]::IsNullOrWhiteSpace($x)) { continue }
+    $setB[$x] = $true
+  }
+  if ($setA.Count -eq 0 -or $setB.Count -eq 0) { return 0.0 }
+
+  $union = @{}
+  foreach ($k in $setA.Keys) { $union[$k] = $true }
+  foreach ($k in $setB.Keys) { $union[$k] = $true }
+
+  $inter = 0
+  foreach ($k in $setA.Keys) {
+    if ($setB.ContainsKey($k)) { $inter++ }
+  }
+  if ($union.Count -eq 0) { return 0.0 }
+  return [double]$inter / [double]$union.Count
+}
+
+function Copy-RowObject([object]$row) {
+  $out = [ordered]@{}
+  foreach ($prop in $row.PSObject.Properties) {
+    $out[$prop.Name] = $prop.Value
+  }
+  return [pscustomobject]$out
+}
+
+function Infer-MacewanCredentialType([string]$programName) {
+  $t = (Normalize-Text $programName).ToLowerInvariant()
+  if (-not $t) { return "Other" }
+  if ($t -match "diploma") { return "Diploma" }
+  if ($t -match "certificate") { return "Certificate" }
+  if ($t -match "degree|bachelor|major|honours") { return "Degree" }
+  return "Other"
 }
 
 function Add-ToSet([hashtable]$set, [string]$key) {
@@ -148,6 +220,27 @@ $norquestStats = @{
   seed_backfill_added = 0
 }
 
+$macewanSeedRows = @()
+$macewanStats = @{
+  seed_rows_loaded = 0
+  matched_seed_rows = 0
+  unresolved_seed_rows = 0
+  ambiguous_seed_rows = 0
+  rows_written = 0
+  rows_with_program_url = 0
+}
+
+$ualbertaUrlMap = @{}
+$ualbertaMapDuplicates = @()
+$ualbertaStats = @{
+  map_rows_loaded = 0
+  rows_examined = 0
+  rows_mapped = 0
+  rows_missing_map = 0
+  rows_invalid_map_url = 0
+  rows_with_program_url = 0
+}
+
 if (Test-Path $FilterRulesPath) {
   $rulesJson = Get-Content -Raw $FilterRulesPath | ConvertFrom-Json
   $naitBlockedUrlPatterns = To-StringArray $rulesJson.blocked_url_patterns
@@ -202,6 +295,50 @@ if (Test-Path $NorquestSeedPath) {
     }
   }
 }
+
+if (Test-Path $MacewanSeedPath) {
+  foreach ($seed in (Import-Csv $MacewanSeedPath)) {
+    $name = Normalize-Text (Get-PropValue -row $seed -names @("program_name", "Program"))
+    $seedUrl = Normalize-Text (Get-PropValue -row $seed -names @("program_url_seed", "program_url", "Program_URL", "url"))
+    $requirementsUrl = Normalize-Text (Get-PropValue -row $seed -names @("requirements_url", "requirement_url"))
+    $preferredUrl = ""
+    if (Is-HttpUrl $requirementsUrl) {
+      $preferredUrl = $requirementsUrl
+    } elseif (Is-HttpUrl $seedUrl) {
+      $preferredUrl = $seedUrl
+    }
+    if (-not $name -or -not $preferredUrl) { continue }
+    $macewanSeedRows += [pscustomobject]@{
+      Program          = $name
+      Program_Key      = (Normalize-ProgramKey $name)
+      Program_Url_Seed = $seedUrl
+      Requirements_Url = $requirementsUrl
+      Preferred_Url    = $preferredUrl
+      Tokens           = (Get-Tokens $name)
+    }
+  }
+}
+$macewanStats.seed_rows_loaded = @($macewanSeedRows).Count
+
+if (Test-Path $UalbertaMapPath) {
+  foreach ($mapRow in (Import-Csv $UalbertaMapPath)) {
+    $name = Normalize-Text (Get-PropValue -row $mapRow -names @("program_name", "Program"))
+    $nameKey = Normalize-ProgramKey $name
+    $url = Normalize-Text (Get-PropValue -row $mapRow -names @("program_url", "Program_URL", "source_url", "url"))
+    if (-not $nameKey) { continue }
+
+    if ($ualbertaUrlMap.ContainsKey($nameKey)) {
+      $ualbertaMapDuplicates += $name
+      continue
+    }
+
+    $ualbertaUrlMap[$nameKey] = [pscustomobject]@{
+      Program = $name
+      Program_URL = $url
+    }
+  }
+}
+$ualbertaStats.map_rows_loaded = $ualbertaUrlMap.Count
 
 if (Test-Path $NaitLegacyAllowlistPath) {
   foreach ($allow in (Import-Csv $NaitLegacyAllowlistPath)) {
@@ -454,8 +591,216 @@ if ($DropNorQuestNonPrograms -and $norquestSeedRowsByKey.Count -gt 0) {
   }
 }
 
+if ($macewanSeedRows.Count -gt 0 -or $MacewanRequireFullSeedCoverage) {
+  if ($MacewanRequireFullSeedCoverage -and $macewanSeedRows.Count -eq 0) {
+    throw "MacEwan seed file is required but no rows were loaded: $MacewanSeedPath"
+  }
+
+  $templateRow = $null
+  if (@($canonical).Count -gt 0) {
+    $templateRow = @($canonical)[0]
+  }
+  if ($null -eq $templateRow) {
+    throw "Could not build MacEwan canonical rows: canonical template row missing"
+  }
+
+  $existingMacewanRows = @($canonical | Where-Object { $_.Institution -eq "MacEwan" })
+  $nonMacewanRows = @($canonical | Where-Object { $_.Institution -ne "MacEwan" })
+
+  $candidateRows = @()
+  foreach ($row in $existingMacewanRows) {
+    $candidateRows += [pscustomobject]@{
+      Row         = $row
+      ProgramNorm = (Normalize-ProgramText $row.Program)
+      Tokens      = (Get-Tokens $row.Program)
+    }
+  }
+
+  $rebuiltMacewanRows = @()
+  foreach ($seed in $macewanSeedRows) {
+    $seedName = Normalize-Text $seed.Program
+    $seedTokens = @($seed.Tokens)
+    $scored = @()
+
+    foreach ($candidate in $candidateRows) {
+      $score = Score-Jaccard -a $seedTokens -b @($candidate.Tokens)
+      if ($score -le 0) { continue }
+      $scored += [pscustomobject]@{
+        Score       = [double]$score
+        ProgramNorm = $candidate.ProgramNorm
+        Row         = $candidate.Row
+      }
+    }
+
+    $isMatch = $false
+    $isAmbiguous = $false
+    $bestRow = $null
+    $bestScore = 0.0
+
+    if ($scored.Count -gt 0) {
+      $scored = @($scored | Sort-Object @{ Expression = "Score"; Descending = $true })
+      $bestScore = [double]$scored[0].Score
+      if ($bestScore -ge $MacewanMatchMinScore) {
+        $near = @($scored | Where-Object { ($bestScore - [double]$_.Score) -lt $MacewanMatchMinGap })
+        $nearNorms = @($near | Select-Object -ExpandProperty ProgramNorm -Unique)
+        if ($nearNorms.Count -le 1) {
+          $isMatch = $true
+          $bestRow = $scored[0].Row
+        } else {
+          $isAmbiguous = $true
+        }
+      }
+    }
+
+    $seedRequirementsUrl = Normalize-Text $seed.Requirements_Url
+    $seedProgramUrl = Normalize-Text $seed.Program_Url_Seed
+    $seedPreferredUrl = Normalize-Text $seed.Preferred_Url
+    $fallbackUrl = ""
+    if (Is-HttpUrl $seedRequirementsUrl) {
+      $fallbackUrl = $seedRequirementsUrl
+    } elseif (Is-HttpUrl $seedProgramUrl) {
+      $fallbackUrl = $seedProgramUrl
+    } elseif (Is-HttpUrl $seedPreferredUrl) {
+      $fallbackUrl = $seedPreferredUrl
+    }
+
+    if ($isMatch -and $bestRow) {
+      $rebuilt = Copy-RowObject $bestRow
+      $rebuilt.Institution = "MacEwan"
+      $rebuilt.Program = $seedName
+      if (Is-Blank $rebuilt.Status) {
+        $rebuilt.Status = "Active"
+      }
+      if (Is-Blank $rebuilt.Credential_Type) {
+        $rebuilt.Credential_Type = Infer-MacewanCredentialType $seedName
+      }
+
+      $matchedUrl = Normalize-Text $bestRow.Program_URL
+      if ((Is-HttpUrl $matchedUrl) -and ($matchedUrl -match "calendar\.macewan\.ca")) {
+        $rebuilt.Program_URL = $matchedUrl
+      } elseif ($fallbackUrl) {
+        $rebuilt.Program_URL = $fallbackUrl
+      } elseif (Is-HttpUrl $matchedUrl) {
+        $rebuilt.Program_URL = $matchedUrl
+      } else {
+        $rebuilt.Program_URL = ""
+      }
+
+      $macewanStats.matched_seed_rows++
+      $rebuiltMacewanRows += $rebuilt
+      continue
+    }
+
+    $blank = [ordered]@{}
+    foreach ($prop in $templateRow.PSObject.Properties) {
+      $blank[$prop.Name] = ""
+    }
+    $rebuilt = [pscustomobject]$blank
+    $rebuilt.Institution = "MacEwan"
+    $rebuilt.Program = $seedName
+    $rebuilt.Credential_Type = Infer-MacewanCredentialType $seedName
+    $rebuilt.Status = "Active"
+    $rebuilt.Program_URL = $fallbackUrl
+    $rebuilt.Requirement_Type = "See Degree"
+    $rebuilt.HS_Diploma_Req = "Unknown"
+    $rebuilt.Math_Assessment_Flag = "Unknown"
+
+    if ($isAmbiguous) {
+      $macewanStats.ambiguous_seed_rows++
+    }
+    $macewanStats.unresolved_seed_rows++
+    $rebuiltMacewanRows += $rebuilt
+  }
+
+  if ($MacewanRequireFullSeedCoverage -and ($rebuiltMacewanRows.Count -ne $macewanSeedRows.Count)) {
+    throw (
+      "MacEwan seed coverage mismatch: expected {0} rows, rebuilt {1}" -f
+      $macewanSeedRows.Count, $rebuiltMacewanRows.Count
+    )
+  }
+
+  $macewanStats.rows_written = @($rebuiltMacewanRows).Count
+  $macewanStats.rows_with_program_url = @($rebuiltMacewanRows | Where-Object { Is-HttpUrl $_.Program_URL }).Count
+  $canonical = @($nonMacewanRows) + @($rebuiltMacewanRows)
+}
+
+$ualbertaMissingPrograms = @()
+$ualbertaInvalidMapPrograms = @()
+$ualbertaSeenMapKeys = @{}
+foreach ($row in @($canonical | Where-Object { $_.Institution -eq "UAlberta" })) {
+  $ualbertaStats.rows_examined++
+  $programName = Normalize-Text $row.Program
+  $programKey = Normalize-ProgramKey $programName
+  if (-not $programKey -or -not $ualbertaUrlMap.ContainsKey($programKey)) {
+    $ualbertaStats.rows_missing_map++
+    $ualbertaMissingPrograms += $programName
+    continue
+  }
+
+  Add-ToSet -set $ualbertaSeenMapKeys -key $programKey
+
+  $mapUrl = Normalize-Text $ualbertaUrlMap[$programKey].Program_URL
+  if (-not (Is-HttpUrl $mapUrl)) {
+    $ualbertaStats.rows_invalid_map_url++
+    $ualbertaInvalidMapPrograms += $programName
+    continue
+  }
+
+  $row.Program_URL = $mapUrl
+  $ualbertaStats.rows_mapped++
+}
+
+$ualbertaStats.rows_with_program_url = @(
+  $canonical |
+    Where-Object { $_.Institution -eq "UAlberta" -and (Is-HttpUrl $_.Program_URL) }
+).Count
+
+if ($UalbertaRequireFullCoverage) {
+  if (-not (Test-Path $UalbertaMapPath)) {
+    throw "UAlberta map file not found: $UalbertaMapPath"
+  }
+  if ($ualbertaUrlMap.Count -eq 0) {
+    throw "UAlberta map has no rows: $UalbertaMapPath"
+  }
+  if ($ualbertaMapDuplicates.Count -gt 0) {
+    $examples = @($ualbertaMapDuplicates | Select-Object -First 25) -join "; "
+    throw "UAlberta map has duplicate program_name keys ($($ualbertaMapDuplicates.Count)). Examples: $examples"
+  }
+  if ($ualbertaMissingPrograms.Count -gt 0) {
+    $examples = @($ualbertaMissingPrograms | Select-Object -First 25) -join "; "
+    throw "UAlberta canonical rows missing from URL map ($($ualbertaMissingPrograms.Count)). Examples: $examples"
+  }
+  if ($ualbertaInvalidMapPrograms.Count -gt 0) {
+    $examples = @($ualbertaInvalidMapPrograms | Select-Object -First 25) -join "; "
+    throw "UAlberta URL map rows missing/non-http program_url ($($ualbertaInvalidMapPrograms.Count)). Examples: $examples"
+  }
+
+  $unusedMapPrograms = @()
+  foreach ($key in $ualbertaUrlMap.Keys) {
+    if ($ualbertaSeenMapKeys.ContainsKey($key)) { continue }
+    $unusedMapPrograms += (Normalize-Text $ualbertaUrlMap[$key].Program)
+  }
+  if ($unusedMapPrograms.Count -gt 0) {
+    $examples = @($unusedMapPrograms | Select-Object -First 25) -join "; "
+    throw "UAlberta URL map rows were not matched to canonical rows ($($unusedMapPrograms.Count)). Examples: $examples"
+  }
+}
+
 if ($DropExactDuplicates) {
-  $canonical = $canonical | Sort-Object * -Unique
+  if ($macewanSeedRows.Count -gt 0) {
+    $nonMacewanDedup = @(
+      $canonical |
+        Where-Object { $_.Institution -ne "MacEwan" } |
+        Sort-Object * -Unique
+    )
+    $macewanRowsPreserved = @(
+      $canonical |
+        Where-Object { $_.Institution -eq "MacEwan" }
+    )
+    $canonical = @($nonMacewanDedup) + @($macewanRowsPreserved)
+  } else {
+    $canonical = $canonical | Sort-Object * -Unique
+  }
 }
 
 Ensure-Dir $OutputPath
@@ -501,4 +846,22 @@ if ($DropNorQuestNonPrograms) {
   Write-Host ("  kept_allowlist_override: {0}" -f $norquestStats.kept_allowlist_override)
   Write-Host ("  kept_seed_match: {0}" -f $norquestStats.kept_seed_match)
   Write-Host ("  seed_backfill_added: {0}" -f $norquestStats.seed_backfill_added)
+}
+if ($macewanStats.seed_rows_loaded -gt 0 -or $MacewanRequireFullSeedCoverage) {
+  Write-Host "MacEwan seed summary:"
+  Write-Host ("  seed_rows_loaded: {0}" -f $macewanStats.seed_rows_loaded)
+  Write-Host ("  matched_seed_rows: {0}" -f $macewanStats.matched_seed_rows)
+  Write-Host ("  unresolved_seed_rows: {0}" -f $macewanStats.unresolved_seed_rows)
+  Write-Host ("  ambiguous_seed_rows: {0}" -f $macewanStats.ambiguous_seed_rows)
+  Write-Host ("  rows_written: {0}" -f $macewanStats.rows_written)
+  Write-Host ("  rows_with_program_url: {0}" -f $macewanStats.rows_with_program_url)
+}
+if ($ualbertaStats.map_rows_loaded -gt 0 -or $UalbertaRequireFullCoverage) {
+  Write-Host "UAlberta URL map summary:"
+  Write-Host ("  map_rows_loaded: {0}" -f $ualbertaStats.map_rows_loaded)
+  Write-Host ("  rows_examined: {0}" -f $ualbertaStats.rows_examined)
+  Write-Host ("  rows_mapped: {0}" -f $ualbertaStats.rows_mapped)
+  Write-Host ("  rows_missing_map: {0}" -f $ualbertaStats.rows_missing_map)
+  Write-Host ("  rows_invalid_map_url: {0}" -f $ualbertaStats.rows_invalid_map_url)
+  Write-Host ("  rows_with_program_url: {0}" -f $ualbertaStats.rows_with_program_url)
 }

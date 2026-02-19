@@ -60,6 +60,40 @@ Index cleaning now supports:
 
 NAIT rows are dropped when evidence/rules indicate non-program content. Remaining rows are kept by seed match, explicit rules allowlist, or legacy fallback allowlist.
 
+## MacEwan 114 seed integration
+MacEwan discovery is now seeded from the captured link-list element and keeps all 114 program-card rows (including duplicate row-level entries).
+
+Authoritative seed source:
+- `macewan course list elements.md`
+
+Seed build command:
+
+```powershell
+python .\pipeline\build_macewan_seed_from_element.py
+```
+
+This writes:
+- `pipeline/macewan_program_seed.csv`
+
+Seed output columns:
+- `program_name`
+- `program_href`
+- `program_url_seed`
+- `requirements_url` (best-effort resolved from program pages)
+- `seed_source`
+
+Fixture check:
+
+```powershell
+python .\pipeline\check_macewan_seed_fixtures.py
+```
+
+`build_index.py` now supports:
+- `--macewan-seed` (default: `pipeline/macewan_program_seed.csv`)
+- `--no-macewan-seed-replace` (default behavior replaces MacEwan index rows with seed rows)
+
+Default behavior keeps MacEwan rows at 114 in `pipeline/program_index.cleaned.csv` with non-empty `source_url`.
+
 ## Institution adapters (scaffold)
 `pipeline/adapters/` now provides adapter classes for:
 - `NAIT`
