@@ -4,6 +4,8 @@ param(
   [string]$NaitSeedPath = ".\\pipeline\\nait_program_seed.csv",
   [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
   [string]$NaitRulesPath = ".\\config\\nait_non_program_rules.json",
+  [string]$NorquestSeedPath = ".\\pipeline\\norquest_program_seed.csv",
+  [string]$NorquestRulesPath = ".\\config\\norquest_non_program_rules.json",
   [string]$ProgramEvidencePath = ".\\PROGRAMS_ONLY.csv",
   [int]$MinRows = 100,
   [double]$MaxRowDropPercent = 35,
@@ -127,6 +129,14 @@ foreach ($seedRow in (Import-Csv $NaitSeedPath)) {
   Add-ToSet -set $naitSeed -key (Normalize-ProgramKey (Get-PropValue -row $seedRow -names @("program_name", "Program")))
 }
 
+$norquestSeed = @{}
+if (-not (Test-Path $NorquestSeedPath)) {
+  throw "Validation failed: NorQuest seed file not found: $NorquestSeedPath"
+}
+foreach ($seedRow in (Import-Csv $NorquestSeedPath)) {
+  Add-ToSet -set $norquestSeed -key (Normalize-ProgramKey (Get-PropValue -row $seedRow -names @("program_name", "Program")))
+}
+
 $naitLegacyAllowlist = @{}
 if (Test-Path $NaitLegacyAllowlistPath) {
   foreach ($allowRow in (Import-Csv $NaitLegacyAllowlistPath)) {
@@ -153,19 +163,51 @@ foreach ($url in (To-StringArray $rulesJson.allowlist_urls)) {
   Add-ToSet -set $allowUrl -key (Normalize-UrlKey $url)
 }
 
-$evidenceByName = @{}
+$norquestBlockedUrlPatterns = @()
+$norquestBlockedNamePatterns = @()
+$norquestEvidenceTokens = @("not a program page")
+$norquestAllowProgram = @{}
+$norquestAllowUrl = @{}
+if (-not (Test-Path $NorquestRulesPath)) {
+  throw "Validation failed: NorQuest rules file not found: $NorquestRulesPath"
+}
+$norquestRulesJson = Get-Content -Raw $NorquestRulesPath | ConvertFrom-Json
+$norquestBlockedUrlPatterns = To-StringArray $norquestRulesJson.blocked_url_patterns
+$norquestBlockedNamePatterns = To-StringArray $norquestRulesJson.blocked_name_patterns
+$norquestEvidenceTokens = To-StringArray $norquestRulesJson.evidence_not_program_tokens
+if ($norquestEvidenceTokens.Count -eq 0) {
+  $norquestEvidenceTokens = @("not a program page")
+}
+foreach ($name in (To-StringArray $norquestRulesJson.allowlist_program_names)) {
+  Add-ToSet -set $norquestAllowProgram -key (Normalize-ProgramKey $name)
+}
+foreach ($url in (To-StringArray $norquestRulesJson.allowlist_urls)) {
+  Add-ToSet -set $norquestAllowUrl -key (Normalize-UrlKey $url)
+}
+
+$naitEvidenceByName = @{}
+$norquestEvidenceByName = @{}
 if (Test-Path $ProgramEvidencePath) {
   foreach ($e in (Import-Csv $ProgramEvidencePath)) {
     $inst = Normalize-Text (Get-PropValue -row $e -names @("institution", "Institution"))
-    if ($inst.ToUpperInvariant() -ne "NAIT") { continue }
+    $instKey = $inst.ToUpperInvariant()
+    if ($instKey -ne "NAIT" -and $instKey -ne "NORQUEST") { continue }
     $nameKey = Normalize-ProgramKey (Get-PropValue -row $e -names @("program_name", "Program"))
     if (-not $nameKey) { continue }
     $notes = Normalize-Text (Get-PropValue -row $e -names @("notes_uncertain", "Notes_Uncertain", "notes", "Notes"))
     if (-not $notes) { continue }
-    if ($evidenceByName.ContainsKey($nameKey)) {
-      $evidenceByName[$nameKey] = "{0} | {1}" -f $evidenceByName[$nameKey], $notes
+    if ($instKey -eq "NAIT") {
+      if ($naitEvidenceByName.ContainsKey($nameKey)) {
+        $naitEvidenceByName[$nameKey] = "{0} | {1}" -f $naitEvidenceByName[$nameKey], $notes
+      } else {
+        $naitEvidenceByName[$nameKey] = $notes
+      }
     } else {
-      $evidenceByName[$nameKey] = $notes
+      if ($norquestEvidenceByName.ContainsKey($nameKey)) {
+        $norquestEvidenceByName[$nameKey] = "{0} | {1}" -f $norquestEvidenceByName[$nameKey], $notes
+      } else {
+        $norquestEvidenceByName[$nameKey] = $notes
+      }
     }
   }
 }
@@ -183,8 +225,8 @@ foreach ($r in $naitRows) {
 
   $reason = ""
   $evidenceLow = ""
-  if ($programKey -and $evidenceByName.ContainsKey($programKey)) {
-    $evidenceLow = ([string]$evidenceByName[$programKey]).ToLowerInvariant()
+  if ($programKey -and $naitEvidenceByName.ContainsKey($programKey)) {
+    $evidenceLow = ([string]$naitEvidenceByName[$programKey]).ToLowerInvariant()
   }
   foreach ($token in $evidenceTokens) {
     if ($token -and $evidenceLow.Contains($token.ToLowerInvariant())) {
@@ -232,6 +274,67 @@ if ($naitViolations.Count -gt 0) {
   throw "Validation failed: NAIT non-program/seed violations found ($summary). Examples: $examples"
 }
 
+$norquestViolations = @()
+$norquestRows = @($rows | Where-Object { $_.Institution -eq "NorQuest" })
+foreach ($r in $norquestRows) {
+  $program = Normalize-Text $r.Program
+  $programKey = Normalize-ProgramKey $program
+  $url = Normalize-Text (Get-PropValue -row $r -names @("Program_URL", "Source_URL", "source_url", "program_url"))
+  $urlKey = Normalize-UrlKey $url
+  $isAllow = (($programKey -and $norquestAllowProgram.ContainsKey($programKey)) -or
+    ($urlKey -and $norquestAllowUrl.ContainsKey($urlKey)))
+
+  $reason = ""
+  $evidenceLow = ""
+  if ($programKey -and $norquestEvidenceByName.ContainsKey($programKey)) {
+    $evidenceLow = ([string]$norquestEvidenceByName[$programKey]).ToLowerInvariant()
+  }
+  foreach ($token in $norquestEvidenceTokens) {
+    if ($token -and $evidenceLow.Contains($token.ToLowerInvariant())) {
+      $reason = "evidence_non_program"
+      break
+    }
+  }
+
+  if (-not $reason) {
+    foreach ($pattern in $norquestBlockedUrlPatterns) {
+      if ($pattern -and $url -match $pattern) {
+        $reason = "blocked_url"
+        break
+      }
+    }
+  }
+
+  if (-not $reason) {
+    foreach ($pattern in $norquestBlockedNamePatterns) {
+      if ($pattern -and $program -match $pattern) {
+        $reason = "blocked_name"
+        break
+      }
+    }
+  }
+
+  if (-not $reason -and -not $isAllow) {
+    if (-not ($programKey -and $norquestSeed.ContainsKey($programKey))) {
+      $reason = "not_in_seed"
+    }
+  }
+
+  if ($reason) {
+    $norquestViolations += [pscustomobject]@{
+      Program = $program
+      Reason = $reason
+    }
+  }
+}
+
+if ($norquestViolations.Count -gt 0) {
+  $groups = @($norquestViolations | Group-Object Reason | Sort-Object Name)
+  $summary = @($groups | ForEach-Object { "{0}={1}" -f $_.Name, $_.Count }) -join ", "
+  $examples = @($norquestViolations | Select-Object -First 25 | ForEach-Object { "{0} ({1})" -f $_.Program, $_.Reason }) -join "; "
+  throw "Validation failed: NorQuest non-program/seed violations found ($summary). Examples: $examples"
+}
+
 if (Test-Path $BaselinePath) {
   $baselineRows = Import-Csv $BaselinePath
   if ($baselineRows -and $baselineRows.Count -gt 0) {
@@ -276,3 +379,5 @@ foreach ($g in $counts) {
 }
 Write-Host ("NAIT seed/rules check passed: {0} rows checked, seed size {1}, legacy allowlist size {2}" -f
   $naitRows.Count, $naitSeed.Count, $naitLegacyAllowlist.Count)
+Write-Host ("NorQuest seed/rules check passed: {0} rows checked, seed size {1}" -f
+  $norquestRows.Count, $norquestSeed.Count)

@@ -1,0 +1,29 @@
+{
+  "blocked_url_patterns": [
+    "/programs-courses/learning-at-norquest/",
+    "/programs-courses/browse-programs-and-courses/?$",
+    "/programs-courses/continuing-education/?$",
+    "/programs-courses/microcredentials/?$",
+    "/program-availability/?$",
+    "/international-student/",
+    "/x/"
+  ],
+  "blocked_name_patterns": [
+    "^about$",
+    "^definitions$",
+    "^frequently asked questions$",
+    "^page not found$",
+    "^program availability$",
+    "^programs and courses$",
+    "^request information$",
+    "^continuing education$",
+    "^microcredentials$",
+    "^learning at norquest$",
+    "\\bvolunteer\\b"
+  ],
+  "evidence_not_program_tokens": [
+    "not a program page"
+  ],
+  "allowlist_program_names": [],
+  "allowlist_urls": []
+}

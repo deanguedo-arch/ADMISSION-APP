@@ -4,8 +4,11 @@ param(
   [string]$ProgramEvidencePath = ".\\PROGRAMS_ONLY.csv",
   [string]$FilterRulesPath = ".\\config\\nait_non_program_rules.json",
   [string]$NaitSeedPath = ".\\pipeline\\nait_program_seed.csv",
+  [string]$NorquestRulesPath = ".\\config\\norquest_non_program_rules.json",
+  [string]$NorquestSeedPath = ".\\pipeline\\norquest_program_seed.csv",
   [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
   [switch]$DropNaitNonPrograms = $true,
+  [switch]$DropNorQuestNonPrograms = $true,
   [switch]$DropMinors = $true,
   [switch]$DropExactDuplicates = $true
 )
@@ -80,6 +83,15 @@ function Get-RowProgramUrl([object]$row) {
   return Normalize-Text (Get-PropValue -row $row -names @("Program_URL", "Source_URL", "source_url", "program_url"))
 }
 
+function Normalize-NorquestCredentialType([string]$credential) {
+  $c = (Normalize-Text $credential).ToLowerInvariant()
+  if (-not $c) { return "Other" }
+  if ($c -match "diploma") { return "Diploma" }
+  if ($c -match "certificate") { return "Certificate" }
+  if ($c -match "degree|bachelor") { return "Degree" }
+  return "Other"
+}
+
 function Ensure-Dir([string]$path) {
   $dir = Split-Path -Parent $path
   if (-not (Test-Path $dir)) {
@@ -117,6 +129,25 @@ $naitStats = @{
   kept_seed_match = 0
 }
 
+$norquestSeedNames = @{}
+$norquestSeedRowsByKey = @{}
+$norquestAllowlistNames = @{}
+$norquestAllowlistUrls = @{}
+$norquestBlockedUrlPatterns = @()
+$norquestBlockedNamePatterns = @()
+$norquestEvidenceTokens = @("not a program page")
+$norquestEvidenceByName = @{}
+$norquestStats = @{
+  norquest_rows_examined = 0
+  dropped_evidence_non_program = 0
+  dropped_blocked_url = 0
+  dropped_blocked_name = 0
+  dropped_not_in_seed = 0
+  kept_allowlist_override = 0
+  kept_seed_match = 0
+  seed_backfill_added = 0
+}
+
 if (Test-Path $FilterRulesPath) {
   $rulesJson = Get-Content -Raw $FilterRulesPath | ConvertFrom-Json
   $naitBlockedUrlPatterns = To-StringArray $rulesJson.blocked_url_patterns
@@ -133,9 +164,42 @@ if (Test-Path $FilterRulesPath) {
   }
 }
 
+if (Test-Path $NorquestRulesPath) {
+  $rulesJson = Get-Content -Raw $NorquestRulesPath | ConvertFrom-Json
+  $norquestBlockedUrlPatterns = To-StringArray $rulesJson.blocked_url_patterns
+  $norquestBlockedNamePatterns = To-StringArray $rulesJson.blocked_name_patterns
+  $tokenValues = To-StringArray $rulesJson.evidence_not_program_tokens
+  if ($tokenValues.Count -gt 0) {
+    $norquestEvidenceTokens = @($tokenValues | ForEach-Object { $_.ToLowerInvariant() })
+  }
+  foreach ($name in (To-StringArray $rulesJson.allowlist_program_names)) {
+    Add-ToSet -set $norquestAllowlistNames -key (Normalize-ProgramKey $name)
+  }
+  foreach ($url in (To-StringArray $rulesJson.allowlist_urls)) {
+    Add-ToSet -set $norquestAllowlistUrls -key (Normalize-UrlKey $url)
+  }
+}
+
 if (Test-Path $NaitSeedPath) {
   foreach ($seed in (Import-Csv $NaitSeedPath)) {
     Add-ToSet -set $naitSeedNames -key (Normalize-ProgramKey $seed.program_name)
+  }
+}
+
+if (Test-Path $NorquestSeedPath) {
+  foreach ($seed in (Import-Csv $NorquestSeedPath)) {
+    $name = Normalize-Text (Get-PropValue -row $seed -names @("program_name", "Program"))
+    $key = Normalize-ProgramKey $name
+    $url = Normalize-Text (Get-PropValue -row $seed -names @("program_url", "Program_URL", "source_url", "url"))
+    $credential = Normalize-NorquestCredentialType (Get-PropValue -row $seed -names @("credential", "Credential", "credential_type", "Credential_Type"))
+    Add-ToSet -set $norquestSeedNames -key $key
+    if ($key -and -not $norquestSeedRowsByKey.ContainsKey($key)) {
+      $norquestSeedRowsByKey[$key] = [pscustomobject]@{
+        Program = $name
+        Credential_Type = $credential
+        Program_URL = $url
+      }
+    }
   }
 }
 
@@ -149,75 +213,137 @@ if (Test-Path $NaitLegacyAllowlistPath) {
 if (Test-Path $ProgramEvidencePath) {
   foreach ($e in (Import-Csv $ProgramEvidencePath)) {
     $inst = Normalize-Text (Get-PropValue -row $e -names @("institution", "Institution"))
-    if ($inst.ToUpperInvariant() -ne "NAIT") { continue }
+    $instKey = $inst.ToUpperInvariant()
+    if ($instKey -ne "NAIT" -and $instKey -ne "NORQUEST") { continue }
     $name = Normalize-ProgramKey (Get-PropValue -row $e -names @("program_name", "Program"))
     if (-not $name) { continue }
     $notes = Normalize-Text (Get-PropValue -row $e -names @("notes_uncertain", "Notes_Uncertain", "notes", "Notes"))
     if (-not $notes) { continue }
-    if ($naitEvidenceByName.ContainsKey($name)) {
-      $naitEvidenceByName[$name] = "{0} | {1}" -f $naitEvidenceByName[$name], $notes
+    if ($instKey -eq "NAIT") {
+      if ($naitEvidenceByName.ContainsKey($name)) {
+        $naitEvidenceByName[$name] = "{0} | {1}" -f $naitEvidenceByName[$name], $notes
+      } else {
+        $naitEvidenceByName[$name] = $notes
+      }
     } else {
-      $naitEvidenceByName[$name] = $notes
+      if ($norquestEvidenceByName.ContainsKey($name)) {
+        $norquestEvidenceByName[$name] = "{0} | {1}" -f $norquestEvidenceByName[$name], $notes
+      } else {
+        $norquestEvidenceByName[$name] = $notes
+      }
     }
   }
 }
 
-if ($DropNaitNonPrograms) {
+if ($DropNaitNonPrograms -or $DropNorQuestNonPrograms) {
   $rows = $rows | Where-Object {
-    if ($_.Institution -ne "NAIT") { return $true }
-    $naitStats.nait_rows_examined++
-
+    $inst = Normalize-Text $_.Institution
     $programName = Normalize-Text $_.Program
     $programKey = Normalize-ProgramKey $programName
     $programUrl = Get-RowProgramUrl $_
     $programUrlKey = Normalize-UrlKey $programUrl
 
-    $evidenceNotes = ""
-    if ($programKey -and $naitEvidenceByName.ContainsKey($programKey)) {
-      $evidenceNotes = [string]$naitEvidenceByName[$programKey]
-    }
-    $evidenceLow = $evidenceNotes.ToLowerInvariant()
-    foreach ($token in $naitEvidenceTokens) {
-      if ($token -and $evidenceLow.Contains($token)) {
-        $naitStats.dropped_evidence_non_program++
-        return $false
+    if ($inst -eq "NAIT" -and $DropNaitNonPrograms) {
+      $naitStats.nait_rows_examined++
+
+      $evidenceNotes = ""
+      if ($programKey -and $naitEvidenceByName.ContainsKey($programKey)) {
+        $evidenceNotes = [string]$naitEvidenceByName[$programKey]
       }
+      $evidenceLow = $evidenceNotes.ToLowerInvariant()
+      foreach ($token in $naitEvidenceTokens) {
+        if ($token -and $evidenceLow.Contains($token)) {
+          $naitStats.dropped_evidence_non_program++
+          return $false
+        }
+      }
+
+      foreach ($pattern in $naitBlockedUrlPatterns) {
+        if (-not $pattern) { continue }
+        if ($programUrl -and $programUrl -match $pattern) {
+          $naitStats.dropped_blocked_url++
+          return $false
+        }
+      }
+
+      foreach ($pattern in $naitBlockedNamePatterns) {
+        if (-not $pattern) { continue }
+        if ($programName -match $pattern) {
+          $naitStats.dropped_blocked_name++
+          return $false
+        }
+      }
+
+      if (($programKey -and $naitAllowlistNames.ContainsKey($programKey)) -or
+        ($programUrlKey -and $naitAllowlistUrls.ContainsKey($programUrlKey))) {
+        $naitStats.kept_allowlist_override++
+        return $true
+      }
+
+      if ($programKey -and $naitLegacyAllowlistNames.ContainsKey($programKey)) {
+        $naitStats.kept_legacy_allowlist++
+        return $true
+      }
+
+      if ($programKey -and $naitSeedNames.ContainsKey($programKey)) {
+        $naitStats.kept_seed_match++
+        return $true
+      }
+
+      $naitStats.dropped_not_in_seed++
+      return $false
     }
 
-    foreach ($pattern in $naitBlockedUrlPatterns) {
-      if (-not $pattern) { continue }
-      if ($programUrl -and $programUrl -match $pattern) {
-        $naitStats.dropped_blocked_url++
-        return $false
+    if ($inst -eq "NorQuest" -and $DropNorQuestNonPrograms) {
+      $norquestStats.norquest_rows_examined++
+
+      $evidenceNotes = ""
+      if ($programKey -and $norquestEvidenceByName.ContainsKey($programKey)) {
+        $evidenceNotes = [string]$norquestEvidenceByName[$programKey]
       }
+      $evidenceLow = $evidenceNotes.ToLowerInvariant()
+      foreach ($token in $norquestEvidenceTokens) {
+        if ($token -and $evidenceLow.Contains($token)) {
+          $norquestStats.dropped_evidence_non_program++
+          return $false
+        }
+      }
+
+      foreach ($pattern in $norquestBlockedUrlPatterns) {
+        if (-not $pattern) { continue }
+        if ($programUrl -and $programUrl -match $pattern) {
+          $norquestStats.dropped_blocked_url++
+          return $false
+        }
+      }
+
+      foreach ($pattern in $norquestBlockedNamePatterns) {
+        if (-not $pattern) { continue }
+        if ($programName -match $pattern) {
+          $norquestStats.dropped_blocked_name++
+          return $false
+        }
+      }
+
+      if (($programKey -and $norquestAllowlistNames.ContainsKey($programKey)) -or
+        ($programUrlKey -and $norquestAllowlistUrls.ContainsKey($programUrlKey))) {
+        $norquestStats.kept_allowlist_override++
+        return $true
+      }
+
+      if ($programKey -and $norquestSeedNames.ContainsKey($programKey)) {
+        $norquestStats.kept_seed_match++
+        return $true
+      }
+
+      $norquestStats.dropped_not_in_seed++
+      return $false
     }
 
-    foreach ($pattern in $naitBlockedNamePatterns) {
-      if (-not $pattern) { continue }
-      if ($programName -match $pattern) {
-        $naitStats.dropped_blocked_name++
-        return $false
-      }
-    }
-
-    if (($programKey -and $naitAllowlistNames.ContainsKey($programKey)) -or
-      ($programUrlKey -and $naitAllowlistUrls.ContainsKey($programUrlKey))) {
-      $naitStats.kept_allowlist_override++
+    if ($inst -eq "NAIT" -or $inst -eq "NorQuest") {
       return $true
     }
-
-    if ($programKey -and $naitLegacyAllowlistNames.ContainsKey($programKey)) {
-      $naitStats.kept_legacy_allowlist++
-      return $true
-    }
-
-    if ($programKey -and $naitSeedNames.ContainsKey($programKey)) {
-      $naitStats.kept_seed_match++
-      return $true
-    }
-
-    $naitStats.dropped_not_in_seed++
-    return $false
+    return $true
   }
 }
 
@@ -269,6 +395,65 @@ $canonical = foreach ($r in $rows) {
   }
 }
 
+if ($DropNorQuestNonPrograms -and $norquestSeedRowsByKey.Count -gt 0) {
+  $existingNorquestKeys = @{}
+  foreach ($row in @($canonical | Where-Object { $_.Institution -eq "NorQuest" })) {
+    $key = Normalize-ProgramKey $row.Program
+    if ($key) { $existingNorquestKeys[$key] = $true }
+  }
+
+  $backfillRows = @()
+  foreach ($key in $norquestSeedRowsByKey.Keys) {
+    if ($existingNorquestKeys.ContainsKey($key)) { continue }
+    $seedRow = $norquestSeedRowsByKey[$key]
+    $backfillRows += [pscustomobject]@{
+      Institution          = "NorQuest"
+      Program              = $seedRow.Program
+      Credential_Type      = (Normalize-NorquestCredentialType $seedRow.Credential_Type)
+      Status               = "Active"
+      Program_URL          = (Normalize-Text $seedRow.Program_URL)
+
+      Min_Avg_Final        = ""
+      Competitive_Final    = ""
+      Avg_Total            = ""
+
+      English_Req          = ""
+      English_Min          = ""
+      Eng_30_2_Allowed     = ""
+
+      Math_Req             = ""
+      Math_Min             = ""
+
+      Social_Req           = ""
+      Social_Min           = ""
+
+      Science_Req          = ""
+      Science_Min          = ""
+      Bio_30_Req           = ""
+      Chem_30_Req          = ""
+      Phys_30_Req          = ""
+      Sci_30_Req           = ""
+
+      Elective_Qty         = ""
+      Elective_Pool        = ""
+      Pool_Allows_Group_A  = ""
+      Pool_Allows_Group_B  = ""
+      Pool_Allows_Group_C  = ""
+      Pool_Allows_Group_D  = ""
+
+      Requirement_Type     = "Unknown"
+      HS_Diploma_Req       = "Unknown"
+      Math_Assessment_Flag = "Unknown"
+      ELP_Tests_Mentioned  = ""
+    }
+  }
+
+  if ($backfillRows.Count -gt 0) {
+    $norquestStats.seed_backfill_added = $backfillRows.Count
+    $canonical = @($canonical) + @($backfillRows)
+  }
+}
+
 if ($DropExactDuplicates) {
   $canonical = $canonical | Sort-Object * -Unique
 }
@@ -303,4 +488,17 @@ if ($DropNaitNonPrograms) {
   Write-Host ("  kept_allowlist_override: {0}" -f $naitStats.kept_allowlist_override)
   Write-Host ("  kept_legacy_allowlist: {0}" -f $naitStats.kept_legacy_allowlist)
   Write-Host ("  kept_seed_match: {0}" -f $naitStats.kept_seed_match)
+}
+if ($DropNorQuestNonPrograms) {
+  Write-Host "NorQuest cleanup summary:"
+  Write-Host ("  norquest_rows_examined: {0}" -f $norquestStats.norquest_rows_examined)
+  Write-Host ("  seed_names_loaded: {0}" -f $norquestSeedNames.Count)
+  Write-Host ("  evidence_names_loaded: {0}" -f $norquestEvidenceByName.Count)
+  Write-Host ("  dropped_evidence_non_program: {0}" -f $norquestStats.dropped_evidence_non_program)
+  Write-Host ("  dropped_blocked_url: {0}" -f $norquestStats.dropped_blocked_url)
+  Write-Host ("  dropped_blocked_name: {0}" -f $norquestStats.dropped_blocked_name)
+  Write-Host ("  dropped_not_in_seed: {0}" -f $norquestStats.dropped_not_in_seed)
+  Write-Host ("  kept_allowlist_override: {0}" -f $norquestStats.kept_allowlist_override)
+  Write-Host ("  kept_seed_match: {0}" -f $norquestStats.kept_seed_match)
+  Write-Host ("  seed_backfill_added: {0}" -f $norquestStats.seed_backfill_added)
 }

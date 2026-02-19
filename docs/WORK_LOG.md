@@ -515,3 +515,12 @@ Keep entries short and append-only.
 ## 2026-02-18 (Post-Refresh Publish Run)
 - Ran full local refresh and sync publish (REFRESH_ALL.cmd + scripts/SYNC_ALL.cmd).
 - Canonical rebuilt and synced with 260 rows (NAIT 103, MacEwan 93, NorQuest 50, UAlberta 14).
+
+## 2026-02-19 (NorQuest Seed-First Hardening + NAIT/NorQuest Test Run)
+- Added NorQuest seed builder (pipeline/build_norquest_seed_from_api.py) using /norquestcollege_program/programsearch and generated pipeline/norquest_program_seed.csv (77 rows).
+- Added NorQuest rules + filter module (config/norquest_non_program_rules.json, pipeline/norquest_program_filter.py).
+- Upgraded pipeline/build_index.py with NorQuest seed/rule filtering and seed backfill, plus robust multi-institution arg parsing.
+- Upgraded `tools/clean-master.ps1` and `tools/validate-canonical.ps1` with NorQuest seed/rule enforcement (NAIT behavior preserved).
+- Upgraded `tools/refresh-all.ps1` to refresh NorQuest seed each run and normalize institution filter inputs.
+- Test run: `tools/refresh-all.ps1 -Institution NAIT,NorQuest -SkipSync` produced cleaned index NAIT=95, NorQuest=77 with zero NorQuest noise hits from prior headline/navigation leakage.
+

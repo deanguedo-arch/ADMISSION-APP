@@ -110,6 +110,18 @@ def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
+def parse_institutions(values: list[str]) -> set[str] | None:
+    if not values:
+        return None
+    out: set[str] = set()
+    for raw in values:
+        for token in re.split(r"[,\s]+", str(raw or "").strip()):
+            value = token.strip()
+            if value:
+                out.add(value)
+    return out or None
+
+
 def run(index_path: Path, out_dir: Path, limit: int | None, institutions: set[str] | None) -> None:
     rows = load_index(index_path)
     if institutions:
@@ -229,7 +241,7 @@ def main(argv: list[str]) -> int:
     index_path = Path(args.index)
     out_dir = Path(args.out)
     limit = args.limit or None
-    institutions = set(args.institution) if args.institution else None
+    institutions = parse_institutions(args.institution)
 
     run(index_path=index_path, out_dir=out_dir, limit=limit, institutions=institutions)
     return 0

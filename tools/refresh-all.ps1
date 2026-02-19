@@ -34,6 +34,18 @@ function Invoke-PythonChecked([string[]]$CommandArgs) {
   }
 }
 
+function Expand-Institutions([string[]]$Values) {
+  $expanded = @()
+  foreach ($value in @($Values)) {
+    if ([string]::IsNullOrWhiteSpace($value)) { continue }
+    $parts = ($value -split "[,\s]+" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    foreach ($part in $parts) {
+      $expanded += $part.Trim()
+    }
+  }
+  return ,$expanded
+}
+
 if ($DryRun) {
   $SkipSync = $true
   Write-Host "DryRun enabled: sync/publish steps will be skipped."
@@ -44,9 +56,11 @@ Write-Host "Step 1/9: Rebuild canonical dataset"
 & .\\tools\\clean-master.ps1 | Out-Host
 
 Write-Host ""
-Write-Host "Step 2/9: Build cleaned program index"
+Write-Host "Step 2/9: Refresh NorQuest seed + build cleaned program index"
+Invoke-PythonChecked @(".\\pipeline\\build_norquest_seed_from_api.py")
 $buildArgs = @(".\\pipeline\\build_index.py", "--in", $IndexSourcePath, "--out", $CleanIndexPath)
-foreach ($inst in @($Institution)) {
+$institutionFilters = Expand-Institutions -Values $Institution
+foreach ($inst in @($institutionFilters)) {
   if ([string]::IsNullOrWhiteSpace($inst)) { continue }
   $buildArgs += @("--institution", [string]$inst)
 }
@@ -70,7 +84,7 @@ if (-not $SkipScrape) {
   if ($Limit -gt 0) {
     $runArgs += @("--limit", [string]$Limit)
   }
-  foreach ($inst in @($Institution)) {
+  foreach ($inst in @($institutionFilters)) {
     if ([string]::IsNullOrWhiteSpace($inst)) { continue }
     $runArgs += @("--institution", [string]$inst)
   }
