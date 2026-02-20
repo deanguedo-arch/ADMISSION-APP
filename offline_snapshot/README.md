@@ -26,6 +26,8 @@ Double-click:
 
 - `START_OFFLINE_SNAPSHOT_PREVIEW.bat`
 
+Note: this launcher now rebuilds the snapshot first, then starts preview (`update -> preview`).
+
 Or run:
 
 ```powershell
@@ -45,6 +47,10 @@ Generated site files are written to:
 ## Deploy
 
 Upload the contents of `offline_snapshot/site/` to any static web host and link users to `index.html`.
+
+GitHub Pages one-action deployment:
+- Run workflow: `Update + Build + Deploy Offline Snapshot (GitHub Pages)`
+- It performs `refresh -> build -> deploy` in a single run.
 
 ## Optional Snapshot Inputs
 

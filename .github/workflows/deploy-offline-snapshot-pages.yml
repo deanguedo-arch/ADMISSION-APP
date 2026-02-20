@@ -1,13 +1,21 @@
-name: Deploy Offline Snapshot to GitHub Pages
+name: Update + Build + Deploy Offline Snapshot (GitHub Pages)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "offline_snapshot/site/**"
-      - ".github/workflows/deploy-offline-snapshot-pages.yml"
+    inputs:
+      refresh_mode:
+        description: "Dataset refresh mode before snapshot build"
+        required: false
+        type: choice
+        default: fast
+        options:
+          - fast
+          - full
+      skip_fixtures:
+        description: "Skip fixture checks during refresh (faster, less strict)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -20,13 +28,47 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup project venv/deps
+        shell: pwsh
+        run: |
+          .\tools\setup-python.ps1
+
+      - name: Refresh dataset for offline snapshot
+        shell: pwsh
+        run: |
+          $args = @("-SkipSync", "-SkipElectivePrefill")
+          if ("${{ inputs.refresh_mode }}" -eq "fast") {
+            $args += @("-SkipScrape", "-SkipAvgApply")
+          }
+          if ("${{ inputs.skip_fixtures }}" -eq "true") {
+            $args += "-SkipFixtures"
+          }
+          Write-Host "refresh-all args: $($args -join ' ')"
+          & .\tools\refresh-all.ps1 @args
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build offline snapshot
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe .\offline_snapshot\build_snapshot.py
+
+      - name: Print snapshot metadata
+        shell: pwsh
+        run: |
+          Get-Content .\offline_snapshot\site\snapshot.meta.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
