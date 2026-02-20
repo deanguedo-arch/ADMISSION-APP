@@ -48,7 +48,7 @@ Device(s):
 
 ## Fixed Test Profiles (Locked Baseline)
 
-Baseline dataset date for expected counts: `2026-02-19`
+Baseline dataset date for expected counts: `2026-02-20`
 
 ### Profile A (Happy Path)
 ```csv
@@ -66,9 +66,9 @@ Drama 30,80
 ```
 
 Expected summary:
-- `Likely eligible`: `259`
+- `Likely eligible`: `262`
 - `Likely ineligible`: `0`
-- `Uncheckable`: `41`
+- `Uncheckable`: `37`
 
 ### Profile B (Edge / Partial-Low)
 ```csv
@@ -82,8 +82,8 @@ Art 30,55
 
 Expected summary:
 - `Likely eligible`: `66`
-- `Likely ineligible`: `193`
-- `Uncheckable`: `41`
+- `Likely ineligible`: `196`
+- `Uncheckable`: `37`
 
 ### Anchor Assertions
 - `NAIT | Bachelor of Business Administration (BBA) Co-operative Education`

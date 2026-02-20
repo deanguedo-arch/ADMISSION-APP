@@ -654,3 +654,7 @@ Keep entries short and append-only.
 - Updated URL placeholders with live rollout links:
   - Staff Apps Script URL set in `docs/USER_MANUAL.md`.
   - Student/public snapshot URL set in `docs/USER_MANUAL.md` and `README.md`.
+- Updated iPhone release-gate baseline after production smoke on public snapshot URL.
+  - Baseline dataset date set to `2026-02-20` in `docs/RELEASE_GATE_IPHONE.md`.
+  - Profile A expected summary updated to `Likely eligible 262 / Likely ineligible 0 / Uncheckable 37`.
+  - Profile B expected summary updated to `Likely eligible 66 / Likely ineligible 196 / Uncheckable 37`.
