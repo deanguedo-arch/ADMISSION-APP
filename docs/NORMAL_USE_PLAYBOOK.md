@@ -16,15 +16,15 @@ This document is the day-to-day workflow after one-time setup is complete.
 
 | Workflow | File | Triggers |
 |---|---|---|
-| Refresh + Sync (Commit Outputs) | .github/workflows/refresh_and_sync.yml | workflow_dispatch |
-| Sync Programs To Sheets | .github/workflows/sync-programs.yml | workflow_dispatch, schedule |
+| Publish Admissions Data to Sheets (Refresh + Sync + Commit) | .github/workflows/refresh_and_sync.yml | workflow_dispatch |
+| Sync Programs Only to Sheets (Programs Tab) | .github/workflows/sync-programs.yml | workflow_dispatch, schedule |
 | Deploy Apps Script Web App | .github/workflows/deploy-apps-script.yml | workflow_dispatch, push |
 
 ## Normal use (no engineering changes)
 
 ### A) Full data refresh (primary one-click run)
 1. Open GitHub -> Actions.
-2. Run workflow: `Refresh + Sync (Commit Outputs)`.
+2. Run workflow: `Publish Admissions Data to Sheets (Refresh + Sync + Commit)`.
 3. Wait for green status.
 4. Confirm canonical dataset changed only when expected.
 
@@ -34,7 +34,7 @@ Expected outcome:
 
 ### B) Fast Programs-only run (optional)
 1. Open GitHub -> Actions.
-2. Run workflow: `Sync Programs To Sheets`.
+2. Run workflow: `Sync Programs Only to Sheets (Programs Tab)`.
 3. Wait for green status.
 
 Use this when you only need a Programs publish/update path and do not want a full refresh pass.
