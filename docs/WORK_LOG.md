@@ -584,3 +584,16 @@ Keep entries short and append-only.
   - `tools/check-eligibility.ps1` now supports `-FallbackMasterPath` and resolves newest canonical between `.csv`/`.csv.new`.
   - `tools/generate-avg-rules-template.ps1` now supports `-FallbackMasterPath` and resolves newest canonical between `.csv`/`.csv.new`.
 - Result: refresh/sync/validate/check-eligibility/avg-rules-template now consistently use active canonical output even during file-lock fallback writes.
+## 2026-02-19 (Clickable publish launcher + clearer GitHub Action labels)
+- Added `PUBLISH_DATA_TO_SHEETS.bat` at repo root as a clickable local launcher with mode prompt:
+  - `1` Fast publish (`-SkipScrape`, recommended)
+  - `2` Full publish (includes scrape)
+  - Both run `scripts\RUN_ALL.cmd` and pause with clear success/failure message.
+- Renamed workflow display labels for clarity in GitHub Actions:
+  - `.github/workflows/refresh_and_sync.yml` -> `Publish Admissions Data to Sheets (Refresh + Sync + Commit)`
+  - `.github/workflows/sync-programs.yml` -> `Sync Programs Only to Sheets (Programs Tab)`
+- Updated programs-only workflow validation required institutions to include `UAlberta`.
+- Updated docs references in `README.md` and `docs/GITHUB_AUTOMATION.md` to show new launcher and workflow names.
+- Added offline snapshot local preview launcher: `START_OFFLINE_SNAPSHOT_PREVIEW.bat`.
+- Added `offline_snapshot/start-preview.ps1` with runtime auto-detect (Node preferred, Python fallback), dedicated URL `http://localhost:5180/index.html`, and build guard if snapshot site is missing.
+- Updated `offline_snapshot/README.md` with local preview instructions.

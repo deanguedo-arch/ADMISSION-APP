@@ -2,7 +2,8 @@
 
 This project is now set up to support:
 - local guarded sync (`tools/sync-programs.ps1`)
-- GitHub Actions guarded sync (`.github/workflows/sync-programs.yml`)
+- GitHub Actions full publish (`.github/workflows/refresh_and_sync.yml`)
+- GitHub Actions programs-only sync (`.github/workflows/sync-programs.yml`)
 
 ## 1) Publish this repo to GitHub
 `gh` is not required.
@@ -22,15 +23,15 @@ In GitHub -> Settings -> Secrets and variables -> Actions, add:
 - `SHEETS_SYNC_TOKEN` = your `SYNC_TOKEN` from Apps Script properties
 
 ## 3) Run once manually before schedule
-In GitHub -> Actions -> `Sync Programs To Sheets` -> `Run workflow`.
+In GitHub -> Actions -> `Publish Admissions Data to Sheets (Refresh + Sync + Commit)` -> `Run workflow`.
 
 Confirm:
 - workflow passes
 - `Programs` tab updates
 - `Programs_BACKUP` tab is created/updated
 
-## 4) Enable automatic updates
-The workflow already includes a daily schedule (`13:00 UTC`) and manual run.
+## 4) Optional programs-only schedule
+The programs-only workflow includes a daily schedule (`13:00 UTC`) and manual run.
 
 Adjust schedule in:
 - `.github/workflows/sync-programs.yml`

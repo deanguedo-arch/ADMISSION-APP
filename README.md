@@ -171,6 +171,7 @@ If you want local scraping to automatically overwrite the Sheetâ€™s `Progra
 - Local uploader: `pipeline/push_to_sheets.py`
 
 One-click local sync (Windows):
+- `PUBLISH_DATA_TO_SHEETS.bat` (clickable; choose Fast publish or Full publish)
 - `SYNC_PROGRAMS.cmd`
 - `SYNC_ELECTIVE_RULES.cmd` (uploads `out/ElectiveRules.*.csv` to `ElectiveRules` tab)
 - `SYNC_ALL.cmd` (Programs + ElectiveRules in one run)
@@ -198,7 +199,8 @@ Apps Script structure guardrail:
 
 GitHub automation setup:
 - `docs/GITHUB_AUTOMATION.md`
-- workflow file: `.github/workflows/sync-programs.yml`
+- workflow: `Publish Admissions Data to Sheets (Refresh + Sync + Commit)` (`.github/workflows/refresh_and_sync.yml`)
+- workflow: `Sync Programs Only to Sheets (Programs Tab)` (`.github/workflows/sync-programs.yml`)
 - Apps Script code auto-deploy: `docs/APPS_SCRIPT_AUTODEPLOY.md` (`.github/workflows/deploy-apps-script.yml`)
 
 ## Optional: program-specific average rules (recommended)

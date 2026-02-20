@@ -1,4 +1,4 @@
-name: Refresh + Sync (Commit Outputs)
+name: Publish Admissions Data to Sheets (Refresh + Sync + Commit)
 
 on:
   workflow_dispatch:
@@ -12,10 +12,10 @@ on:
         required: false
         default: ""
       skip_scrape:
-        description: "Skip scraping/enrichment (faster; uses existing artifacts where possible)."
+        description: "Skip scraping/enrichment (faster publish; recommended for routine updates)."
         type: boolean
         required: false
-        default: false
+        default: true
   # Optional schedule (disabled by default to avoid unexpected quota/scrape load).
   # schedule:
   #   - cron: "0 13 * * *"
