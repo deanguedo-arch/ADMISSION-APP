@@ -13,6 +13,7 @@ import csv
 import hashlib
 import json
 import re
+import shutil
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -25,12 +26,21 @@ INCLUDE_PATTERN = re.compile(
 )
 
 INJECT_BEFORE_BOOT_PATTERN = re.compile(r"(<script>\s*boot\(\);)", re.MULTILINE)
+HEAD_CLOSE_PATTERN = re.compile(r"</head>", re.IGNORECASE)
 
 DEFAULT_CANONICAL = Path("data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv")
 DEFAULT_CANONICAL_FALLBACK = Path("data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new")
 DEFAULT_OUT_DIR = Path("offline_snapshot/site")
 DEFAULT_AVG_RULES = Path("offline_snapshot/input/AvgRules.csv")
 DEFAULT_ELECTIVE_RULES = Path("offline_snapshot/input/ElectiveRules.csv")
+DEFAULT_ICON_ASSETS = Path("offline_snapshot/assets/icons")
+
+MANIFEST_FILE_NAME = "manifest.webmanifest"
+ICON_180 = "icon-180.png"
+ICON_192 = "icon-192.png"
+ICON_512 = "icon-512.png"
+THEME_COLOR = "#1f9d72"
+BACKGROUND_COLOR = "#f2f5f3"
 
 
 def _read_text(path: Path) -> str:
@@ -221,6 +231,82 @@ def _inject_offline_scripts(resolved_html: str) -> str:
     return updated
 
 
+def _inject_mobile_meta_and_manifest(resolved_html: str) -> str:
+    injection = (
+        f'    <link rel="manifest" href="./{MANIFEST_FILE_NAME}" />\n'
+        f'    <link rel="icon" type="image/png" sizes="192x192" href="./icons/{ICON_192}" />\n'
+        f'    <link rel="apple-touch-icon" sizes="180x180" href="./icons/{ICON_180}" />\n'
+        f'    <meta name="theme-color" content="{THEME_COLOR}" />\n'
+        '    <meta name="mobile-web-app-capable" content="yes" />\n'
+        '    <meta name="apple-mobile-web-app-capable" content="yes" />\n'
+        '    <meta name="apple-mobile-web-app-status-bar-style" content="default" />\n'
+        '    <meta name="apple-mobile-web-app-title" content="Next Step" />\n'
+    )
+    updated = HEAD_CLOSE_PATTERN.sub(injection + "</head>", resolved_html, count=1)
+    if updated == resolved_html:
+        raise ValueError("Could not inject mobile meta tags into WebApp markup.")
+    return updated
+
+
+def _copy_icon_assets(icon_assets_dir: Path, icons_out_dir: Path) -> List[str]:
+    required = [ICON_180, ICON_192, ICON_512]
+    missing_required = [name for name in required if not (icon_assets_dir / name).exists()]
+    if missing_required:
+        missing_txt = ", ".join(missing_required)
+        raise FileNotFoundError(
+            f"Missing required icon asset(s): {missing_txt}. Expected under: {icon_assets_dir}"
+        )
+
+    icon_files = sorted(
+        [
+            path
+            for path in icon_assets_dir.glob("*")
+            if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp"}
+        ]
+    )
+    if not icon_files:
+        raise FileNotFoundError(f"No icon assets found under: {icon_assets_dir}")
+
+    if icons_out_dir.exists():
+        shutil.rmtree(icons_out_dir)
+    icons_out_dir.mkdir(parents=True, exist_ok=True)
+
+    copied: List[str] = []
+    for src in icon_files:
+        dst = icons_out_dir / src.name
+        shutil.copy2(src, dst)
+        copied.append(src.name)
+    return copied
+
+
+def _build_web_manifest_payload() -> Dict[str, object]:
+    return {
+        "name": "Next Step Admissions Checker",
+        "short_name": "Next Step",
+        "description": "Advisory Alberta admissions checker for Edmonton-area institutions.",
+        "start_url": "./index.html",
+        "scope": "./",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": BACKGROUND_COLOR,
+        "theme_color": THEME_COLOR,
+        "icons": [
+            {
+                "src": f"./icons/{ICON_192}",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": f"./icons/{ICON_512}",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any",
+            },
+        ],
+    }
+
+
 def _sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as handle:
@@ -298,6 +384,11 @@ def main() -> int:
         default=str(DEFAULT_ELECTIVE_RULES),
         help="Optional ElectiveRules CSV snapshot input.",
     )
+    parser.add_argument(
+        "--icon-assets",
+        default=str(DEFAULT_ICON_ASSETS),
+        help="Icon asset folder copied into offline site icons/ and referenced by manifest/meta.",
+    )
     args = parser.parse_args()
 
     script_dir = Path(__file__).resolve().parent
@@ -311,6 +402,7 @@ def main() -> int:
     out_dir = (repo_root / args.out).resolve()
     avg_rules_path = (repo_root / args.avg_rules).resolve()
     elective_rules_path = (repo_root / args.elective_rules).resolve()
+    icon_assets_dir = (repo_root / args.icon_assets).resolve()
 
     header, rows = _load_csv_rows(canonical_path)
     programs_range = _to_programs_range(header, rows)
@@ -349,6 +441,7 @@ def main() -> int:
     template_path = web_root / "WebApp.html"
     resolved_html = _resolve_html_includes(template_path, web_root)
     offline_html = _inject_offline_scripts(resolved_html)
+    offline_html = _inject_mobile_meta_and_manifest(offline_html)
 
     eligibility_core = _build_eligibility_core(repo_root)
     bridge_source = _read_text(script_dir / "src/offline_bridge.js")
@@ -373,10 +466,14 @@ def main() -> int:
         "elective_rule_rows_loaded": len(elective_rows),
     }
 
+    copied_icons = _copy_icon_assets(icon_assets_dir, out_dir / "icons")
+    web_manifest = _build_web_manifest_payload()
+
     _write_text(out_dir / "index.html", offline_html)
     _write_text(out_dir / "runtime/eligibility_core.js", eligibility_core)
     _write_text(out_dir / "runtime/offline_bridge.js", bridge_source)
     _write_text(out_dir / "data/snapshot_data.js", snapshot_js)
+    _write_text(out_dir / MANIFEST_FILE_NAME, json.dumps(web_manifest, indent=2) + "\n")
     _write_text(out_dir / "snapshot.meta.json", json.dumps(meta, indent=2) + "\n")
 
     print(f"Built offline snapshot -> {out_dir}")
@@ -391,6 +488,9 @@ def main() -> int:
         print(f"  elective_rule_rows: {len(elective_rows)} ({elective_rules_path})")
     else:
         print("  elective_rule_rows: 0 (optional file not provided or empty)")
+    print(f"  icon_assets: {icon_assets_dir}")
+    print(f"  icons_copied: {len(copied_icons)} -> {out_dir / 'icons'}")
+    print(f"  manifest: {out_dir / MANIFEST_FILE_NAME}")
     return 0
 
 

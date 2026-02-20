@@ -9,8 +9,15 @@ This is the only guide a coworker should need.
 - Always treat results as snapshot guidance, not final admission decisions.
 
 ## 2) Who does what
-- Checker user (most staff): uses either Google Sheets menu flow or the web app link.
+- Checker user (most staff): uses Google Sheets menu flow or the staff web app URL.
+- Student/public user: uses the public snapshot URL (Safari/Home Screen on iPhone).
 - Data maintainer (one person): runs local sync commands when program data changes.
+
+## 2B) URL map (keep these separate)
+- Staff URL (Apps Script, authenticated/domain-gated): `https://script.google.com/macros/s/AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ/exec`
+- Student/public URL (GitHub Pages snapshot): `https://deanguedo-arch.github.io/ADMISSION-APP/`
+- Student iPhone install guide: `docs/STUDENT_IPHONE_INSTALL.md`
+- iPhone release gate: `docs/RELEASE_GATE_IPHONE.md`
 
 ## 3) Checker user workflow (Sheets only)
 1. Open the shared Google Sheet.
@@ -36,8 +43,8 @@ After lockdown, staff should normally work only in:
 - `Ineligible`
 - `Uncheckable`
 
-## 3B) Checker user workflow (Web app)
-1. Open the web app URL provided by the owner.
+## 3B) Checker user workflow (Staff web app)
+1. Open the staff web app URL provided by the owner.
 2. Enter named courses and marks.
 3. Optional: enter elective overrides (course + group + mark).
 4. Click `Check Eligibility`.
@@ -51,6 +58,14 @@ After lockdown, staff should normally work only in:
    - `Export CSV` (all program rows)
    - `Export PDF` (current view)
    - `Generate Program Comparison Sheet (Pinned)` for pinned rows
+
+## 3C) Student/public workflow (iPhone Home Screen app)
+1. Open the student/public snapshot URL in Safari.
+2. Add to Home Screen (`Share -> Add to Home Screen`).
+3. Launch from icon and enter courses/marks.
+4. Run `Check Eligibility`.
+5. Review `Likely eligible`, `Likely ineligible`, and `Uncheckable`.
+6. Confirm dataset date banner and review source links for non-High confidence rows.
 
 ## 4) Confidence guide (high-level)
 - `High`: structured fields are complete, source link exists, no known ambiguity patterns, and data is fresh.

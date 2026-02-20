@@ -1,6 +1,8 @@
 name: Update + Build + Deploy Offline Snapshot (GitHub Pages)
 
 on:
+  schedule:
+    - cron: "0 14 * * 1"
   workflow_dispatch:
     inputs:
       refresh_mode:

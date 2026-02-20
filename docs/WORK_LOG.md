@@ -633,3 +633,24 @@ Keep entries short and append-only.
 - Post-fix local verification completed:
   - Refresh flow with CI-equivalent flags PASS (`-SkipSync -SkipElectivePrefill -AllowStaleNorquestSeed -SkipScrape -SkipAvgApply -SkipFixtures`).
 - Current status after fixes: `main` contains release + both workflow hardening patches; rerunning Pages workflow should no longer fail on those two paths.
+## 2026-02-20 (Kickoff student iPhone rollout: web-first snapshot path)
+- Added iPhone/public release controls docs:
+  - `docs/RELEASE_GATE_IPHONE.md` (one-page go/no-go gate + locked test profiles/anchors)
+  - `docs/STUDENT_IPHONE_INSTALL.md` (Safari Add-to-Home-Screen user guide)
+  - `docs/IOS_APPSTORE_READINESS.md` (deferred App Store wrapper readiness checklist)
+- Updated operator docs to split staff vs student/public paths:
+  - `README.md` (new public student snapshot section + doc links)
+  - `docs/USER_MANUAL.md` (separate staff URL and student URL workflows)
+- Added snapshot iPhone install metadata pipeline:
+  - `offline_snapshot/build_snapshot.py` now injects manifest/mobile meta tags, copies icon assets, and emits `offline_snapshot/site/manifest.webmanifest`.
+  - Added source icon assets in `offline_snapshot/assets/icons/` and build-copy to `offline_snapshot/site/icons/`.
+- Added weekly GitHub Pages cadence:
+  - `.github/workflows/deploy-offline-snapshot-pages.yml` now includes `schedule` trigger (`0 14 * * 1`) while keeping manual dispatch.
+- Validation:
+  - `tools/validate-webapp-surface.ps1` PASS
+  - `tools/validate-apps-script-structure.ps1` PASS
+  - `BUILD_OFFLINE_SNAPSHOT.bat` PASS (manifest/icons generation confirmed)
+- `offline_snapshot/start-preview.ps1 -Mode auto -Port 5280` smoke PASS (default 5180 was already in use during this run).
+- Updated URL placeholders with live rollout links:
+  - Staff Apps Script URL set in `docs/USER_MANUAL.md`.
+  - Student/public snapshot URL set in `docs/USER_MANUAL.md` and `README.md`.

@@ -39,10 +39,19 @@ Or run:
 Generated site files are written to:
 
 - `offline_snapshot/site/index.html`
+- `offline_snapshot/site/manifest.webmanifest`
+- `offline_snapshot/site/icons/`
 - `offline_snapshot/site/runtime/eligibility_core.js`
 - `offline_snapshot/site/runtime/offline_bridge.js`
 - `offline_snapshot/site/data/snapshot_data.js`
 - `offline_snapshot/site/snapshot.meta.json`
+
+## iPhone Home Screen Metadata
+
+The snapshot build injects install metadata for Safari Add-to-Home-Screen:
+- `manifest.webmanifest`
+- Apple touch icon + mobile-web-app meta tags in `index.html`
+- icon assets copied from `offline_snapshot/assets/icons/` into `offline_snapshot/site/icons/`
 
 ## Deploy
 

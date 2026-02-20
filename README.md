@@ -162,7 +162,19 @@ Personal deploy auth properties:
 Local UI tinkering loop:
 - `docs/LOCAL_WEBAPP_DEV.md`
 
-### Student template (compact input layout)
+Staff URL guidance:
+- Keep staff on the Apps Script deployment URL (authenticated, domain-gated).
+- Do not share staff URL with students/public users.
+
+### D) Public student iPhone web app (snapshot)
+Student/public users should use the static snapshot site (GitHub Pages), not the staff Apps Script URL.
+
+- Student URL (set this in your rollout docs): `https://deanguedo-arch.github.io/ADMISSION-APP/`
+- Install guide (Safari -> Add to Home Screen): `docs/STUDENT_IPHONE_INSTALL.md`
+- Pre-release go/no-go gate: `docs/RELEASE_GATE_IPHONE.md`
+- App Store-later readiness notes: `docs/IOS_APPSTORE_READINESS.md`
+
+### E) Student template (compact input layout)
 If you want a compact `Student` tab with 5 manual elective slots, copy/paste:
 - `examples/student_template.tsv`
 
