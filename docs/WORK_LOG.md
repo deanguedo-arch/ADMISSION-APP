@@ -601,3 +601,12 @@ Keep entries short and append-only.
 - Consolidated offline site publish flow into one GitHub Action: `.github/workflows/deploy-offline-snapshot-pages.yml` now runs `refresh-all` (fast/full input), builds snapshot, and deploys to GitHub Pages in one run.
 - Updated `START_OFFLINE_SNAPSHOT_PREVIEW.bat` to rebuild snapshot before launching local preview (`update -> preview`).
 - Updated `offline_snapshot/README.md` with one-action deploy and updated preview behavior.
+## 2026-02-20 (Advisory confidence + pinned comparison sheet + elective rules default open)
+- Added deterministic confidence and explainability outputs to eligibility rows/details: `snapshot_result`, `confidence`, `why_text`, `uncheckable_reason`, `next_step`, `source_url`, `dataset_date`, `program_key`.
+- Added snapshot-date plumbing and staleness cap logic (default 60 days) to web/sheet/offline runs; source-link-missing now caps confidence at Low unless Uncheckable ambiguity applies.
+- Updated web UI/offline snapshot UI to advisory language (`Likely eligible` / `Likely ineligible`), always-visible snapshot banner + data date, targeted confidence warnings, and prominent source links for non-High confidence.
+- Added web action `Generate Program Comparison Sheet (Pinned)` (print-friendly pinned comparison table).
+- Added Sheets workflow support: `Results` now has persistent `Pin` checkboxes and new menu action `Generate Program Comparison Sheet (Pinned)` creates `PROGRAM_COMPARISON_YYYYMMDD_HHMM` tabs from pinned rows.
+- Updated details drawer so `ELECTIVE RULES` is expanded by default and collapse preference persists for the session.
+- Rebuilt offline snapshot artifacts and updated structure guardrail allowlists for new helper functions.
+- Validation: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS, offline snapshot rebuild PASS, `runConfidenceSelfTest_` PASS via Node VM against generated `eligibility_core.js`.

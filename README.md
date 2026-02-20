@@ -123,7 +123,10 @@ The script writes:
 - `Ineligible` (Missing is non-empty)
 - `Uncheckable` (no Missing, but requirements are not checkable from the dataset)
 
-Output layout (left-to-right): Institution, Program, Credential, Min Avg, Student Avg, Avg Courses, Avg Used, Competitive Guidance, Missing, Notes.
+Output layout now includes advisory/defensibility fields:
+- Core columns: Institution, Program, Credential, Min Avg, Student Avg, Avg Courses, Avg Used, Competitive Guidance, Missing, Notes
+- Advisory fields: `snapshot_result`, `confidence`, `why_text`, `uncheckable_reason`, `next_step`, `source_url`, `dataset_date`, `program_key`
+- `Results` includes a `Pin` checkbox column (used for pinned program comparison generation).
 
 ### C) Use the web app (staff form + CSV/PDF export)
 The same Apps Script project serves a web UI from `apps_script/WebApp.html` plus split `WebApp*.html` fragments.
@@ -141,6 +144,12 @@ The same Apps Script project serves a web UI from `apps_script/WebApp.html` plus
 - Exports:
   - CSV (all rows)
   - PDF (current result view)
+  - Program Comparison Sheet (Pinned) print view
+- Web results now show:
+  - always-visible snapshot banner (`Snapshot (advisory) - verify on institution site for final decisions`)
+  - `Data date: YYYY-MM-DD`
+  - confidence per program (`High`, `Medium`, `Low`, `Uncheckable`) with targeted warnings for non-High rows
+  - prominent source links for non-High rows (or explicit `Source link missing`).
 
 Spreadsheet binding for web app calls:
 - By default, web app checks use Sheet ID `1QSp9ufon8isEuaBjqoH-8xh5F9vjG94PSsBoZgTPAvU`.
@@ -263,7 +272,9 @@ With the example student file:
 ```
 
 In the `Results` tab:
-- `Eligible` means `Missing` is blank and the row isn't marked `Uncheckable`.
+- Snapshot status is advisory: `Likely eligible`, `Likely ineligible`, or `Uncheckable`.
+- `confidence` is deterministic (data completeness, source URL presence, ambiguity patterns, and data staleness).
+- `why_text` is populated for Medium/Low rows; `uncheckable_reason` + `next_step` are populated for Uncheckable rows.
 - `Competitive Guidance` does not change eligibility; it highlights `Min Avg` + `Student Avg` in yellow.
 - Assessment/placement requirements (and similar advisories) appear in `Notes` and do **not** make a row ineligible.
 

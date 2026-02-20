@@ -12,6 +12,7 @@ function evaluateProgramsForStudent_(opts) {
   const manualElectives = (opts && opts.manualElectives) || [];
   const avgRules = (opts && opts.avgRules) || { byKey: {}, byInstitution: {} };
   const electiveRuleOverrides = (opts && opts.electiveRuleOverrides) || { byKey: {}, byInstitution: {} };
+  const staleDaysCap = Math.max(1, Math.round(toNumber_((opts && opts.staleDaysCap) || 60) || 60));
 
   if (!programsRange || programsRange.length < 2) {
     throw new Error("Programs tab is empty. Import/sync the dataset into the Programs tab first.");
@@ -27,6 +28,7 @@ function evaluateProgramsForStudent_(opts) {
   const rows = programsRange.slice(1);
   const idx = indexHeader_(header);
   requireProgramsColumns_(idx);
+  const datasetDate = resolveDatasetDateFromPrograms_(programsRange, (opts && opts.datasetDate) || new Date().toISOString());
 
   const rowRecords = [];
   const detailsByKey = {};
@@ -166,6 +168,29 @@ function evaluateProgramsForStudent_(opts) {
         : "";
     const missingText = (reasons || []).join(" | ");
     const notesText = buildNotes_(notes, advisories);
+    const sourceUrl = normalizeHttpUrlForOutput_(programUrl);
+    const confidenceAssessment = evaluateConfidenceForProgram_({
+      institution,
+      program,
+      credential,
+      requirementTypeEffective,
+      englishReq,
+      mathReq,
+      socialReq,
+      scienceReq,
+      electiveQty,
+      avgMin,
+      avgTotalFromData,
+      avgTotalResolved: avgTotal,
+      notes,
+      advisories,
+      missingText,
+      sourceUrl,
+      datasetDate,
+      staleDaysCap,
+    });
+    const snapshotResult = deriveSnapshotResult_(missingText, confidenceAssessment.confidence);
+    const sourceUrlText = sourceUrl || "Source link missing";
 
     const row = [
       institution,
@@ -178,6 +203,14 @@ function evaluateProgramsForStudent_(opts) {
       competitiveGuidance,
       missingText,
       notesText,
+      snapshotResult,
+      confidenceAssessment.confidence,
+      confidenceAssessment.whyText,
+      confidenceAssessment.uncheckableReason,
+      confidenceAssessment.nextStep,
+      sourceUrlText,
+      datasetDate,
+      programKey,
     ];
 
     rowRecords.push({
@@ -185,6 +218,7 @@ function evaluateProgramsForStudent_(opts) {
       row,
       missing: missingText,
       notes: notesText,
+      confidence: confidenceAssessment.confidence,
       rowIndex,
     });
 
@@ -207,6 +241,9 @@ function evaluateProgramsForStudent_(opts) {
       reasons,
       notes,
       advisories,
+      datasetDate,
+      confidenceAssessment,
+      snapshotResult,
     });
   });
 
@@ -222,17 +259,13 @@ function evaluateProgramsForStudent_(opts) {
 
   const body = rowRecords.map((x) => x.row);
   const finalOut = [RESULTS_HEADER_ROW.slice()].concat(body);
-  const eligibleRecords = rowRecords.filter((r) => {
-    const missing = String(r.missing || "").trim();
-    const notes = String(r.notes || "").trim();
-    return missing === "" && !isUncheckable_(notes);
-  });
-  const ineligibleRecords = rowRecords.filter((r) => String(r.missing || "").trim() !== "");
-  const uncheckableRecords = rowRecords.filter((r) => {
-    const missing = String(r.missing || "").trim();
-    const notes = String(r.notes || "").trim();
-    return missing === "" && isUncheckable_(notes);
-  });
+  const uncheckableRecords = rowRecords.filter((r) => isConfidenceUncheckable_(r.confidence));
+  const ineligibleRecords = rowRecords.filter(
+    (r) => !isConfidenceUncheckable_(r.confidence) && String(r.missing || "").trim() !== ""
+  );
+  const eligibleRecords = rowRecords.filter(
+    (r) => !isConfidenceUncheckable_(r.confidence) && String(r.missing || "").trim() === ""
+  );
 
   const eligibleRows = [RESULTS_HEADER_ROW.slice()].concat(eligibleRecords.map((r) => r.row));
   const ineligibleRows = [RESULTS_HEADER_ROW.slice()].concat(ineligibleRecords.map((r) => r.row));
@@ -413,6 +446,15 @@ function buildProgramDetailsForWeb_(opts) {
   const studentAvg = toNumber_(opts && opts.studentAvg);
   const avgTotal = toNumber_(opts && opts.avgTotal);
   const usedCount = toNumber_(avg.usedCount);
+  const confidenceAssessment = (opts && opts.confidenceAssessment) || {};
+  const confidence = normalizeConfidenceValue_(confidenceAssessment.confidence || "");
+  const why = (Array.isArray(confidenceAssessment.why) ? confidenceAssessment.why : [])
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+  const whyText = String(confidenceAssessment.whyText || "").trim();
+  const uncheckableReason = String(confidenceAssessment.uncheckableReason || "").trim();
+  const nextStep = String(confidenceAssessment.nextStep || "").trim();
+  const warning = buildConfidenceWarningPayload_(confidence, why, uncheckableReason, nextStep);
 
   const averageComplete = isFinite(avgTotal) && avgTotal > 0 && isFinite(usedCount) && usedCount >= avgTotal;
   const averageMeetsMinimum = isFinite(avgMin)
@@ -434,16 +476,23 @@ function buildProgramDetailsForWeb_(opts) {
       name: String((e && e.name) || "").trim(),
       mark: isFinite(toNumber_(e && e.mark)) ? Number(toNumber_(e && e.mark)) : "",
     }));
+  const normalizedProgramUrl = normalizeHttpUrlForOutput_((opts && opts.programUrl) || "");
 
   return {
     programKey: String((opts && opts.programKey) || "").trim(),
     institution: String((opts && opts.institution) || "").trim(),
     program: String((opts && opts.program) || "").trim(),
     credential: String((opts && opts.credential) || "").trim(),
-    programUrl: (() => {
-      const raw = String((opts && opts.programUrl) || "").trim();
-      return /^https?:\/\//i.test(raw) ? raw : "";
-    })(),
+    programUrl: normalizedProgramUrl,
+    sourceUrlMissing: !normalizedProgramUrl,
+    datasetDate: normalizeDateYmd_((opts && opts.datasetDate) || ""),
+    snapshotResult: String((opts && opts.snapshotResult) || "").trim(),
+    confidence,
+    why,
+    whyText,
+    uncheckableReason,
+    nextStep,
+    warning,
     competitiveGuidance: String((opts && opts.competitiveGuidance) || "").trim(),
     requirementText: String((opts && opts.requirementTypeEffective) || "").trim(),
     requirements: (Array.isArray(opts && opts.requirementSummaries) ? opts.requirementSummaries : []).map((x) => ({
@@ -480,12 +529,73 @@ function buildProgramDetailsForWeb_(opts) {
   };
 }
 
-function writeResultRowsToSheet_(sheet, rows) {
+function readPinnedProgramKeysFromSheet_(sheet) {
+  if (!sheet) return {};
+  const range = sheet.getDataRange();
+  const values = range && range.getValues ? range.getValues() : [];
+  if (!values || values.length < 2) return {};
+
+  const header = (values[0] || []).map((x) => String(x || "").trim().toLowerCase());
+  const pinIdx = header.indexOf("pin");
+  const keyIdx = header.indexOf("program_key");
+  if (pinIdx < 0 || keyIdx < 0) return {};
+
+  const out = {};
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] || [];
+    const key = String(row[keyIdx] || "").trim();
+    if (!key) continue;
+    if (isTruthyPinValue_(row[pinIdx])) out[key] = true;
+  }
+  return out;
+}
+
+function isTruthyPinValue_(value) {
+  if (value === true) return true;
+  const t = String(value || "").trim().toLowerCase();
+  if (!t) return false;
+  return t === "true" || t === "yes" || t === "1" || t === "y";
+}
+
+function writeResultRowsToSheet_(sheet, rows, opts) {
   const safeRows = rows && rows.length ? rows : [RESULTS_HEADER_ROW.slice()];
+  const options = opts && typeof opts === "object" ? opts : {};
+  const withPins = options.enablePins === true;
+  const pinnedByProgramKey = options.pinnedByProgramKey && typeof options.pinnedByProgramKey === "object"
+    ? options.pinnedByProgramKey
+    : {};
+
+  const outputRows = withPins
+    ? addPinColumnToRows_(safeRows, pinnedByProgramKey)
+    : safeRows;
+
   sheet.clearContents();
-  sheet.getRange(1, 1, safeRows.length, safeRows[0].length).setValues(safeRows);
+  sheet.getRange(1, 1, outputRows.length, outputRows[0].length).setValues(outputRows);
   sheet.setFrozenRows(1);
-  applyCompetitiveHighlight_(sheet, safeRows);
+
+  if (withPins && outputRows.length > 1) {
+    const pinRange = sheet.getRange(2, 1, outputRows.length - 1, 1);
+    pinRange.insertCheckboxes();
+    const pinValues = outputRows
+      .slice(1)
+      .map((r) => [r[0] === true]);
+    pinRange.setValues(pinValues);
+  }
+
+  applyCompetitiveHighlight_(sheet, outputRows);
+}
+
+function addPinColumnToRows_(rows, pinnedByProgramKey) {
+  const safeRows = rows && rows.length ? rows : [RESULTS_HEADER_ROW.slice()];
+  const header = (safeRows[0] || []).map((x) => String(x || ""));
+  const keyIdx = header.map((x) => String(x || "").trim().toLowerCase()).indexOf("program_key");
+  const out = [["Pin"].concat(header)];
+  for (let i = 1; i < safeRows.length; i++) {
+    const row = Array.isArray(safeRows[i]) ? safeRows[i].slice() : [];
+    const key = keyIdx >= 0 ? String(row[keyIdx] || "").trim() : "";
+    out.push([!!(key && pinnedByProgramKey[key])].concat(row));
+  }
+  return out;
 }
 
 function normalizeCompetitive_(text) {
@@ -514,7 +624,10 @@ function applyCompetitiveHighlight_(sheet, values) {
   if (!values || values.length < 2) return;
   const header = (values[0] || []).map((x) => String(x || "").trim().toLowerCase());
   const compIdx = header.indexOf("competitive guidance");
+  const minIdx = header.indexOf("min avg");
+  const studentIdx = header.indexOf("student avg");
   if (compIdx < 0) return;
+  if (minIdx < 0 || studentIdx < 0) return;
 
   const n = values.length - 1;
   const yellow = "#fff2cc";
@@ -524,22 +637,236 @@ function applyCompetitiveHighlight_(sheet, values) {
   for (let i = 1; i < values.length; i++) {
     const competitive = String(values[i][compIdx] || "").trim();
     const color = competitive ? yellow : white;
-    bg.push([color, color]);
+    bg.push([color]);
   }
 
-  // Apply only to Min Avg + Student Avg cells (rows 2..)
-  sheet.getRange(2, 4, n, 2).setBackgrounds(bg);
+  // Apply only to Min Avg + Student Avg cells (rows 2..), even if columns shift.
+  sheet.getRange(2, minIdx + 1, n, 1).setBackgrounds(bg);
+  sheet.getRange(2, studentIdx + 1, n, 1).setBackgrounds(bg);
 }
 
 function isUncheckable_(notesText) {
-  const t = String(notesText || "").toLowerCase();
-  if (!t.trim()) return false;
-  // These indicate we don't have enough structured info to evaluate eligibility from marks alone.
+  return isAmbiguityText_(notesText);
+}
+
+function normalizeHttpUrlForOutput_(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return /^https?:\/\//i.test(raw) ? raw : "";
+}
+
+function normalizeConfidenceValue_(value) {
+  const t = String(value || "").trim().toLowerCase();
+  if (t === "high") return "High";
+  if (t === "medium") return "Medium";
+  if (t === "low") return "Low";
+  if (t === "uncheckable") return "Uncheckable";
+  return "Medium";
+}
+
+function isConfidenceUncheckable_(value) {
+  return normalizeConfidenceValue_(value) === "Uncheckable";
+}
+
+function deriveSnapshotResult_(missingText, confidence) {
+  if (isConfidenceUncheckable_(confidence)) return "Uncheckable";
+  return String(missingText || "").trim() ? "Likely ineligible" : "Likely eligible";
+}
+
+function isAmbiguityText_(text) {
+  const t = String(text || "").trim().toLowerCase();
+  if (!t) return false;
   return (
-    t.includes("see degree") ||
-    t.includes("refer to degree") ||
-    t.includes("requirement unspecified")
+    /\bsee\s+(degree|department|faculty|program|calendar)\b/.test(t) ||
+    /\brefer\s+to\s+(degree|department|faculty|program|calendar)\b/.test(t) ||
+    /\brequirement\s+unspecified\b/.test(t) ||
+    /\bdepartment(?:al)?\s+requirements?\b/.test(t) ||
+    /\binherit(?:ed|ance)?\b/.test(t) ||
+    /\bsame\s+as\b/.test(t) ||
+    /\bcheck\s+notes\b/.test(t) ||
+    /\bcontact\s+(the\s+)?(department|faculty|program|institution)\b/.test(t)
   );
+}
+
+function firstAmbiguityReason_(parts) {
+  const list = (parts || []).map((x) => String(x || "").trim()).filter(Boolean);
+  for (let i = 0; i < list.length; i++) {
+    if (isAmbiguityText_(list[i])) {
+      return "Requirements reference another degree/department page and cannot be checked deterministically from the snapshot.";
+    }
+  }
+  return "";
+}
+
+function confidenceRank_(value) {
+  const c = normalizeConfidenceValue_(value);
+  if (c === "High") return 3;
+  if (c === "Medium") return 2;
+  if (c === "Low") return 1;
+  return 0;
+}
+
+function capConfidence_(current, cap) {
+  const normalizedCurrent = normalizeConfidenceValue_(current);
+  const normalizedCap = normalizeConfidenceValue_(cap);
+  if (normalizedCurrent === "Uncheckable") return normalizedCurrent;
+  if (normalizedCap === "Uncheckable") return "Uncheckable";
+  return confidenceRank_(normalizedCurrent) <= confidenceRank_(normalizedCap)
+    ? normalizedCurrent
+    : normalizedCap;
+}
+
+function confidenceFromScore_(score) {
+  const n = Number(score);
+  if (!isFinite(n)) return "Medium";
+  if (n >= 3) return "High";
+  if (n >= 2) return "Medium";
+  return "Low";
+}
+
+function defaultUncheckableNextStep_(sourceUrl) {
+  if (sourceUrl) {
+    return "Open the official program page and confirm exact prerequisites, average method, and department-level requirements.";
+  }
+  return "Find the official program page first, then confirm exact prerequisites, average method, and department-level requirements.";
+}
+
+function evaluateConfidenceForProgram_(opts) {
+  const sourceUrl = normalizeHttpUrlForOutput_(opts && opts.sourceUrl);
+  const notes = (Array.isArray(opts && opts.notes) ? opts.notes : []).map((x) => String(x || "").trim()).filter(Boolean);
+  const advisories = (Array.isArray(opts && opts.advisories) ? opts.advisories : [])
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+  const requirementTypeText = String((opts && opts.requirementTypeEffective) || "").trim();
+  const englishReq = String((opts && opts.englishReq) || "").trim();
+  const mathReq = String((opts && opts.mathReq) || "").trim();
+  const socialReq = String((opts && opts.socialReq) || "").trim();
+  const scienceReq = String((opts && opts.scienceReq) || "").trim();
+  const electiveQty = String((opts && opts.electiveQty) || "").trim();
+  const datasetDate = normalizeDateYmd_((opts && opts.datasetDate) || "");
+  const staleDaysCap = Math.max(1, Math.round(toNumber_(opts && opts.staleDaysCap) || 60));
+
+  const hasAnyStructuredRequirement = (
+    isFinite(toNumber_(opts && opts.avgMin)) ||
+    !!englishReq ||
+    !!mathReq ||
+    !!socialReq ||
+    !!scienceReq ||
+    !!electiveQty
+  );
+
+  if (!hasAnyStructuredRequirement) {
+    const reason = "Snapshot row is missing structured admission requirement fields.";
+    return {
+      confidence: "Uncheckable",
+      why: [],
+      whyText: "",
+      uncheckableReason: reason,
+      nextStep: defaultUncheckableNextStep_(sourceUrl),
+    };
+  }
+
+  const ambiguityReason = firstAmbiguityReason_([
+    requirementTypeText,
+    englishReq,
+    mathReq,
+    socialReq,
+    scienceReq,
+    electiveQty,
+  ].concat(notes, advisories));
+
+  if (ambiguityReason) {
+    return {
+      confidence: "Uncheckable",
+      why: [],
+      whyText: "",
+      uncheckableReason: ambiguityReason,
+      nextStep: defaultUncheckableNextStep_(sourceUrl),
+    };
+  }
+
+  let score = 3;
+  const why = [];
+
+  if (!sourceUrl) {
+    score = Math.min(score, 1);
+    why.push("Source link missing in snapshot data.");
+  }
+
+  const avgDefaulted = notes.some((x) => /avg course-count defaulted/i.test(x));
+  if (avgDefaulted) {
+    score -= 1;
+    why.push("Average course-count uses a default assumption.");
+  }
+
+  const hasManualReviewSignals = advisories.length > 0 || /(audition|portfolio|casper|interview|questionnaire)/i.test(requirementTypeText);
+  if (hasManualReviewSignals) {
+    score -= 1;
+    why.push("Program includes additional manual-review requirements.");
+  }
+
+  const hasUnstructuredNotes = notes.some((x) =>
+    /(requirement unspecified|english language proficiency|language proficiency)/i.test(String(x || ""))
+  );
+  if (hasUnstructuredNotes) {
+    score -= 2;
+    why.push("Some requirement text is not fully machine-checkable.");
+  }
+
+  const datasetAgeDays = calculateDatasetAgeDays_(datasetDate, new Date());
+  const isStale = isFinite(datasetAgeDays) && datasetAgeDays > staleDaysCap;
+  if (isStale) {
+    why.push(`Snapshot data is ${datasetAgeDays} days old.`);
+  }
+
+  let confidence = confidenceFromScore_(score);
+  if (!sourceUrl) confidence = capConfidence_(confidence, "Low");
+  if (isStale) confidence = capConfidence_(confidence, "Medium");
+
+  let whyOut = [];
+  if (confidence === "Medium") whyOut = why.slice(0, 1);
+  if (confidence === "Low") whyOut = why.slice(0, 3);
+
+  return {
+    confidence,
+    why: whyOut,
+    whyText: whyOut.join(" | "),
+    uncheckableReason: "",
+    nextStep: "",
+  };
+}
+
+function buildConfidenceWarningPayload_(confidenceValue, why, uncheckableReason, nextStep) {
+  const confidence = normalizeConfidenceValue_(confidenceValue);
+  const reasons = (Array.isArray(why) ? why : []).map((x) => String(x || "").trim()).filter(Boolean);
+  if (confidence === "High") {
+    return { level: "high", text: "", reasons: [], reason: "", nextStep: "" };
+  }
+  if (confidence === "Medium") {
+    return {
+      level: "medium",
+      text: "Advisory - verify on program website",
+      reasons: reasons.slice(0, 1),
+      reason: "",
+      nextStep: "",
+    };
+  }
+  if (confidence === "Low") {
+    return {
+      level: "low",
+      text: "Low confidence - verify on program website",
+      reasons: reasons.slice(0, 3),
+      reason: "",
+      nextStep: "",
+    };
+  }
+  return {
+    level: "uncheckable",
+    text: "Uncheckable - manual review required",
+    reasons: [],
+    reason: String(uncheckableReason || "").trim(),
+    nextStep: String(nextStep || "").trim(),
+  };
 }
 
 function formatAvgUsed_(avg) {
@@ -581,6 +908,33 @@ function appendDatasetNotes_(requirementTypeText, notes, advisories) {
   const found = specialKeywords.filter((k) => lower.includes(k));
   if (found.length) {
     advisories.push(`Other requirements: ${unique_(found).join(", ")}`);
+  }
+}
+
+function runConfidenceSelfTest_() {
+  const base = {
+    requirementTypeEffective: "Standard admission requirements",
+    englishReq: "English 30-1",
+    mathReq: "Math 30-1",
+    socialReq: "",
+    scienceReq: "",
+    electiveQty: "2",
+    avgMin: 70,
+    notes: [],
+    advisories: [],
+    datasetDate: "2026-01-01",
+    staleDaysCap: 60,
+  };
+
+  const high = evaluateConfidenceForProgram_(Object.assign({}, base, { sourceUrl: "https://example.edu/program" }));
+  if (high.confidence !== "High") throw new Error(`Confidence self-test failed: expected High, got ${high.confidence}`);
+
+  const low = evaluateConfidenceForProgram_(Object.assign({}, base, { sourceUrl: "" }));
+  if (low.confidence !== "Low") throw new Error(`Confidence self-test failed: expected Low, got ${low.confidence}`);
+
+  const uncheckable = evaluateConfidenceForProgram_(Object.assign({}, base, { requirementTypeEffective: "Refer to Degree" }));
+  if (uncheckable.confidence !== "Uncheckable") {
+    throw new Error(`Confidence self-test failed: expected Uncheckable, got ${uncheckable.confidence}`);
   }
 }
 

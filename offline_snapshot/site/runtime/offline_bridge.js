@@ -20,6 +20,14 @@
     "Competitive Guidance",
     "Missing",
     "Notes",
+    "snapshot_result",
+    "confidence",
+    "why_text",
+    "uncheckable_reason",
+    "next_step",
+    "source_url",
+    "dataset_date",
+    "program_key",
   ];
 
   if (!Array.isArray(window.RESULTS_HEADER_ROW) || !window.RESULTS_HEADER_ROW.length) {
@@ -210,6 +218,7 @@
       dataset: {
         lastProgramsSyncUtc: normalizeText(snapshot.lastProgramsSyncUtc),
         lastProgramsSyncLocal: normalizeText(snapshot.lastProgramsSyncLocal),
+        datasetDate: normalizeText(snapshot.datasetDate),
       },
       namedCourseOptions: window.listNamedCourseOptions_(),
       electiveCourseOptions:
@@ -247,6 +256,8 @@
       manualElectives: manualElectives,
       avgRules: avgRules,
       electiveRuleOverrides: electiveRuleOverrides,
+      datasetDate: normalizeText(snapshot.datasetDate) || new Date().toISOString(),
+      staleDaysCap: Number(snapshot.confidenceStaleDays || 60),
     });
 
     var generatedAt = new Date().toISOString();
@@ -265,6 +276,7 @@
         rowKeyVersion: "v1",
         datasetStamp: datasetStamp,
         datasetStampVersion: "offline",
+        datasetDate: normalizeText(snapshot.datasetDate),
         cacheHit: false,
         lastProgramsSyncUtc: normalizeText(snapshot.lastProgramsSyncUtc),
         lastProgramsSyncLocal: normalizeText(snapshot.lastProgramsSyncLocal),

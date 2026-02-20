@@ -5,7 +5,8 @@ This is the only guide a coworker should need.
 ## 1) What this system does
 - Takes student marks entered in Google Sheets.
 - Compares them to program requirements.
-- Produces `Eligible`, `Ineligible`, and `Uncheckable` lists.
+- Produces advisory results: `Likely eligible`, `Likely ineligible`, and `Uncheckable`.
+- Always treat results as snapshot guidance, not final admission decisions.
 
 ## 2) Who does what
 - Checker user (most staff): uses either Google Sheets menu flow or the web app link.
@@ -21,9 +22,12 @@ This is the only guide a coworker should need.
    - Optional electives in `D:F`
 4. Run: `Admissions Checker -> Check Eligibility`.
 5. Read outputs:
-   - `Eligible`: no missing requirements
-   - `Ineligible`: missing requirements shown in `Missing`
+   - `Likely eligible`: no missing requirements in snapshot checks
+   - `Likely ineligible`: missing requirements shown in `Missing`
    - `Uncheckable`: rules not fully checkable from current dataset
+   - `confidence`: `High`, `Medium`, `Low`, or `Uncheckable`
+6. (Optional) Pin programs in `Results` using the `Pin` checkbox.
+7. Generate planning sheet: `Admissions Checker -> Generate Program Comparison Sheet (Pinned)`.
 
 After lockdown, staff should normally work only in:
 - `Student`
@@ -38,14 +42,25 @@ After lockdown, staff should normally work only in:
 3. Optional: enter elective overrides (course + group + mark).
 4. Click `Check Eligibility`.
 5. Review categories:
-   - `Eligible`
-   - `Missing`
+   - `Likely eligible`
+   - `Likely ineligible`
    - `Uncheckable`
+   - Snapshot banner + data date are always visible on results.
+   - Non-High confidence rows show a warning and a prominent program source link.
 6. Export if needed:
    - `Export CSV` (all program rows)
    - `Export PDF` (current view)
+   - `Generate Program Comparison Sheet (Pinned)` for pinned rows
 
-## 4) Data maintainer workflow (local)
+## 4) Confidence guide (high-level)
+- `High`: structured fields are complete, source link exists, no known ambiguity patterns, and data is fresh.
+- `Medium`: usable snapshot, but at least one caution (for example stale data or extra manual-review requirement).
+- `Low`: stronger caution (for example missing source link or multiple completeness limits).
+- `Uncheckable`: known ambiguity/inheritance language means manual review is required.
+
+For non-High confidence, confirm details on official program websites before decisions.
+
+## 5) Data maintainer workflow (local)
 Use this only when you need updated Programs or ElectiveRules in Sheets.
 
 1. Open PowerShell in project root.
@@ -61,12 +76,12 @@ Fast publish-only option (skip scrape/enrichment):
 .\SYNC_ALL.cmd
 ```
 
-## 5) What people should NOT use day to day
+## 6) What people should NOT use day to day
 - Do not run individual scripts under `tools/` unless you are the maintainer.
 - Do not edit Apps Script code unless you are updating logic.
 - Do not hand-edit `Programs` tab if you plan to sync from local (sync can overwrite it).
 
-## 6) Common issues
+## 7) Common issues
 - `Programs tab is empty`: run `REFRESH_ALL.cmd` or `SYNC_ALL.cmd` (maintainer) or import canonical CSV into `Programs`.
 - Missing menu items: reload the sheet.
 - Group dropdowns missing in `Student D:F`: run `One-Time Setup (Recommended)` again.
@@ -74,3 +89,4 @@ Fast publish-only option (skip scrape/enrichment):
 - `Admin action blocked. Run this as sheet owner (...)`: only the sheet owner can run admin menu actions.
 - Sync overwrote a tab unexpectedly: use backup tab (for example `Programs_BACKUP`) created by sync.
 - `Cannot call SpreadsheetApp.getUi() from this context`: you ran `onOpen` from the Apps Script editor. Do not run `onOpen` manually; open/reload the spreadsheet tab instead.
+- No rows in Program Comparison output: at least one row in `Results` must have `Pin` checked.

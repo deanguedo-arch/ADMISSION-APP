@@ -205,6 +205,80 @@ function toNumber_(v) {
   return isFinite(n) ? n : NaN;
 }
 
+function normalizeDateYmd_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(value.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const isoDirect = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (isoDirect) return `${isoDirect[1]}-${isoDirect[2]}-${isoDirect[3]}`;
+
+  const isoDatePrefix = /^(\d{4})-(\d{2})-(\d{2})[T\s]/.exec(raw);
+  if (isoDatePrefix) return `${isoDatePrefix[1]}-${isoDatePrefix[2]}-${isoDatePrefix[3]}`;
+
+  const mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(raw);
+  if (mdy) {
+    const month = String(Math.max(1, Math.min(12, Number(mdy[1])))).padStart(2, "0");
+    const day = String(Math.max(1, Math.min(31, Number(mdy[2])))).padStart(2, "0");
+    return `${mdy[3]}-${month}-${day}`;
+  }
+
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) return "";
+  const y = parsed.getUTCFullYear();
+  const m = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function resolveDatasetDateFromPrograms_(programsRange, fallbackDateValue) {
+  const fallback = normalizeDateYmd_(fallbackDateValue);
+  if (!programsRange || programsRange.length < 2) return fallback;
+
+  const header = (programsRange[0] || []).map((x) => String(x || ""));
+  const idx = indexHeader_(header);
+  const candidates = [
+    "dataset_date",
+    "captured_date",
+    "capture_date",
+    "data_date",
+    "last_updated",
+    "last_updated_utc",
+    "refresh_date",
+  ];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const col = idx[candidates[i]];
+    if (col === undefined) continue;
+    for (let r = 1; r < programsRange.length; r++) {
+      const ymd = normalizeDateYmd_(programsRange[r][col]);
+      if (ymd) return ymd;
+    }
+  }
+
+  return fallback;
+}
+
+function calculateDatasetAgeDays_(datasetDateYmd, nowDate) {
+  const ymd = normalizeDateYmd_(datasetDateYmd);
+  if (!ymd) return NaN;
+
+  const d = new Date(`${ymd}T00:00:00Z`);
+  if (isNaN(d.getTime())) return NaN;
+  const now = nowDate instanceof Date ? nowDate : new Date();
+  if (isNaN(now.getTime())) return NaN;
+
+  const deltaMs = now.getTime() - d.getTime();
+  if (!isFinite(deltaMs)) return NaN;
+  return Math.max(0, Math.floor(deltaMs / 86400000));
+}
+
 function canonKey_(s) {
   return String(s || "")
     .trim()

@@ -23,6 +23,7 @@ function onOpen() {
     const menu = ui
       .createMenu("Admissions Checker")
       .addItem("Check Eligibility", "runEligibility_")
+      .addItem("Generate Program Comparison Sheet (Pinned)", "generateProgramComparisonSheetFromPinned_")
       .addItem("One-Time Setup (Recommended)", "setupWorkbookForStaff_")
       .addItem("Setup Student Elective Dropdowns", "setupStudentElectiveInputs_")
       .addItem("Setup ElectiveRules Template", "setupElectiveRulesTemplate_")
@@ -80,6 +81,7 @@ const WEBAPP_RESULT_CACHE_MAX_CHARS = 95000;
 const WEBAPP_DATASET_STAMP_VERSION = "v1";
 const WEBAPP_AUDIT_SHEET_NAME = "WebAudit";
 const WEBAPP_AUDIT_MAX_DATA_ROWS = 2000;
+const CONFIDENCE_STALE_DAYS_DEFAULT = 60;
 const LAST_PROGRAMS_SYNC_UTC_PROPERTY = "LAST_PROGRAMS_SYNC_UTC";
 const LAST_PROGRAMS_SYNC_LOCAL_PROPERTY = "LAST_PROGRAMS_SYNC_LOCAL";
 const RESULTS_HEADER_ROW = [
@@ -93,6 +95,14 @@ const RESULTS_HEADER_ROW = [
   "Competitive Guidance",
   "Missing",
   "Notes",
+  "snapshot_result",
+  "confidence",
+  "why_text",
+  "uncheckable_reason",
+  "next_step",
+  "source_url",
+  "dataset_date",
+  "program_key",
 ];
 
 function onEdit(e) {
@@ -184,6 +194,11 @@ function runEligibility_() {
     .getRange(MANUAL_ELECTIVE_START_ROW, MANUAL_ELECTIVE_COL, MANUAL_ELECTIVE_SLOTS, MANUAL_ELECTIVE_WIDTH)
     .getValues();
   const manualElectives = buildElectives_(electivesRows, { source: "manual", rowOffset: MANUAL_ELECTIVE_START_ROW });
+  const syncFallback = String(
+    PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+  ).trim();
+  const datasetDate = resolveDatasetDateFromPrograms_(programsRange, syncFallback || new Date().toISOString());
+  const pinnedByProgramKey = readPinnedProgramKeysFromSheet_(resultsSheet);
 
   if (Object.keys(courseMap).length === 0 && manualElectives.length === 0) {
     const manualRange = `D${MANUAL_ELECTIVE_START_ROW}:F${MANUAL_ELECTIVE_START_ROW + MANUAL_ELECTIVE_SLOTS - 1}`;
@@ -196,9 +211,14 @@ function runEligibility_() {
     manualElectives,
     avgRules,
     electiveRuleOverrides,
+    datasetDate,
+    staleDaysCap: CONFIDENCE_STALE_DAYS_DEFAULT,
   });
 
-  writeResultRowsToSheet_(resultsSheet, evaluation.finalOut);
+  writeResultRowsToSheet_(resultsSheet, evaluation.finalOut, {
+    enablePins: true,
+    pinnedByProgramKey,
+  });
   writeResultRowsToSheet_(eligibleSheet, evaluation.eligibleRows);
   writeResultRowsToSheet_(ineligibleSheet, evaluation.ineligibleRows);
   writeResultRowsToSheet_(uncheckableSheet, evaluation.uncheckableRows);
@@ -275,6 +295,10 @@ function runWebEligibility(payload) {
   if (!programsRange || programsRange.length < 2) {
     throw new Error("Admissions data is empty. Refresh the Programs tab, then try again.");
   }
+  const syncFallback = String(
+    PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+  ).trim();
+  const datasetDate = resolveDatasetDateFromPrograms_(programsRange, syncFallback || new Date().toISOString());
 
   const avgRules = readAvgRules_(ss);
   const electiveRuleOverrides = readElectiveRuleOverrides_(ss);
@@ -359,9 +383,17 @@ function runWebEligibility(payload) {
         "Uncheckable",
         "Cache_Hit",
         "Dataset_Stamp",
+        "Data_Date",
       ];
 
-      if (sheet.getLastRow() < 1) {
+      const existingHeader =
+        sheet.getLastRow() >= 1
+          ? sheet.getRange(1, 1, 1, header.length).getValues()[0]
+          : [];
+      const headerMatches = header.every(
+        (h, i) => String((existingHeader[i] === undefined || existingHeader[i] === null) ? "" : existingHeader[i]).trim() === h
+      );
+      if (sheet.getLastRow() < 1 || !headerMatches) {
         sheet.getRange(1, 1, 1, header.length).setValues([header]);
         sheet.setFrozenRows(1);
       }
@@ -375,6 +407,7 @@ function runWebEligibility(payload) {
         Math.max(0, Number(summary.uncheckable || 0)),
         payloadObj.cacheHit ? "yes" : "no",
         String(payloadObj.datasetStamp || ""),
+        String(payloadObj.datasetDate || ""),
       ]);
 
       const dataRows = Math.max(0, sheet.getLastRow() - 1);
@@ -402,6 +435,7 @@ function runWebEligibility(payload) {
               rowKeyVersion: String(cachedMeta.rowKeyVersion || "v1"),
               datasetStamp,
               datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
+              datasetDate,
                cacheHit: true,
                lastProgramsSyncUtc: String(
                  PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
@@ -432,6 +466,7 @@ function runWebEligibility(payload) {
           summary: responseFromCache.summary,
           cacheHit: true,
           datasetStamp,
+          datasetDate,
         });
         return responseFromCache;
       }
@@ -446,6 +481,8 @@ function runWebEligibility(payload) {
     manualElectives,
     avgRules,
     electiveRuleOverrides,
+    datasetDate,
+    staleDaysCap: CONFIDENCE_STALE_DAYS_DEFAULT,
   });
 
   const generatedAt = new Date().toISOString();
@@ -459,6 +496,7 @@ function runWebEligibility(payload) {
       rowKeyVersion: "v1",
       datasetStamp,
       datasetStampVersion: WEBAPP_DATASET_STAMP_VERSION,
+      datasetDate,
        cacheHit: false,
        lastProgramsSyncUtc: String(
          PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
@@ -502,6 +540,7 @@ function runWebEligibility(payload) {
     summary: response.summary,
     cacheHit: false,
     datasetStamp,
+    datasetDate,
   });
 
   return response;

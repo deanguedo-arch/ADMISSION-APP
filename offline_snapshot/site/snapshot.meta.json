@@ -1,6 +1,7 @@
 {
-  "built_at_utc": "2026-02-20T15:24:02.819928Z",
+  "built_at_utc": "2026-02-20T17:10:14.973408Z",
   "dataset_stamp": "offline_e7c13f3a970362e4d84dea62",
+  "dataset_date": "2026-02-19",
   "dataset_hash_sha256": "e7c13f3a970362e4d84dea625d5b2a20c9e64d0a14c410871d5c7ad917cf3b3c",
   "canonical_source_path": "data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv",
   "row_count_total": 300,

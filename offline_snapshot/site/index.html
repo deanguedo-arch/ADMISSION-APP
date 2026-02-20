@@ -344,6 +344,27 @@
         margin-bottom: 10px;
       }
 
+      .snapshot-banner {
+        border: 1px solid #cfe0d8;
+        border-radius: 10px;
+        background: #f6fbf8;
+        padding: 9px 10px;
+        margin-bottom: 10px;
+        display: grid;
+        gap: 4px;
+      }
+
+      .snapshot-banner-title {
+        font-size: 0.84rem;
+        color: #1f4f3f;
+        font-weight: 700;
+      }
+
+      .snapshot-banner-date {
+        font-size: 0.82rem;
+        color: #375b4d;
+      }
+
       .stat {
         border-radius: 10px;
         padding: 8px;
@@ -596,6 +617,73 @@
         color: #435750;
       }
 
+      .card-warning {
+        border: 1px solid #d9e5df;
+        border-radius: 8px;
+        padding: 6px 8px;
+        font-size: 0.79rem;
+        line-height: 1.35;
+        background: #f9fcfb;
+        color: #355449;
+      }
+
+      .card-warning.medium {
+        border-color: #d7c892;
+        background: #fff9eb;
+        color: #6f5300;
+      }
+
+      .card-warning.low {
+        border-color: #e5b5ad;
+        background: #fff2f0;
+        color: #7f342b;
+      }
+
+      .card-warning.uncheckable {
+        border-color: #b7d2ea;
+        background: #edf5fd;
+        color: #184e82;
+      }
+
+      .card-warning-title {
+        font-weight: 700;
+      }
+
+      .card-warning-reasons {
+        margin: 4px 0 0 16px;
+        padding: 0;
+      }
+
+      .source-link-inline {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #c8ddd3;
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: #1d5742;
+        background: #f3faf6;
+        text-decoration: none;
+      }
+
+      .source-link-inline.prominent {
+        border-color: #c0841e;
+        background: #fff5df;
+        color: #7a5300;
+      }
+
+      .source-link-inline:hover {
+        border-color: #9cc8b6;
+        background: #eaf6f0;
+      }
+
+      .source-link-missing {
+        font-size: 0.78rem;
+        color: #7f342b;
+        font-weight: 700;
+      }
+
       .card-actions {
         display: flex;
         flex-wrap: wrap;
@@ -783,6 +871,12 @@
         background: #eaf6f0;
       }
 
+      .detail-link.prominent {
+        border-color: #c0841e;
+        background: #fff5df;
+        color: #7a5300;
+      }
+
       .detail-link-missing {
         font-size: 0.78rem;
         color: #63756f;
@@ -793,6 +887,33 @@
         border-radius: 10px;
         padding: 8px;
         background: #fff;
+      }
+
+      .detail-warning {
+        border: 1px solid #d9e5df;
+        border-radius: 10px;
+        padding: 8px;
+        background: #f9fcfb;
+        display: grid;
+        gap: 4px;
+      }
+
+      .detail-warning.medium {
+        border-color: #d7c892;
+        background: #fff9eb;
+        color: #6f5300;
+      }
+
+      .detail-warning.low {
+        border-color: #e5b5ad;
+        background: #fff2f0;
+        color: #7f342b;
+      }
+
+      .detail-warning.uncheckable {
+        border-color: #b7d2ea;
+        background: #edf5fd;
+        color: #184e82;
       }
 
       .meaning-panel h4 {
@@ -1330,17 +1451,22 @@
             </button>
           </div>
 
+          <div class="snapshot-banner" id="snapshotBanner">
+            <div class="snapshot-banner-title">Snapshot (advisory) - verify on institution site for final decisions</div>
+            <div class="snapshot-banner-date" id="snapshotDataDate">Data date: n/a</div>
+          </div>
+
           <div class="summary">
             <div class="stat neutral">
               <div class="label">Programs Checked</div>
               <div class="value" id="sumTotal">0</div>
             </div>
             <div class="stat good">
-              <div class="label">Eligible</div>
+              <div class="label">Likely eligible</div>
               <div class="value" id="sumEligible">0</div>
             </div>
             <div class="stat warn">
-              <div class="label">Missing</div>
+              <div class="label">Likely ineligible</div>
               <div class="value" id="sumMissing">0</div>
             </div>
             <div class="stat neutral">
@@ -1351,8 +1477,8 @@
 
           <div class="result-toolbar">
             <div class="tab-group" id="filterGroup" role="tablist" aria-label="Result views">
-              <button class="filter-btn active" type="button" data-view="ineligible">Missing <span class="tab-count" id="tabCountIneligible">0</span></button>
-              <button class="filter-btn" type="button" data-view="eligible">Eligible <span class="tab-count" id="tabCountEligible">0</span></button>
+              <button class="filter-btn active" type="button" data-view="ineligible">Likely ineligible <span class="tab-count" id="tabCountIneligible">0</span></button>
+              <button class="filter-btn" type="button" data-view="eligible">Likely eligible <span class="tab-count" id="tabCountEligible">0</span></button>
               <button class="filter-btn" type="button" data-view="uncheckable">Uncheckable <span class="tab-count" id="tabCountUncheckable">0</span></button>
               <button class="filter-btn" type="button" data-view="shortlist">Shortlist <span class="tab-count" id="tabCountShortlist">0</span></button>
               <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
@@ -1391,6 +1517,9 @@
           <div class="compare-strip" id="compareStrip">
             <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
           </div>
+          <div class="actions">
+            <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
+          </div>
 
           <div class="compare-results is-empty" id="compareResults">
             <div class="ghost">Select at least 2 programs to compare.</div>
@@ -1423,6 +1552,7 @@
         selectedProgramKey: "",
         compareKeys: [],
         compareViewMode: "side",
+        electiveRulesCollapsed: false,
         inputsCollapsed: false,
         resultFilters: {
           query: "",
@@ -1442,6 +1572,8 @@
         toggleInputsBtn: document.getElementById("toggleInputsBtn"),
         showInputsBtn: document.getElementById("showInputsBtn"),
         stamp: document.getElementById("stamp"),
+        snapshotBanner: document.getElementById("snapshotBanner"),
+        snapshotDataDate: document.getElementById("snapshotDataDate"),
         authLine: document.getElementById("authLine"),
         googleSignIn: document.getElementById("googleSignIn"),
         status: document.getElementById("status"),
@@ -1474,6 +1606,7 @@
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
         compareStrip: document.getElementById("compareStrip"),
+        pinnedComparisonBtn: document.getElementById("pinnedComparisonBtn"),
         compareResults: document.getElementById("compareResults"),
         detailsDrawer: document.getElementById("detailsDrawer"),
       };
@@ -1496,6 +1629,7 @@ function boot() {
           );
           ui.stamp.textContent = "Standalone preview (no backend)";
           ui.authLine.textContent = "Not connected to Apps Script backend.";
+          updateSnapshotBannerDate_("");
           return;
         }
         loadPublicBootstrap();
@@ -1574,6 +1708,7 @@ function boot() {
         const stamp = formatUtcStamp(state.boot.generatedAt || "");
         ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
         ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
+        updateSnapshotBannerFromBoot_(state.boot);
         setStatus("Ready.");
       }
 
@@ -1642,11 +1777,13 @@ function boot() {
         state.resultFilters.institution = "";
         state.resultFilters.credential = "";
         state.resultFilters.sort = DEFAULT_RESULT_SORT;
+        state.electiveRulesCollapsed = false;
         ui.csvBtn.disabled = true;
         ui.pdfBtn.disabled = true;
         syncResultControls();
         populateResultFilterOptions();
         updateSummary({ totalPrograms: 0, eligible: 0, missing: 0, uncheckable: 0 });
+        updateSnapshotBannerFromBoot_(state.boot);
         renderResults();
         renderCompareStrip();
         renderCompareResults();
@@ -2209,6 +2346,7 @@ function boot() {
         ui.pdfBtn.disabled = !state.result;
         updateSummary((state.result && state.result.summary) || {});
         updateHeaderStampFromResult();
+        updateSnapshotBannerFromResult_();
         updateFilterCounts();
         syncFilterButtons();
         renderResults();
@@ -2229,6 +2367,14 @@ function boot() {
           "Competitive Guidance",
           "Missing",
           "Notes",
+          "snapshot_result",
+          "confidence",
+          "why_text",
+          "uncheckable_reason",
+          "next_step",
+          "source_url",
+          "dataset_date",
+          "program_key",
         ];
         const totalInputs = (payload.namedCourses || []).length + (payload.manualElectives || []).length;
         const avg =
@@ -2238,6 +2384,9 @@ function boot() {
                 .reduce((sum, r) => sum + Number(r.mark || 0), 0) / totalInputs
             : 0;
         const studentAvg = Number(avg.toFixed(1));
+        const k1 = "mock_macewan_ba";
+        const k2 = "mock_nait_business";
+        const k3 = "mock_ualberta_music";
         const eligibleRow = [
           "MacEwan",
           "Bachelor of Arts Undeclared",
@@ -2249,6 +2398,14 @@ function boot() {
           "",
           "",
           "",
+          "Likely eligible",
+          "High",
+          "",
+          "",
+          "",
+          "https://calendar.macewan.ca/programs/degree-programs/bachelor-of-arts/",
+          "2026-02-10",
+          k1,
         ];
         const missingRow = [
           "NAIT",
@@ -2261,6 +2418,14 @@ function boot() {
           "",
           "Need 1 more elective mark(s) for average",
           "",
+          "Likely ineligible",
+          "Low",
+          "Source link missing in snapshot data. | Average course-count uses a default assumption.",
+          "",
+          "",
+          "Source link missing",
+          "2026-02-10",
+          k2,
         ];
         const uncheckableRow = [
           "UAlberta",
@@ -2273,10 +2438,15 @@ function boot() {
           "",
           "",
           "Other requirements: audition",
+          "Uncheckable",
+          "Uncheckable",
+          "",
+          "Requirements reference another degree/department page and cannot be checked deterministically from the snapshot.",
+          "Open the official program page and confirm exact prerequisites, average method, and department-level requirements.",
+          "https://www.ualberta.ca/en/music/programs/undergraduate-programs/bachelor-of-music.html",
+          "2026-02-10",
+          k3,
         ];
-        const k1 = "mock_macewan_ba";
-        const k2 = "mock_nait_business";
-        const k3 = "mock_ualberta_music";
         return {
           generatedAt: new Date().toISOString(),
           headers,
@@ -2287,6 +2457,7 @@ function boot() {
             rowKeyVersion: "v1",
             datasetStamp: "v1_mock_20260210",
             datasetStampVersion: "v1",
+            datasetDate: "2026-02-10",
             cacheHit: false,
           },
           summary: {
@@ -2307,6 +2478,14 @@ function boot() {
               program: "Bachelor of Arts Undeclared",
               credential: "Degree",
               programUrl: "https://calendar.macewan.ca/programs/degree-programs/bachelor-of-arts/",
+              snapshotResult: "Likely eligible",
+              confidence: "High",
+              why: [],
+              whyText: "",
+              uncheckableReason: "",
+              nextStep: "",
+              warning: { level: "high", text: "", reasons: [], reason: "", nextStep: "" },
+              datasetDate: "2026-02-10",
               requirements: [
                 { label: "English", status: "met", requirement: "English 30-1 OR English 30-2", matched: "English 30-1=82", issues: [] },
               ],
@@ -2320,7 +2499,21 @@ function boot() {
               institution: "NAIT",
               program: "Business Administration Diploma",
               credential: "Diploma",
-              programUrl: "https://www.nait.ca/programs",
+              programUrl: "",
+              snapshotResult: "Likely ineligible",
+              confidence: "Low",
+              why: ["Source link missing in snapshot data."],
+              whyText: "Source link missing in snapshot data.",
+              uncheckableReason: "",
+              nextStep: "",
+              warning: {
+                level: "low",
+                text: "Low confidence - verify on program website",
+                reasons: ["Source link missing in snapshot data."],
+                reason: "",
+                nextStep: "",
+              },
+              datasetDate: "2026-02-10",
               requirements: [],
               average: { min: 70, student: "", totalCourses: 5, usedCourses: 1, complete: false, meetsMinimum: false, neededElectivesForAverage: 1 },
               electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
@@ -2333,6 +2526,24 @@ function boot() {
               program: "Bachelor of Music",
               credential: "Degree",
               programUrl: "https://www.ualberta.ca/en/music/programs/undergraduate-programs/bachelor-of-music.html",
+              snapshotResult: "Uncheckable",
+              confidence: "Uncheckable",
+              why: [],
+              whyText: "",
+              uncheckableReason:
+                "Requirements reference another degree/department page and cannot be checked deterministically from the snapshot.",
+              nextStep:
+                "Open the official program page and confirm exact prerequisites, average method, and department-level requirements.",
+              warning: {
+                level: "uncheckable",
+                text: "Uncheckable - manual review required",
+                reasons: [],
+                reason:
+                  "Requirements reference another degree/department page and cannot be checked deterministically from the snapshot.",
+                nextStep:
+                  "Open the official program page and confirm exact prerequisites, average method, and department-level requirements.",
+              },
+              datasetDate: "2026-02-10",
               requirements: [],
               average: { min: 75, student: studentAvg, totalCourses: 5, usedCourses: 5, complete: true, meetsMinimum: true, neededElectivesForAverage: 0 },
               electives: { allowedGroups: ["A", "B", "C", "D"], ruleSummary: "", selected: [] },
@@ -2368,6 +2579,7 @@ function boot() {
         seedRows();
         ui.stamp.textContent = "Mock mode";
         ui.authLine.textContent = "Local preview mode (no real student data is sent).";
+        updateSnapshotBannerDate_("2026-02-10");
         setStatus("Mock mode enabled. UI changes can be tested locally.");
       }
 
@@ -2383,6 +2595,21 @@ function boot() {
         return iso ? iso.replace("T", " ").replace("Z", " UTC") : "";
       }
 
+      function toYmdDate_(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        const direct = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (direct) return `${direct[1]}-${direct[2]}-${direct[3]}`;
+        const isoPrefix = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T\s]/);
+        if (isoPrefix) return `${isoPrefix[1]}-${isoPrefix[2]}-${isoPrefix[3]}`;
+        const parsed = new Date(raw);
+        if (!(parsed instanceof Date) || Number.isNaN(parsed.getTime())) return "";
+        const y = parsed.getUTCFullYear();
+        const m = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+        const d = String(parsed.getUTCDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
       function getResultMeta() {
         if (!(state.resultModel && state.resultModel.meta && typeof state.resultModel.meta === "object")) return {};
         return state.resultModel.meta;
@@ -2390,6 +2617,36 @@ function boot() {
 
       function getResultDatasetStamp() {
         return String((getResultMeta().datasetStamp || "")).trim();
+      }
+
+      function getResultDatasetDate() {
+        const meta = getResultMeta();
+        const fromMeta = toYmdDate_(meta.datasetDate || "");
+        if (fromMeta) return fromMeta;
+        const rows = (state.resultModel && state.resultModel.rows) || [];
+        for (let i = 0; i < rows.length; i++) {
+          const ymd = toYmdDate_(rows[i] && rows[i].datasetDate);
+          if (ymd) return ymd;
+        }
+        return "";
+      }
+
+      function updateSnapshotBannerDate_(datasetDate) {
+        if (!ui.snapshotDataDate) return;
+        const ymd = toYmdDate_(datasetDate || "");
+        ui.snapshotDataDate.textContent = `Data date: ${ymd || "n/a"}`;
+      }
+
+      function updateSnapshotBannerFromBoot_(bootData) {
+        const boot = bootData && typeof bootData === "object" ? bootData : {};
+        const dataset = boot.dataset && typeof boot.dataset === "object" ? boot.dataset : {};
+        const dateFromBoot = toYmdDate_(dataset.lastProgramsSyncUtc || dataset.lastProgramsSyncLocal || "");
+        updateSnapshotBannerDate_(dateFromBoot);
+      }
+
+      function updateSnapshotBannerFromResult_() {
+        if (!state.result) return;
+        updateSnapshotBannerDate_(getResultDatasetDate());
       }
 
       function updateHeaderStampFromResult() {
@@ -2531,7 +2788,7 @@ function boot() {
           if (state.view === "shortlist" && countShortlistRows() === 0) {
             state.view = "ineligible";
             syncFilterButtons();
-            setStatus("Shortlist is empty. Showing Missing view.");
+            setStatus("Shortlist is empty. Showing likely ineligible view.");
           }
           updateFilterCounts();
           renderResults();
@@ -2561,6 +2818,9 @@ function boot() {
           renderDetailsDrawer();
           return;
         }
+
+        const sourceLink = e.target && e.target.closest("a[data-source-link]");
+        if (sourceLink) return;
 
         const rowEl = e.target && e.target.closest(".result-card[data-row-key]");
         if (!rowEl) return;
@@ -2662,6 +2922,13 @@ function boot() {
         renderCompareResults();
       }
 
+      function onDetailsDrawerToggle(e) {
+        const target = e && e.target;
+        if (!(target instanceof HTMLDetailsElement)) return;
+        if (!target.hasAttribute("data-elective-rules")) return;
+        state.electiveRulesCollapsed = !target.open;
+      }
+
       function renderResults() {
         if (!state.result || !state.resultModel) {
           ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
@@ -2699,8 +2966,13 @@ function boot() {
             const isPinned = !!state.shortlist[row.key];
             const isSelected = row.key === state.selectedProgramKey;
             const isCompared = state.compareKeys.indexOf(row.key) >= 0;
+            const detail = getProgramDetailsForRow(row);
+            const confidence = normalizeConfidence_(detail.confidence || row.confidence);
             const status = rowStatusForDisplay_(row);
             const reason = rowReasonForDisplay_(row, status);
+            const warning = buildWarningDisplay_(detail, confidence);
+            const warningHtml = renderWarningHtml_(warning, "card-warning");
+            const sourceLinkHtml = renderSourceLinkInline_(detail, confidence);
             const pinClass = isPinned ? "pin-btn active" : "pin-btn";
             const compareClass = isCompared ? "action-btn active" : "action-btn";
             const viewClass = isSelected ? "action-btn active" : "action-btn";
@@ -2728,6 +3000,7 @@ function boot() {
                   </div>
                   <div class="card-metrics">
                     <span class="metric-pill">Min Avg: ${escapeHtml(Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a")}</span>
+                    <span class="metric-pill">Confidence: ${escapeHtml(confidence)}</span>
                     <span class="status-pill ${escapeAttr(status.css)}">${escapeHtml(status.label)}</span>
                     <div class="student-avg-block ${escapeAttr(avgToneClass)}">
                       <div class="student-avg-label">Student Avg Used</div>
@@ -2736,7 +3009,9 @@ function boot() {
                   </div>
                 </div>
                 <div class="card-reason">${escapeHtml(reason)}</div>
+                ${warningHtml}
                 <div class="card-actions">
+                  ${sourceLinkHtml}
                   <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
                   <button class="${compareClass}" type="button" data-compare-key="${escapeAttr(row.key)}">${compareLabel}</button>
                   <button class="${viewClass}" type="button" data-detail-key="${escapeAttr(row.key)}">${viewLabel}</button>
@@ -2753,9 +3028,12 @@ function boot() {
       }
 
       function rowStatusForDisplay_(row) {
-        if (row && row.viewFlags && row.viewFlags.ineligible) return { label: "Missing", css: "missing" };
-        if (row && row.viewFlags && row.viewFlags.uncheckable) return { label: "Uncheckable", css: "uncheckable" };
-        return { label: "Eligible", css: "eligible" };
+        const confidence = normalizeConfidence_(row && row.confidence);
+        if (confidence === "Uncheckable" || (row && row.viewFlags && row.viewFlags.uncheckable)) {
+          return { label: "Uncheckable", css: "uncheckable" };
+        }
+        if (row && row.viewFlags && row.viewFlags.ineligible) return { label: "Likely ineligible", css: "missing" };
+        return { label: "Likely eligible", css: "eligible" };
       }
 
       function rowReasonForDisplay_(row, status) {
@@ -2766,13 +3044,97 @@ function boot() {
         }
         if (rowStatus.css === "uncheckable") {
           const detail = getProgramDetailsForRow(row);
-          const advisories = Array.isArray(detail.advisories) ? detail.advisories.filter(Boolean) : [];
-          const notes = Array.isArray(detail.notes) ? detail.notes.filter(Boolean) : [];
-          return advisories[0] || notes[0] || "Program has additional requirements not fully checkable here.";
+          return detail.uncheckableReason || "Program has additional requirements not fully checkable here.";
         }
         const detail = getProgramDetailsForRow(row);
         const advisories = Array.isArray(detail.advisories) ? detail.advisories.filter(Boolean) : [];
         return advisories[0] || "Meets marks-based checks.";
+      }
+
+      function normalizeConfidence_(value) {
+        const t = String(value || "").trim().toLowerCase();
+        if (t === "high") return "High";
+        if (t === "medium") return "Medium";
+        if (t === "low") return "Low";
+        if (t === "uncheckable") return "Uncheckable";
+        return "Medium";
+      }
+
+      function buildWarningDisplay_(detail, confidenceValue) {
+        const confidence = normalizeConfidence_(confidenceValue);
+        if (detail && detail.warning && typeof detail.warning === "object") {
+          const fromBackend = detail.warning;
+          if (fromBackend.level && fromBackend.text !== undefined) {
+            return {
+              level: String(fromBackend.level || "").trim(),
+              text: String(fromBackend.text || "").trim(),
+              reasons: (Array.isArray(fromBackend.reasons) ? fromBackend.reasons : [])
+                .map((x) => String(x || "").trim())
+                .filter(Boolean),
+              reason: String(fromBackend.reason || "").trim(),
+              nextStep: String(fromBackend.nextStep || "").trim(),
+            };
+          }
+        }
+
+        const why = (Array.isArray(detail && detail.why) ? detail.why : []).map((x) => String(x || "").trim()).filter(Boolean);
+        if (confidence === "High") return { level: "high", text: "", reasons: [], reason: "", nextStep: "" };
+        if (confidence === "Medium") {
+          return {
+            level: "medium",
+            text: "Advisory - verify on program website",
+            reasons: why.slice(0, 1),
+            reason: "",
+            nextStep: "",
+          };
+        }
+        if (confidence === "Low") {
+          return {
+            level: "low",
+            text: "Low confidence - verify on program website",
+            reasons: why.slice(0, 3),
+            reason: "",
+            nextStep: "",
+          };
+        }
+        return {
+          level: "uncheckable",
+          text: "Uncheckable - manual review required",
+          reasons: [],
+          reason: String((detail && detail.uncheckableReason) || "").trim(),
+          nextStep: String((detail && detail.nextStep) || "").trim(),
+        };
+      }
+
+      function renderWarningHtml_(warning, baseClass) {
+        const item = warning && typeof warning === "object" ? warning : {};
+        const level = String(item.level || "").trim();
+        if (!level || level === "high") return "";
+        const css = `${baseClass || "card-warning"} ${escapeAttr(level)}`;
+        const text = String(item.text || "").trim();
+        const reasons = (Array.isArray(item.reasons) ? item.reasons : []).map((x) => String(x || "").trim()).filter(Boolean);
+        const reason = String(item.reason || "").trim();
+        const nextStep = String(item.nextStep || "").trim();
+        const reasonsHtml = reasons.length
+          ? `<ul class="card-warning-reasons">${reasons.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+          : "";
+        const uncheckableHtml =
+          level === "uncheckable"
+            ? `<div>${escapeHtml(reason || "Manual review required.")}</div>${
+                nextStep ? `<div><strong>Next step:</strong> ${escapeHtml(nextStep)}</div>` : ""
+              }`
+            : "";
+        return `<div class="${css}"><div class="card-warning-title">${escapeHtml(text)}</div>${reasonsHtml}${uncheckableHtml}</div>`;
+      }
+
+      function renderSourceLinkInline_(detail, confidenceValue) {
+        const confidence = normalizeConfidence_(confidenceValue);
+        const programUrl = normalizeHttpUrl_((detail && detail.programUrl) || "");
+        if (!programUrl) return `<span class="source-link-missing">Source link missing</span>`;
+        const prominent = confidence === "High" ? "" : " prominent";
+        return `<a class="source-link-inline${prominent}" data-source-link="1" href="${escapeAttr(
+          programUrl
+        )}" target="_blank" rel="noopener noreferrer">Program Link</a>`;
       }
 
       function renderCompareStrip() {
@@ -3076,10 +3438,14 @@ function boot() {
 
       function renderSingleProgramDetails_(row) {
         const detail = getProgramDetailsForRow(row);
-        const programUrl = normalizeHttpUrl_(detail.programUrl);
+        const confidence = normalizeConfidence_(detail.confidence || row.confidence);
+        const warning = buildWarningDisplay_(detail, confidence);
+        const warningHtml = renderWarningHtml_(warning, "detail-warning");
+        const programUrl = normalizeHttpUrl_(detail.programUrl || row.sourceUrl);
         const missing = (Array.isArray(detail.missingReasons) ? detail.missingReasons : []).filter(Boolean);
         const notes = (Array.isArray(detail.notes) ? detail.notes : []).filter(Boolean);
         const advisories = (Array.isArray(detail.advisories) ? detail.advisories : []).filter(Boolean);
+        const why = (Array.isArray(detail.why) ? detail.why : []).filter(Boolean);
         const requirementLines = (Array.isArray(detail.requirements) ? detail.requirements : [])
           .map((req) => {
             const status = normalizeReqStatus(req.status);
@@ -3133,12 +3499,25 @@ function boot() {
         const selectedElectivesText = selectedElectives.length
           ? selectedElectives.map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${formatCell(e.mark)}`).join(", ")
           : "None";
+        const prominentSourceClass = confidence === "High" ? "" : " prominent";
         const programLinkHtml = programUrl
-          ? `<div class="detail-link-row"><a class="detail-link" href="${escapeAttr(
+          ? `<div class="detail-link-row"><a class="detail-link${prominentSourceClass}" href="${escapeAttr(
               programUrl
             )}" target="_blank" rel="noopener noreferrer">Program Website</a></div>`
-          : `<div class="detail-link-row"><span class="detail-link-missing">Program website link unavailable.</span></div>`;
-        const electiveSectionHtml = `<details class="collapsible"><summary>Elective Rules</summary>
+          : `<div class="detail-link-row"><span class="source-link-missing">Source link missing</span></div>`;
+        const explainabilityHtml =
+          confidence === "Uncheckable"
+            ? `<div class="detail-block"><h4>Reason</h4><p>${escapeHtml(detail.uncheckableReason || "Manual review required.")}</p><h4>Next Step</h4><p>${escapeHtml(
+                detail.nextStep || "Open the official program page and confirm exact requirements."
+              )}</p></div>`
+            : why.length
+            ? `<div class="detail-block"><h4>Why</h4><ul class="detail-list">${why
+                .slice(0, 3)
+                .map((x) => `<li>${escapeHtml(x)}</li>`)
+                .join("")}</ul></div>`
+            : "";
+        const electiveOpenAttr = state.electiveRulesCollapsed ? "" : " open";
+        const electiveSectionHtml = `<details class="collapsible" data-elective-rules="1"${electiveOpenAttr}><summary>ELECTIVE RULES</summary>
             <ul class="detail-list">
               <li>Allowed groups: ${escapeHtml(allowedGroups.join("/") || "A/B/C/D")}</li>
               <li>Rule summary: ${escapeHtml(electives.ruleSummary || "None")}</li>
@@ -3152,8 +3531,12 @@ function boot() {
             <p class="detail-sub">${escapeHtml(detail.institution || row.institution || "")} | ${escapeHtml(
               detail.credential || row.credential || ""
             )}</p>
+            <p class="detail-sub">${escapeHtml(detail.snapshotResult || row.snapshotResult || rowStatusForDisplay_(row).label)} | Confidence: ${escapeHtml(
+              confidence
+            )}</p>
             ${programLinkHtml}
           </div>
+          ${warningHtml}
           <div class="meaning-panel">
             <h4>What this means</h4>
             ${meaningHtml}
@@ -3182,6 +3565,7 @@ function boot() {
               <h4>Notes</h4>
               ${notesHtml}
             </div>
+            ${explainabilityHtml}
           </div>
           ${requirementsSectionHtml}
           ${electiveSectionHtml}
@@ -3237,11 +3621,31 @@ function boot() {
         const fromBackend = row && row.key && map[row.key] ? map[row.key] : null;
         if (fromBackend && typeof fromBackend === "object") return fromBackend;
 
+        const confidence = normalizeConfidence_(row && row.confidence);
+        const warning = buildWarningDisplay_(
+          {
+            warning: null,
+            why: row && row.whyList ? row.whyList : [],
+            uncheckableReason: row && row.uncheckableReason ? row.uncheckableReason : "",
+            nextStep: row && row.nextStep ? row.nextStep : "",
+          },
+          confidence
+        );
+
         return {
           institution: row.institution || "",
           program: row.program || "",
           credential: row.credential || "",
-          programUrl: "",
+          programUrl: row.sourceUrl || "",
+          sourceUrlMissing: !row.sourceUrl,
+          datasetDate: row.datasetDate || "",
+          snapshotResult: row.snapshotResult || "",
+          confidence,
+          why: row.whyList || [],
+          whyText: row.whyText || "",
+          uncheckableReason: row.uncheckableReason || "",
+          nextStep: row.nextStep || "",
+          warning,
           requirements: [],
           average: {
             min: row.minAvg,
@@ -3362,6 +3766,160 @@ function boot() {
         if (aNum) return -1;
         if (bNum) return 1;
         return 0;
+      }
+
+      function getPinnedRowsForComparison_() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey || !model.keysByView) return [];
+        return (model.keysByView.all || [])
+          .filter((k) => !!state.shortlist[k])
+          .map((k) => model.rowsByKey[k])
+          .filter(Boolean);
+      }
+
+      function normalizeSnapshotResultForComparison_(row, detail, confidence) {
+        if (normalizeConfidence_(confidence) === "Uncheckable") return "uncheckable";
+        const fromDetail = String((detail && detail.snapshotResult) || "").trim().toLowerCase();
+        if (fromDetail === "likely eligible") return "Likely eligible";
+        if (fromDetail === "likely ineligible") return "likely ineligible";
+        if (row && row.viewFlags && row.viewFlags.ineligible) return "likely ineligible";
+        return "Likely eligible";
+      }
+
+      function nextActionForConfidence_(confidence) {
+        const c = normalizeConfidence_(confidence);
+        if (c === "High") return "Optional check";
+        if (c === "Medium") return "Confirm prereqs + avg on site";
+        if (c === "Low") return "Confirm everything on site";
+        return "Manual review required";
+      }
+
+      function buildComparisonKeyRequirements_(row, detail) {
+        const avg = (detail && detail.average) || {};
+        const parts = [];
+        if (Number.isFinite(avg.min)) parts.push(`Min Avg ${formatCell(avg.min)}`);
+
+        const reqs = Array.isArray(detail && detail.requirements) ? detail.requirements : [];
+        const reqShort = reqs
+          .filter((r) => !!String((r && r.label) || "").trim())
+          .slice(0, 2)
+          .map((r) => String(r.label || "").trim())
+          .join(", ");
+        if (reqShort) parts.push(`Reqs: ${reqShort}`);
+
+        if (!parts.length && row && row.missing) parts.push(`Gaps: ${splitPipedText(row.missing)[0] || row.missing}`);
+        return parts.join("; ");
+      }
+
+      function buildComparisonWhyFlags_(detail, confidence) {
+        if (normalizeConfidence_(confidence) === "High") return [];
+        const why = (Array.isArray(detail && detail.why) ? detail.why : []).filter(Boolean);
+        if (why.length) return why.slice(0, 2);
+        const uncheckableReason = String((detail && detail.uncheckableReason) || "").trim();
+        if (uncheckableReason) return [uncheckableReason];
+        const notes = (Array.isArray(detail && detail.notes) ? detail.notes : []).filter(Boolean);
+        return notes.length ? notes.slice(0, 2) : ["Verify details on the official program page."];
+      }
+
+      function generatePinnedComparisonSheet() {
+        if (!state.result || !state.resultModel) {
+          setStatus("Run Check Eligibility first.", true);
+          return;
+        }
+
+        const pinnedRows = getPinnedRowsForComparison_();
+        if (!pinnedRows.length) {
+          setStatus("No pinned programs selected. Pin programs, then generate comparison.", true);
+          return;
+        }
+
+        const datasetDate = getResultDatasetDate() || "n/a";
+        const generated = formatUtcStamp(new Date().toISOString()) || "n/a";
+        const tableRowsHtml = pinnedRows
+          .map((row, index) => {
+            const detail = getProgramDetailsForRow(row);
+            const confidence = normalizeConfidence_(detail.confidence || row.confidence);
+            const snapshotResult = normalizeSnapshotResultForComparison_(row, detail, confidence);
+            const whyFlags = buildComparisonWhyFlags_(detail, confidence);
+            const whyHtml = whyFlags.length
+              ? `<ul>${whyFlags.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
+              : "";
+            const programUrl = normalizeHttpUrl_(detail.programUrl || row.sourceUrl);
+            const programLink = programUrl
+              ? `<a href="${escapeAttr(programUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(programUrl)}</a>`
+              : `<span>Source link missing</span>`;
+            const keyRequirements = buildComparisonKeyRequirements_(row, detail);
+            const nextAction = nextActionForConfidence_(confidence);
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(row.institution || "")}</td>
+                <td>${escapeHtml(row.program || "")}</td>
+                <td>${escapeHtml(snapshotResult)}</td>
+                <td>${escapeHtml(confidence)}</td>
+                <td>${escapeHtml(keyRequirements)}</td>
+                <td>${whyHtml}</td>
+                <td>${programLink}</td>
+                <td></td>
+                <td>${escapeHtml(nextAction)}</td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        const html = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Program Comparison Sheet</title>
+    <style>
+      body { font-family: "Open Sans", sans-serif; margin: 18px; color: #2c3f38; }
+      h1 { margin: 0 0 6px; font-family: "Rubik", sans-serif; color: #14553f; font-size: 22px; }
+      .meta { margin: 0 0 6px; }
+      .disc { margin: 0 0 12px; color: #6b5400; font-weight: 700; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      th, td { border: 1px solid #d0ddd7; padding: 6px; text-align: left; vertical-align: top; }
+      th { background: #f1f7f4; color: #14553f; }
+      ul { margin: 0; padding-left: 16px; }
+      .actions { margin: 0 0 10px; }
+      @media print { .actions { display: none; } body { margin: 8mm; } }
+    </style>
+  </head>
+  <body>
+    <div class="actions"><button onclick="window.print()">Print</button></div>
+    <h1>Program Comparison Sheet (Pinned)</h1>
+    <p class="meta">Snapshot date: ${escapeHtml(datasetDate)} | Generated timestamp: ${escapeHtml(generated)}</p>
+    <p class="disc">Snapshot tool. Confirm details on program websites if confidence isn't High.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Pinned Rank (1..n)</th>
+          <th>Institution</th>
+          <th>Program</th>
+          <th>Snapshot Result</th>
+          <th>Confidence</th>
+          <th>Key Requirements (Snapshot)</th>
+          <th>Why / Flags</th>
+          <th>Program Link</th>
+          <th>Notes</th>
+          <th>Next Action</th>
+        </tr>
+      </thead>
+      <tbody>${tableRowsHtml}</tbody>
+    </table>
+  </body>
+</html>`;
+
+        const win = window.open("", "_blank", "noopener,noreferrer");
+        if (!win) {
+          setStatus("Could not open comparison sheet window. Allow pop-ups and try again.", true);
+          return;
+        }
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        setStatus(`Generated Program Comparison Sheet for ${pinnedRows.length} pinned program(s).`);
       }
 
       function exportCsv() {
@@ -3551,6 +4109,14 @@ function boot() {
         const studentAvg = toFiniteNumber(getHeaderValue(cells, headerIndex, "Student Avg"));
         const missing = String(getHeaderValue(cells, headerIndex, "Missing") || "").trim();
         const notes = String(getHeaderValue(cells, headerIndex, "Notes") || "").trim();
+        const snapshotResult = String(getHeaderValue(cells, headerIndex, "snapshot_result") || "").trim();
+        const confidence = normalizeConfidence_(getHeaderValue(cells, headerIndex, "confidence"));
+        const whyText = String(getHeaderValue(cells, headerIndex, "why_text") || "").trim();
+        const uncheckableReason = String(getHeaderValue(cells, headerIndex, "uncheckable_reason") || "").trim();
+        const nextStep = String(getHeaderValue(cells, headerIndex, "next_step") || "").trim();
+        const sourceRaw = String(getHeaderValue(cells, headerIndex, "source_url") || "").trim();
+        const sourceUrl = normalizeHttpUrl_(sourceRaw);
+        const datasetDate = String(getHeaderValue(cells, headerIndex, "dataset_date") || "").trim();
         const issueCount = countMissingIssues(missing);
         const avgGap = parseAverageGap(missing, minAvg, studentAvg);
         const electiveGap = parseMissingElectiveCount(missing);
@@ -3564,10 +4130,19 @@ function boot() {
           studentAvg,
           missing,
           notes,
+          snapshotResult,
+          confidence,
+          whyText,
+          whyList: splitPipedText(whyText),
+          uncheckableReason,
+          nextStep,
+          sourceUrl,
+          sourceMissing: !sourceUrl && /source link missing/i.test(sourceRaw || "source link missing"),
+          datasetDate,
           issueCount,
           avgGap,
           electiveGap,
-          searchText: `${institution} ${program} ${credential} ${missing} ${notes}`.toLowerCase(),
+          searchText: `${institution} ${program} ${credential} ${missing} ${notes} ${snapshotResult} ${confidence} ${whyText}`.toLowerCase(),
           viewFlags: {},
         };
       }
@@ -3778,8 +4353,8 @@ function boot() {
       }
 
       function viewLabel(view) {
-        if (view === "eligible") return "Eligible";
-        if (view === "ineligible") return "Missing";
+        if (view === "eligible") return "Likely eligible";
+        if (view === "ineligible") return "Likely ineligible";
         if (view === "uncheckable") return "Uncheckable";
         if (view === "shortlist") return "Shortlist";
         return "All Programs";
@@ -3827,6 +4402,8 @@ boot();
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
       ui.compareStrip.addEventListener("click", onCompareStripClick);
       if (ui.compareResults) ui.compareResults.addEventListener("click", onCompareResultsClick);
+      if (ui.pinnedComparisonBtn) ui.pinnedComparisonBtn.addEventListener("click", generatePinnedComparisonSheet);
+      if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("toggle", onDetailsDrawerToggle, true);
       window.addEventListener("resize", schedulePanelHeightSync);
 </script>
 

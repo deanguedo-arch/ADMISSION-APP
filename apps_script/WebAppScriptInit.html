@@ -20,6 +20,8 @@ boot();
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
       ui.compareStrip.addEventListener("click", onCompareStripClick);
       if (ui.compareResults) ui.compareResults.addEventListener("click", onCompareResultsClick);
+      if (ui.pinnedComparisonBtn) ui.pinnedComparisonBtn.addEventListener("click", generatePinnedComparisonSheet);
+      if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("toggle", onDetailsDrawerToggle, true);
       window.addEventListener("resize", schedulePanelHeightSync);
 </script>
 

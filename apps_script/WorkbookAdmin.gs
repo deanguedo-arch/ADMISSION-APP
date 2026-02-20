@@ -40,7 +40,168 @@ function ensureSheet_(ss, name) {
 
 function isStaffEditableSheet_(name) {
   const t = String(name || "").trim();
-  return STAFF_EDITABLE_SHEET_NAMES.indexOf(t) >= 0;
+  if (!t) return false;
+  if (STAFF_EDITABLE_SHEET_NAMES.indexOf(t) >= 0) return true;
+  return /^PROGRAM_COMPARISON_\d{8}_\d{4}(?:_\d+)?$/i.test(t);
+}
+
+function generateProgramComparisonSheetFromPinned_() {
+  const ss = SpreadsheetApp.getActive();
+  const resultsSheet = ss.getSheetByName("Results");
+  if (!resultsSheet) {
+    throw new Error("Missing Results sheet. Run Check Eligibility first.");
+  }
+
+  const values = resultsSheet.getDataRange().getValues();
+  if (!values || values.length < 2) {
+    throw new Error("No results available. Run Check Eligibility first.");
+  }
+
+  const header = (values[0] || []).map((x) => String(x || "").trim());
+  const idx = {};
+  header.forEach((h, i) => {
+    const key = normHeaderKey_(h);
+    if (key && idx[key] === undefined) idx[key] = i;
+  });
+
+  const required = ["pin", "institution", "program", "snapshot_result", "confidence", "source_url", "dataset_date"];
+  const missingCols = required.filter((k) => idx[k] === undefined);
+  if (missingCols.length) {
+    throw new Error(
+      `Results is missing required columns for pinned comparison (${missingCols.join(", ")}). Run Check Eligibility to refresh Results.`
+    );
+  }
+
+  const pinnedRows = [];
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] || [];
+    if (!isTruthyPinValue_(row[idx["pin"]])) continue;
+    pinnedRows.push(row);
+  }
+
+  if (!pinnedRows.length) {
+    throw new Error("No pinned programs found in Results. Check at least one Pin box, then rerun this action.");
+  }
+
+  const datasetDate =
+    normalizeDateYmd_(pinnedRows[0][idx["dataset_date"]]) ||
+    normalizeDateYmd_(new Date()) ||
+    "n/a";
+  const tz = Session.getScriptTimeZone() || "America/Edmonton";
+  const now = new Date();
+  const stampName = Utilities.formatDate(now, tz, "yyyyMMdd_HHmm");
+  const generatedStamp = Utilities.formatDate(now, tz, "yyyy-MM-dd HH:mm z");
+  const baseName = `PROGRAM_COMPARISON_${stampName}`;
+  const tabName = buildUniqueSheetName_(ss, baseName);
+  const sheet = ss.insertSheet(tabName);
+
+  const tableHeader = [
+    "Pinned Rank (1..n)",
+    "Institution",
+    "Program",
+    "Snapshot Result (Likely eligible / likely ineligible / uncheckable)",
+    "Confidence",
+    "Key Requirements (Snapshot)",
+    "Why / Flags",
+    "Program Link",
+    "Notes",
+    "Next Action",
+  ];
+
+  const output = [
+    ["Snapshot date", datasetDate, "Generated timestamp", generatedStamp, "", "", "", "", "", ""],
+    ["Snapshot tool. Confirm details on program websites if confidence isn't High.", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", ""],
+    tableHeader,
+  ];
+
+  for (let i = 0; i < pinnedRows.length; i++) {
+    const row = pinnedRows[i] || [];
+    const confidence = normalizeConfidenceValue_(row[idx["confidence"]]);
+    const sourceUrl = normalizeHttpUrlForOutput_(row[idx["source_url"]]);
+    const sourceCell = sourceUrl
+      ? `=HYPERLINK("${String(sourceUrl).replace(/"/g, '""')}","Program Link")`
+      : "Source link missing";
+
+    output.push([
+      i + 1,
+      String(row[idx["institution"]] || "").trim(),
+      String(row[idx["program"]] || "").trim(),
+      formatSnapshotResultForComparison_(row[idx["snapshot_result"]], confidence),
+      confidence,
+      buildKeyRequirementsForComparisonRow_(row, idx),
+      buildWhyFlagsForComparisonRow_(row, idx, confidence),
+      sourceCell,
+      "",
+      nextActionForConfidence_(confidence),
+    ]);
+  }
+
+  sheet.getRange(1, 1, output.length, tableHeader.length).setValues(output);
+  sheet.setFrozenRows(4);
+  sheet.autoResizeColumns(1, tableHeader.length);
+  notifyStudentSetupComplete_(ss, `Generated ${tabName} from ${pinnedRows.length} pinned program(s).`);
+}
+
+function buildUniqueSheetName_(ss, baseName) {
+  const base = String(baseName || "PROGRAM_COMPARISON").trim().slice(0, 96) || "PROGRAM_COMPARISON";
+  if (!ss.getSheetByName(base)) return base;
+  for (let i = 2; i < 1000; i++) {
+    const suffix = `_${i}`;
+    const candidate = `${base.slice(0, 99 - suffix.length)}${suffix}`;
+    if (!ss.getSheetByName(candidate)) return candidate;
+  }
+  throw new Error("Could not allocate a unique PROGRAM_COMPARISON sheet name.");
+}
+
+function buildKeyRequirementsForComparisonRow_(row, idx) {
+  const parts = [];
+  const minAvg = String((row[idx["min avg"]] || "")).trim();
+  const avgCourses = String((row[idx["avg courses"]] || "")).trim();
+  const avgUsed = String((row[idx["avg used"]] || "")).trim();
+  const missing = String((row[idx["missing"]] || "")).trim();
+
+  if (minAvg) parts.push(`Min Avg ${minAvg}`);
+  if (avgCourses) parts.push(`Avg courses ${avgCourses}`);
+  if (avgUsed) parts.push(`Used: ${avgUsed.slice(0, 140)}`);
+  if (!parts.length && missing) parts.push(`Gaps: ${missing.split("|")[0].trim()}`);
+  return parts.join("; ");
+}
+
+function buildWhyFlagsForComparisonRow_(row, idx, confidence) {
+  if (normalizeConfidenceValue_(confidence) === "High") return "";
+  const whyText = String((row[idx["why_text"]] || "")).trim();
+  const uncheckableReason = String((row[idx["uncheckable_reason"]] || "")).trim();
+  const notes = String((row[idx["notes"]] || "")).trim();
+
+  const bullets = [];
+  if (whyText) {
+    whyText
+      .split("|")
+      .map((x) => String(x || "").trim())
+      .filter(Boolean)
+      .slice(0, 2)
+      .forEach((x) => bullets.push(`- ${x}`));
+  }
+  if (!bullets.length && uncheckableReason) bullets.push(`- ${uncheckableReason}`);
+  if (!bullets.length && notes) bullets.push(`- ${notes.split("|")[0].trim()}`);
+  return bullets.join("\n");
+}
+
+function formatSnapshotResultForComparison_(value, confidence) {
+  if (normalizeConfidenceValue_(confidence) === "Uncheckable") return "uncheckable";
+  const t = String(value || "").trim().toLowerCase();
+  if (t === "likely eligible") return "Likely eligible";
+  if (t === "likely ineligible") return "likely ineligible";
+  return t || "likely ineligible";
+}
+
+function nextActionForConfidence_(confidence) {
+  const c = normalizeConfidenceValue_(confidence);
+  if (c === "High") return "Optional check";
+  if (c === "Medium") return "Confirm prereqs + avg on site";
+  if (c === "Low") return "Confirm everything on site";
+  return "Manual review required";
 }
 
 function isQuietSetup_(opts) {

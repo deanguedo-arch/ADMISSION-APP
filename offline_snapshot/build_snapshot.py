@@ -266,6 +266,11 @@ def _snapshot_dataset_stamp(dataset_hash: str) -> str:
     return f"offline_{dataset_hash[:24]}"
 
 
+def _canonical_dataset_date(path: Path) -> str:
+    ts = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    return ts.strftime("%Y-%m-%d")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build offline static snapshot of admissions checker.")
     parser.add_argument(
@@ -320,15 +325,18 @@ def main() -> int:
     canonical_hash = _sha256_file(canonical_path)
     built_at_utc = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
     dataset_stamp = _snapshot_dataset_stamp(canonical_hash)
+    dataset_date = _canonical_dataset_date(canonical_path)
 
     snapshot_payload = {
         "builtAtUtc": built_at_utc,
         "datasetStamp": dataset_stamp,
+        "datasetDate": dataset_date,
         "datasetHashSha256": canonical_hash,
         "canonicalSourcePath": str(canonical_path.relative_to(repo_root)).replace("\\", "/"),
         "programsRange": programs_range,
         "avgRules": avg_rules,
         "electiveRuleOverrides": elective_overrides,
+        "confidenceStaleDays": 60,
         "manualElectiveSlots": 5,
         "groups": ["A", "B", "C", "D"],
         "lastProgramsSyncUtc": built_at_utc,
@@ -355,6 +363,7 @@ def main() -> int:
     meta = {
         "built_at_utc": built_at_utc,
         "dataset_stamp": dataset_stamp,
+        "dataset_date": dataset_date,
         "dataset_hash_sha256": canonical_hash,
         "canonical_source_path": str(canonical_path.relative_to(repo_root)).replace("\\", "/"),
         "row_count_total": len(rows),

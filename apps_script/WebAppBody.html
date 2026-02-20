@@ -104,17 +104,22 @@
             </button>
           </div>
 
+          <div class="snapshot-banner" id="snapshotBanner">
+            <div class="snapshot-banner-title">Snapshot (advisory) - verify on institution site for final decisions</div>
+            <div class="snapshot-banner-date" id="snapshotDataDate">Data date: n/a</div>
+          </div>
+
           <div class="summary">
             <div class="stat neutral">
               <div class="label">Programs Checked</div>
               <div class="value" id="sumTotal">0</div>
             </div>
             <div class="stat good">
-              <div class="label">Eligible</div>
+              <div class="label">Likely eligible</div>
               <div class="value" id="sumEligible">0</div>
             </div>
             <div class="stat warn">
-              <div class="label">Missing</div>
+              <div class="label">Likely ineligible</div>
               <div class="value" id="sumMissing">0</div>
             </div>
             <div class="stat neutral">
@@ -125,8 +130,8 @@
 
           <div class="result-toolbar">
             <div class="tab-group" id="filterGroup" role="tablist" aria-label="Result views">
-              <button class="filter-btn active" type="button" data-view="ineligible">Missing <span class="tab-count" id="tabCountIneligible">0</span></button>
-              <button class="filter-btn" type="button" data-view="eligible">Eligible <span class="tab-count" id="tabCountEligible">0</span></button>
+              <button class="filter-btn active" type="button" data-view="ineligible">Likely ineligible <span class="tab-count" id="tabCountIneligible">0</span></button>
+              <button class="filter-btn" type="button" data-view="eligible">Likely eligible <span class="tab-count" id="tabCountEligible">0</span></button>
               <button class="filter-btn" type="button" data-view="uncheckable">Uncheckable <span class="tab-count" id="tabCountUncheckable">0</span></button>
               <button class="filter-btn" type="button" data-view="shortlist">Shortlist <span class="tab-count" id="tabCountShortlist">0</span></button>
               <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
@@ -164,6 +169,9 @@
 
           <div class="compare-strip" id="compareStrip">
             <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
           </div>
 
           <div class="compare-results is-empty" id="compareResults">
