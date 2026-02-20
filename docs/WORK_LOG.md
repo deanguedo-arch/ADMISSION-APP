@@ -619,3 +619,17 @@ Keep entries short and append-only.
 - Fixed `.github/workflows/deploy-offline-snapshot-pages.yml` refresh step to use hashtable splatting for `refresh-all.ps1` switches.
 - This prevents switch names from being mis-bound as positional `IndexSourcePath`/`CleanIndexPath` values (the `build_index.py --in ... --out ...` failure seen in CI).
 - Validation: local equivalent refresh run with `-SkipSync -SkipElectivePrefill -AllowStaleNorquestSeed -SkipScrape -SkipAvgApply -SkipFixtures` PASS.
+## 2026-02-20 (Release execution + deployment incident timeline)
+- Release commit pushed: `3e89391` (advisory confidence, warnings, source prominence, pinned comparison sheet, elective rules default-open, web/offline parity, docs updates).
+- Pre-release checks completed on that commit: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS.
+- Apps Script deploy completed from local CLI:
+  - `npx @google/clasp push` succeeded.
+  - Created Apps Script version `49`.
+  - Redeployed web app deployment `AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ` to `@49`.
+- GitHub Pages offline workflow incident #1: NorQuest API timeout during refresh step.
+  - Fix pushed in `66a13f7`: retry/backoff in `pipeline/build_norquest_seed_from_api.py` + stale-seed fallback switch in `tools/refresh-all.ps1` + workflow updated to pass `-AllowStaleNorquestSeed`.
+- GitHub Pages offline workflow incident #2: refresh step switch binding bug (`build_index.py --in ... --out ... expected one argument`).
+  - Fix pushed in `46574ab`: changed workflow refresh invocation to hashtable splatting for named PowerShell switches.
+- Post-fix local verification completed:
+  - Refresh flow with CI-equivalent flags PASS (`-SkipSync -SkipElectivePrefill -AllowStaleNorquestSeed -SkipScrape -SkipAvgApply -SkipFixtures`).
+- Current status after fixes: `main` contains release + both workflow hardening patches; rerunning Pages workflow should no longer fail on those two paths.
