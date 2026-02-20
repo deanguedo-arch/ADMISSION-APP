@@ -49,15 +49,21 @@ jobs:
       - name: Refresh dataset for offline snapshot
         shell: pwsh
         run: |
-          $args = @("-SkipSync", "-SkipElectivePrefill", "-AllowStaleNorquestSeed")
+          $refreshParams = @{
+            SkipSync = $true
+            SkipElectivePrefill = $true
+            AllowStaleNorquestSeed = $true
+          }
           if ("${{ inputs.refresh_mode }}" -eq "fast") {
-            $args += @("-SkipScrape", "-SkipAvgApply")
+            $refreshParams.SkipScrape = $true
+            $refreshParams.SkipAvgApply = $true
           }
           if ("${{ inputs.skip_fixtures }}" -eq "true") {
-            $args += "-SkipFixtures"
+            $refreshParams.SkipFixtures = $true
           }
-          Write-Host "refresh-all args: $($args -join ' ')"
-          & .\tools\refresh-all.ps1 @args
+          $enabled = @($refreshParams.GetEnumerator() | Sort-Object Name | Where-Object { $_.Value } | ForEach-Object { "-$($_.Name)" })
+          Write-Host "refresh-all switches: $($enabled -join ' ')"
+          & .\tools\refresh-all.ps1 @refreshParams
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build offline snapshot

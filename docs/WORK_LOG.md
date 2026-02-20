@@ -615,3 +615,7 @@ Keep entries short and append-only.
 - Added `-AllowStaleNorquestSeed` switch to `tools/refresh-all.ps1`; when enabled and NorQuest refresh fails, flow continues using existing `pipeline/norquest_program_seed.csv`.
 - Updated `.github/workflows/deploy-offline-snapshot-pages.yml` to pass `-AllowStaleNorquestSeed` during offline snapshot refresh so Pages deploy is resilient to temporary NorQuest outages.
 - Validation: `validate-webapp-surface` PASS, `validate-apps-script-structure` PASS, and `refresh-all -SkipScrape -SkipAvgApply -SkipElectivePrefill -SkipSync -SkipFixtures -AllowStaleNorquestSeed` PASS.
+## 2026-02-20 (Fix Pages workflow switch binding)
+- Fixed `.github/workflows/deploy-offline-snapshot-pages.yml` refresh step to use hashtable splatting for `refresh-all.ps1` switches.
+- This prevents switch names from being mis-bound as positional `IndexSourcePath`/`CleanIndexPath` values (the `build_index.py --in ... --out ...` failure seen in CI).
+- Validation: local equivalent refresh run with `-SkipSync -SkipElectivePrefill -AllowStaleNorquestSeed -SkipScrape -SkipAvgApply -SkipFixtures` PASS.
