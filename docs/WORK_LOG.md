@@ -597,3 +597,4 @@ Keep entries short and append-only.
 - Added offline snapshot local preview launcher: `START_OFFLINE_SNAPSHOT_PREVIEW.bat`.
 - Added `offline_snapshot/start-preview.ps1` with runtime auto-detect (Node preferred, Python fallback), dedicated URL `http://localhost:5180/index.html`, and build guard if snapshot site is missing.
 - Updated `offline_snapshot/README.md` with local preview instructions.
+- Added GitHub Pages deployment workflow `.github/workflows/deploy-offline-snapshot-pages.yml` to publish `offline_snapshot/site` via Actions (`actions/configure-pages`, `upload-pages-artifact`, `deploy-pages`).
