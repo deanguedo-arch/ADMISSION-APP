@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import sys
+import time
 from pathlib import Path
 from typing import Iterable
 from urllib.parse import urljoin
@@ -18,7 +19,43 @@ def normalize_space(value: object) -> str:
     return " ".join(str(value or "").strip().split())
 
 
-def fetch_seed_rows(endpoint: str, timeout: int) -> tuple[list[dict[str, str]], int]:
+def fetch_page_with_retries(
+    session: requests.Session,
+    endpoint: str,
+    params: dict[str, str],
+    timeout: int,
+    max_attempts: int,
+    retry_delay: float,
+) -> requests.Response:
+    max_attempts = max(1, int(max_attempts))
+    retry_delay = max(0.1, float(retry_delay))
+    last_error: Exception | None = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return session.get(endpoint, params=params, timeout=timeout)
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt >= max_attempts:
+                break
+            sleep_seconds = retry_delay * (2 ** (attempt - 1))
+            print(
+                f"WARN: NorQuest API request failed (attempt {attempt}/{max_attempts}): {exc}. "
+                f"Retrying in {sleep_seconds:.1f}s...",
+                file=sys.stderr,
+            )
+            time.sleep(sleep_seconds)
+
+    assert last_error is not None
+    raise last_error
+
+
+def fetch_seed_rows(
+    endpoint: str,
+    timeout: int,
+    max_attempts: int,
+    retry_delay: float,
+) -> tuple[list[dict[str, str]], int]:
     session = requests.Session()
     session.headers.update({"User-Agent": "AdmissionsCheckerBot/1.0"})
 
@@ -41,7 +78,14 @@ def fetch_seed_rows(endpoint: str, timeout: int) -> tuple[list[dict[str, str]], 
             "OS": "",
             "OA": "",
         }
-        resp = session.get(endpoint, params=params, timeout=timeout)
+        resp = fetch_page_with_retries(
+            session=session,
+            endpoint=endpoint,
+            params=params,
+            timeout=timeout,
+            max_attempts=max_attempts,
+            retry_delay=retry_delay,
+        )
         resp.raise_for_status()
         payload = resp.json()
 
@@ -85,10 +129,17 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT)
     parser.add_argument("--out", default="pipeline/norquest_program_seed.csv")
     parser.add_argument("--timeout", type=int, default=30)
+    parser.add_argument("--max-attempts", type=int, default=4)
+    parser.add_argument("--retry-delay", type=float, default=2.0)
     args = parser.parse_args(argv)
 
     out_path = Path(args.out)
-    rows, total_results_reported = fetch_seed_rows(args.endpoint, args.timeout)
+    rows, total_results_reported = fetch_seed_rows(
+        endpoint=args.endpoint,
+        timeout=args.timeout,
+        max_attempts=args.max_attempts,
+        retry_delay=args.retry_delay,
+    )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", newline="", encoding="utf-8") as f:

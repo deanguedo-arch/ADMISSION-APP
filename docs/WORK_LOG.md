@@ -610,3 +610,8 @@ Keep entries short and append-only.
 - Updated details drawer so `ELECTIVE RULES` is expanded by default and collapse preference persists for the session.
 - Rebuilt offline snapshot artifacts and updated structure guardrail allowlists for new helper functions.
 - Validation: `tools/validate-webapp-surface.ps1` PASS, `tools/validate-apps-script-structure.ps1` PASS, offline snapshot rebuild PASS, `runConfidenceSelfTest_` PASS via Node VM against generated `eligibility_core.js`.
+## 2026-02-20 (Offline Pages deploy hardening for NorQuest timeout)
+- Added retry/backoff to `pipeline/build_norquest_seed_from_api.py` (`--max-attempts`, `--retry-delay`) to reduce transient timeout failures.
+- Added `-AllowStaleNorquestSeed` switch to `tools/refresh-all.ps1`; when enabled and NorQuest refresh fails, flow continues using existing `pipeline/norquest_program_seed.csv`.
+- Updated `.github/workflows/deploy-offline-snapshot-pages.yml` to pass `-AllowStaleNorquestSeed` during offline snapshot refresh so Pages deploy is resilient to temporary NorQuest outages.
+- Validation: `validate-webapp-surface` PASS, `validate-apps-script-structure` PASS, and `refresh-all -SkipScrape -SkipAvgApply -SkipElectivePrefill -SkipSync -SkipFixtures -AllowStaleNorquestSeed` PASS.

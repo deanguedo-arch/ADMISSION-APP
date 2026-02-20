@@ -10,6 +10,7 @@ param(
   [switch]$SkipAvgApply,
   [switch]$SkipProgramUrlApply,
   [switch]$SkipElectivePrefill,
+  [switch]$AllowStaleNorquestSeed,
   [switch]$SkipSync,
   [switch]$SkipValidation,
   [switch]$DryRun
@@ -77,7 +78,20 @@ Write-Host "Active canonical path: $activeCanonicalPath"
 
 Write-Host ""
 Write-Host "Step 2/9: Refresh NorQuest + MacEwan + UAlberta seeds + build cleaned program index"
-Invoke-PythonChecked @(".\\pipeline\\build_norquest_seed_from_api.py")
+$norquestSeedPath = ".\\pipeline\\norquest_program_seed.csv"
+if ($AllowStaleNorquestSeed) {
+  try {
+    Invoke-PythonChecked @(".\\pipeline\\build_norquest_seed_from_api.py")
+  } catch {
+    if (Test-Path $norquestSeedPath) {
+      Write-Warning ("NorQuest seed refresh failed; continuing with existing seed at {0}. Error: {1}" -f $norquestSeedPath, $_.Exception.Message)
+    } else {
+      throw
+    }
+  }
+} else {
+  Invoke-PythonChecked @(".\\pipeline\\build_norquest_seed_from_api.py")
+}
 Invoke-PythonChecked @(".\\pipeline\\build_macewan_seed_from_element.py")
 Invoke-PythonChecked @(".\\pipeline\\build_ualberta_seed_from_coveo.py")
 $buildArgs = @(".\\pipeline\\build_index.py", "--in", $IndexSourcePath, "--out", $CleanIndexPath)

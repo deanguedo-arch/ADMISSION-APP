@@ -49,7 +49,7 @@ jobs:
       - name: Refresh dataset for offline snapshot
         shell: pwsh
         run: |
-          $args = @("-SkipSync", "-SkipElectivePrefill")
+          $args = @("-SkipSync", "-SkipElectivePrefill", "-AllowStaleNorquestSeed")
           if ("${{ inputs.refresh_mode }}" -eq "fast") {
             $args += @("-SkipScrape", "-SkipAvgApply")
           }
