@@ -684,3 +684,6 @@ Keep entries short and append-only.
 - Updated offline snapshot bridge source `offline_snapshot/src/offline_bridge.js` to include `explorerPrograms` in bootstrap parity.
 - Preview checkpoint: Node local preview server running at `http://localhost:5173/WebApp.html?mock=1`.
 - Validation note: `tools/validate-webapp-surface.ps1` not runnable in this environment (`pwsh` unavailable).
+## 2026-02-22 (CI hotfix: Apps Script structure allowlist)
+- Updated `tools/validate-apps-script-structure.ps1` to include new private helpers in `EligibilityProgramsData.gs`: `listExplorerProgramsForWeb_`, `makeExplorerProgramKey_`, `slugExplorerPart_`.
+- Purpose: fix deploy workflow failure at "Validate Apps Script structure" after Program Explorer slice.

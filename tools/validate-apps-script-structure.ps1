@@ -150,7 +150,10 @@ $expectedByFile = @{
     "parseCountToken_",
     "parseGroupsFromText_",
     "splitByAnd_",
-    "parseScienceRequirementText_"
+    "parseScienceRequirementText_",
+    "listExplorerProgramsForWeb_",
+    "makeExplorerProgramKey_",
+    "slugExplorerPart_"
   )
   "EligibilitySubjects.gs" = @(
     "buildCourseMap_",
