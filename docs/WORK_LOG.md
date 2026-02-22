@@ -672,3 +672,15 @@ Keep entries short and append-only.
 - Added keyboard focus-visible treatment across interactive controls plus `result-card` focus-within styling for accessibility.
 - Mobile polish: fixed `.toolbar-controls` single-column behavior under `@media (max-width: 980px)` and ensured child controls fill width.
 - Preview verification performed via Node local server at `http://localhost:5173/WebApp.html?mock=1`.
+## 2026-02-22 (Web app phase 2 slice: Program Explorer top-level tab)
+- Added top-level mode tabs in `apps_script/WebAppBody.html` (`Eligibility Results` + `Program Explorer`) with new UI references in `apps_script/WebAppScriptState.html` and click wiring in `apps_script/WebAppScriptInit.html`.
+- Extended web bootstrap payload in `apps_script/Code.gs` to include `explorerPrograms` without adding new public entrypoints.
+- Added dataset parser `listExplorerProgramsForWeb_` in `apps_script/EligibilityProgramsData.gs` to build active-program explorer records from `Programs` sheet data.
+- Implemented explorer state/rendering/details in `apps_script/WebAppScriptFunctions.html`:
+  - mode switching, mode counts, shared filters/sort, explorer card rendering, and explorer details drawer.
+  - explorer view hides compare/pinned comparison controls while preserving existing eligibility flow.
+  - `runCheck` now auto-switches to results mode so personalized outputs are visible immediately.
+- Added mode-tab styling and responsive behavior in `apps_script/WebAppStyles.html`.
+- Updated offline snapshot bridge source `offline_snapshot/src/offline_bridge.js` to include `explorerPrograms` in bootstrap parity.
+- Preview checkpoint: Node local preview server running at `http://localhost:5173/WebApp.html?mock=1`.
+- Validation note: `tools/validate-webapp-surface.ps1` not runnable in this environment (`pwsh` unavailable).

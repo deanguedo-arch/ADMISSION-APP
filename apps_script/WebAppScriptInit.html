@@ -11,6 +11,7 @@ boot();
       document.getElementById("pasteClearBtn").addEventListener("click", clearTranscriptPaste);
       if (ui.toggleInputsBtn) ui.toggleInputsBtn.addEventListener("click", toggleInputsPanel);
       if (ui.showInputsBtn) ui.showInputsBtn.addEventListener("click", toggleInputsPanel);
+      if (ui.modeTabs) ui.modeTabs.addEventListener("click", onModeTabClick);
       ui.filterGroup.addEventListener("click", onFilterClick);
       ui.resultsWrap.addEventListener("click", onResultsWrapClick);
       ui.resultSearch.addEventListener("input", onResultControlChange);

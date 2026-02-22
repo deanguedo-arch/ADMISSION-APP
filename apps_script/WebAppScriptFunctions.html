@@ -89,6 +89,7 @@ function boot() {
         }
 
         state.boot = boot;
+        setExplorerProgramsFromBoot_(state.boot);
         state.auth.email = String((boot.auth && boot.auth.email) || "").trim().toLowerCase();
         bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
@@ -97,6 +98,8 @@ function boot() {
         ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
         ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
         updateSnapshotBannerFromBoot_(state.boot);
+        updateModeCounts_();
+        syncModeTabs_();
         setStatus("Ready.");
       }
 
@@ -159,6 +162,7 @@ function boot() {
         state.view = "ineligible";
         state.shortlist = {};
         state.selectedProgramKey = "";
+        state.selectedExplorerKey = "";
         state.compareKeys = [];
         state.compareViewMode = "side";
         state.resultFilters.query = "";
@@ -180,6 +184,8 @@ function boot() {
         setPasteStatus("");
         if (ui.pasteInput) ui.pasteInput.value = "";
         updateFilterCounts();
+        updateModeCounts_();
+        syncModeTabs_();
         syncFilterButtons();
         setMeetingMode_(state.meetingMode, { persist: false });
       }
@@ -238,6 +244,47 @@ function boot() {
 
       function toggleMeetingMode() {
         setMeetingMode_(!state.meetingMode);
+      }
+
+      function setExplorerProgramsFromBoot_(bootData) {
+        const boot = bootData && typeof bootData === "object" ? bootData : {};
+        const source = Array.isArray(boot.explorerPrograms) ? boot.explorerPrograms : [];
+        const out = [];
+        for (let i = 0; i < source.length; i++) {
+          const item = source[i];
+          if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+          const institution = String(item.institution || "").trim();
+          const program = String(item.program || "").trim();
+          if (!institution || !program) continue;
+          const credential = String(item.credential || "").trim();
+          const minAvg = toFiniteNumber(item.minAvg);
+          const competitiveGuidance = String(item.competitiveGuidance || "").trim();
+          const requirementType = String(item.requirementType || "").trim();
+          const sourceUrl = normalizeHttpUrl_(item.sourceUrl || "");
+          const datasetDate = toYmdDate_(item.datasetDate || "") || toYmdDate_((boot.dataset && boot.dataset.lastProgramsSyncUtc) || "");
+          const key = sanitizeProgramKey(item.key) || `explorer_${i + 1}`;
+          out.push({
+            key,
+            institution,
+            program,
+            credential,
+            minAvg: Number.isFinite(minAvg) ? minAvg : NaN,
+            competitiveGuidance,
+            requirementType,
+            sourceUrl,
+            datasetDate,
+            searchText: `${institution} ${program} ${credential} ${competitiveGuidance} ${requirementType}`.toLowerCase(),
+          });
+        }
+        out.sort((a, b) => compareInstitutionProgram(a, b));
+        state.explorerRows = out;
+        if (state.selectedExplorerKey && !out.find((x) => x.key === state.selectedExplorerKey)) {
+          state.selectedExplorerKey = "";
+        }
+        if (state.primaryMode === "explorer" && !out.length) {
+          state.primaryMode = "results";
+        }
+        if (state.primaryMode === "explorer") populateResultFilterOptions();
       }
 
       function addNamedRow(seed) {
@@ -724,6 +771,10 @@ function boot() {
           namedCourses: Array.isArray(payload.namedCourses) ? payload.namedCourses : [],
           manualElectives: Array.isArray(payload.manualElectives) ? payload.manualElectives : [],
         };
+        if (state.primaryMode !== "results") {
+          state.primaryMode = "results";
+          syncModeTabs_();
+        }
         if (state.mockMode) {
           runMockCheck(requestPayload);
           return;
@@ -998,14 +1049,52 @@ function boot() {
             "Social Studies 30-1",
           ],
           electiveCourseOptions: ["Art 30", "Drama 30", "Physics 30", "Computer Science Advanced CTS"],
+          explorerPrograms: [
+            {
+              key: "mock_explorer_macewan_ba",
+              institution: "MacEwan",
+              program: "Bachelor of Arts Undeclared",
+              credential: "Degree",
+              minAvg: 70,
+              competitiveGuidance: "Competitive admission may vary by year.",
+              requirementType: "General",
+              sourceUrl: "https://calendar.macewan.ca/programs/degree-programs/bachelor-of-arts/",
+              datasetDate: "2026-02-10",
+            },
+            {
+              key: "mock_explorer_nait_business",
+              institution: "NAIT",
+              program: "Business Administration Diploma",
+              credential: "Diploma",
+              minAvg: 70,
+              competitiveGuidance: "",
+              requirementType: "General",
+              sourceUrl: "",
+              datasetDate: "2026-02-10",
+            },
+            {
+              key: "mock_explorer_ualberta_music",
+              institution: "UAlberta",
+              program: "Bachelor of Music",
+              credential: "Degree",
+              minAvg: 75,
+              competitiveGuidance: "Audition required.",
+              requirementType: "Audition + marks-based review",
+              sourceUrl: "https://www.ualberta.ca/en/music/programs/undergraduate-programs/bachelor-of-music.html",
+              datasetDate: "2026-02-10",
+            },
+          ],
           manualElectiveSlots: 5,
         };
+        setExplorerProgramsFromBoot_(state.boot);
         bindDatalist("namedCourses", state.boot.namedCourseOptions);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions);
         seedRows();
         ui.stamp.textContent = "Mock mode";
         ui.authLine.textContent = "Local preview mode (no real student data is sent).";
         updateSnapshotBannerDate_("2026-02-10");
+        updateModeCounts_();
+        syncModeTabs_();
         setStatus("Mock mode enabled. UI changes can be tested locally.");
       }
 
@@ -1099,7 +1188,54 @@ function boot() {
         ui.stamp.title = hidden.join(" | ");
       }
 
+      function normalizePrimaryMode_(value) {
+        const mode = String(value || "results").trim().toLowerCase();
+        return PRIMARY_MODES.indexOf(mode) >= 0 ? mode : "results";
+      }
+
+      function updateModeCounts_() {
+        const resultsCount = state.resultModel && state.resultModel.rows ? state.resultModel.rows.length : 0;
+        const explorerCount = Array.isArray(state.explorerRows) ? state.explorerRows.length : 0;
+        if (ui.modeCountResults) ui.modeCountResults.textContent = String(resultsCount);
+        if (ui.modeCountExplorer) ui.modeCountExplorer.textContent = String(explorerCount);
+      }
+
+      function syncModeTabs_() {
+        if (!ui.modeTabs) return;
+        const next = normalizePrimaryMode_(state.primaryMode);
+        state.primaryMode = next;
+        const tabs = ui.modeTabs.querySelectorAll("button[data-mode]");
+        tabs.forEach((btn) => {
+          const active = String(btn.getAttribute("data-mode") || "") === next;
+          btn.classList.toggle("active", active);
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+        });
+      }
+
+      function setPrimaryMode_(mode) {
+        const next = normalizePrimaryMode_(mode);
+        if (next === "explorer" && (!state.explorerRows || !state.explorerRows.length)) {
+          setStatus("Program Explorer data is not available right now.", true);
+          return;
+        }
+        state.primaryMode = next;
+        syncModeTabs_();
+        populateResultFilterOptions();
+        updateModeCounts_();
+        renderResults();
+        renderDetailsDrawer();
+      }
+
+      function onModeTabClick(e) {
+        const btn = e.target && e.target.closest("button[data-mode]");
+        if (!btn) return;
+        const mode = String(btn.getAttribute("data-mode") || "results").trim();
+        if (mode === state.primaryMode) return;
+        setPrimaryMode_(mode);
+      }
+
       function onFilterClick(e) {
+        if (state.primaryMode !== "results") return;
         const btn = e.target && e.target.closest("button[data-view]");
         if (!btn) return;
         const nextView = String(btn.dataset.view || "ineligible").trim();
@@ -1116,6 +1252,11 @@ function boot() {
         updateFilterCounts();
         syncFilterButtons();
         renderResults();
+      }
+
+      function getFilterSourceRows_() {
+        if (state.primaryMode === "explorer") return Array.isArray(state.explorerRows) ? state.explorerRows : [];
+        return state.resultModel && state.resultModel.rows ? state.resultModel.rows : [];
       }
 
       function onResultControlChange() {
@@ -1172,7 +1313,7 @@ function boot() {
       }
 
       function populateResultFilterOptions() {
-        const rows = state.resultModel && state.resultModel.rows ? state.resultModel.rows : [];
+        const rows = getFilterSourceRows_();
         const institutions = uniqueStrings(
           rows.map((r) => String(r.institution || "").trim()).filter((x) => x)
         ).sort((a, b) => a.localeCompare(b));
@@ -1206,6 +1347,27 @@ function boot() {
       }
 
       function onResultsWrapClick(e) {
+        if (state.primaryMode === "explorer") {
+          const detailBtn = e.target && e.target.closest("button[data-explorer-detail-key]");
+          if (detailBtn) {
+            const key = String(detailBtn.getAttribute("data-explorer-detail-key") || "").trim();
+            if (key) state.selectedExplorerKey = key;
+            renderResults();
+            renderDetailsDrawer();
+            return;
+          }
+
+          const sourceLink = e.target && e.target.closest("a[data-source-link]");
+          if (sourceLink) return;
+
+          const rowEl = e.target && e.target.closest(".result-card[data-explorer-key]");
+          if (!rowEl) return;
+          state.selectedExplorerKey = String(rowEl.getAttribute("data-explorer-key") || "").trim();
+          renderResults();
+          renderDetailsDrawer();
+          return;
+        }
+
         const pinBtn = e.target && e.target.closest("button[data-pin-key]");
         if (pinBtn) {
           const key = String(pinBtn.getAttribute("data-pin-key") || "").trim();
@@ -1356,6 +1518,75 @@ function boot() {
       }
 
       function renderResults() {
+        syncModeTabs_();
+        updateModeCounts_();
+
+        if (state.primaryMode === "explorer") {
+          setResultsModeVisibility_(true);
+          const viewRows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
+          const filteredRows = sortRows(filterRows(viewRows), getExplorerSortKey_());
+          const viewCount = viewRows.length;
+          const shownCount = filteredRows.length;
+          ui.rowsStamp.textContent = shownCount === viewCount ? `${shownCount} programs` : `${shownCount} of ${viewCount} programs`;
+
+          if (!filteredRows.length) {
+            const emptyMsg =
+              viewCount === 0
+                ? "Program Explorer is empty."
+                : "No programs match the current filters. Clear filters to widen results.";
+            ui.resultsWrap.innerHTML = `<div class="empty">${escapeHtml(emptyMsg)}</div>`;
+            syncResultControls();
+            renderDetailsDrawer();
+            return;
+          }
+
+          const bodyHtml = filteredRows
+            .map((row) => {
+              const isSelected = row.key === state.selectedExplorerKey;
+              const viewClass = isSelected ? "action-btn active" : "action-btn";
+              const viewLabel = isSelected ? "Viewing" : "View";
+              const cardClass = isSelected ? " row-selected" : "";
+              const sourceLinkHtml = row.sourceUrl
+                ? `<a class="source-link-inline" data-source-link="1" href="${escapeAttr(
+                    row.sourceUrl
+                  )}" target="_blank" rel="noopener noreferrer">Program Link</a>`
+                : `<span class="source-link-missing">Source link missing</span>`;
+              const minAvgText = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
+              const reasonText =
+                row.competitiveGuidance ||
+                row.requirementType ||
+                "General admissions snapshot. Run eligibility check with marks for personalized results.";
+              return `
+                <article class="result-card${cardClass}" data-explorer-key="${escapeAttr(row.key)}">
+                  <div class="card-top">
+                    <div class="card-title-wrap">
+                      <h3 class="card-title">${escapeHtml(row.program || "Program")}</h3>
+                      <p class="card-subtitle">${escapeHtml(row.institution || "Institution")} | ${escapeHtml(
+                row.credential || "Credential"
+              )}</p>
+                    </div>
+                    <div class="card-metrics">
+                      <span class="metric-pill">Min Avg: ${escapeHtml(minAvgText)}</span>
+                      <span class="metric-pill">${escapeHtml(row.datasetDate || "Data date n/a")}</span>
+                      <span class="status-pill uncheckable">Explorer</span>
+                    </div>
+                  </div>
+                  <div class="card-reason">${escapeHtml(reasonText)}</div>
+                  <div class="card-actions">
+                    ${sourceLinkHtml}
+                    <button class="${viewClass}" type="button" data-explorer-detail-key="${escapeAttr(row.key)}">${viewLabel}</button>
+                  </div>
+                </article>
+              `;
+            })
+            .join("");
+          ui.resultsWrap.innerHTML = `<div class="result-list">${bodyHtml}</div>`;
+          syncResultControls();
+          renderDetailsDrawer();
+          return;
+        }
+
+        setResultsModeVisibility_(false);
         if (!state.result || !state.resultModel) {
           ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
           ui.rowsStamp.textContent = "No results yet";
@@ -1451,6 +1682,78 @@ function boot() {
         renderCompareStrip();
         renderCompareResults();
         renderDetailsDrawer();
+      }
+
+      function setResultsModeVisibility_(isExplorerMode) {
+        const hide = !!isExplorerMode;
+        if (ui.filterGroup) ui.filterGroup.style.display = hide ? "none" : "";
+        if (ui.compareStrip) ui.compareStrip.style.display = hide ? "none" : "";
+        if (ui.compareResults) ui.compareResults.style.display = hide ? "none" : "";
+        if (ui.pinnedComparisonActions) ui.pinnedComparisonActions.style.display = hide ? "none" : "";
+      }
+
+      function getExplorerSortKey_() {
+        const requested = String(state.resultFilters.sort || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        return requested === DEFAULT_RESULT_SORT ? "institution_program" : requested;
+      }
+
+      function renderExplorerDetailsDrawer_() {
+        const rows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
+        if (!rows.length) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Program Explorer is empty. Run a check or reload data.</div>`;
+          return;
+        }
+
+        let row = state.selectedExplorerKey ? rows.find((x) => x.key === state.selectedExplorerKey) : null;
+        if (!row) {
+          row = rows[0];
+          state.selectedExplorerKey = row ? row.key : "";
+        }
+        if (!row) {
+          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program to inspect details.</div>`;
+          return;
+        }
+
+        const minAvgText = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
+        const competitiveText = row.competitiveGuidance || "Not listed";
+        const requirementText = row.requirementType || "Not listed";
+        const nextStepText = "Enter student marks and run Check Eligibility to get a personalized decision and gaps.";
+        const programLinkHtml = row.sourceUrl
+          ? `<div class="detail-link-row"><a class="detail-link" href="${escapeAttr(
+              row.sourceUrl
+            )}" target="_blank" rel="noopener noreferrer">Program Website</a></div>`
+          : `<div class="detail-link-row"><span class="source-link-missing">Source link missing</span></div>`;
+
+        ui.detailsDrawer.innerHTML = `
+          <div class="detail-head">
+            <h3 class="detail-title">${escapeHtml(row.program || "")}</h3>
+            <p class="detail-sub">${escapeHtml(row.institution || "")} | ${escapeHtml(row.credential || "")}</p>
+            <p class="detail-sub">Explorer view | Data date: ${escapeHtml(row.datasetDate || "n/a")}</p>
+            ${programLinkHtml}
+          </div>
+          <div class="detail-highlights">
+            <div class="highlight-card info">
+              <div class="highlight-label">Snapshot</div>
+              <div class="highlight-value">Program Explorer (catalog view)</div>
+            </div>
+            <div class="highlight-card ok">
+              <div class="highlight-label">Minimum Average</div>
+              <div class="highlight-value">${escapeHtml(minAvgText)}</div>
+            </div>
+            <div class="highlight-card warn">
+              <div class="highlight-label">Competitive Guidance</div>
+              <div class="highlight-value">${escapeHtml(competitiveText)}</div>
+            </div>
+            <div class="highlight-card info">
+              <div class="highlight-label">Next Step</div>
+              <div class="highlight-value">${escapeHtml(nextStepText)}</div>
+            </div>
+          </div>
+          <div class="detail-block">
+            <h4>Requirement Type</h4>
+            <p>${escapeHtml(requirementText)}</p>
+          </div>
+        `;
       }
 
       function rowStatusForDisplay_(row) {
@@ -1564,6 +1867,7 @@ function boot() {
       }
 
       function renderCompareStrip() {
+        if (state.primaryMode === "explorer") return;
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
           ui.compareStrip.innerHTML = `<div class="ghost">Compare prep: add up to 3 programs while triaging.</div>`;
@@ -1595,6 +1899,11 @@ function boot() {
       }
 
       function renderDetailsDrawer() {
+        if (state.primaryMode === "explorer") {
+          renderExplorerDetailsDrawer_();
+          schedulePanelHeightSync();
+          return;
+        }
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
           ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program card to inspect requirements and next steps.</div>`;
@@ -1621,6 +1930,7 @@ function boot() {
       }
 
       function renderCompareResults() {
+        if (state.primaryMode === "explorer") return;
         if (!ui.compareResults) return;
         const rows = getCompareRows_();
         if (rows.length < 2) {

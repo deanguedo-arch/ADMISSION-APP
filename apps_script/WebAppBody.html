@@ -104,6 +104,15 @@
             </button>
           </div>
 
+          <div class="mode-tabs" id="modeTabs" role="tablist" aria-label="Results mode">
+            <button class="mode-tab active" type="button" data-mode="results" aria-selected="true">
+              Eligibility Results <span class="mode-count" id="modeCountResults">0</span>
+            </button>
+            <button class="mode-tab" type="button" data-mode="explorer" aria-selected="false">
+              Program Explorer <span class="mode-count" id="modeCountExplorer">0</span>
+            </button>
+          </div>
+
           <div class="snapshot-banner" id="snapshotBanner">
             <div class="snapshot-banner-title">Snapshot (advisory) - verify on institution site for final decisions</div>
             <div class="snapshot-banner-date" id="snapshotDataDate">Data date: n/a</div>
@@ -173,7 +182,7 @@
           <div class="compare-strip" id="compareStrip">
             <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
           </div>
-          <div class="actions">
+          <div class="actions" id="pinnedComparisonActions">
             <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
           </div>
 

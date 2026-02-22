@@ -241,6 +241,7 @@ function getWebAppBootstrapData(authPayload) {
   const clientConfig = getWebAppClientConfig_();
   const auth = sanitizeWebAuthPayload_(authPayload);
   let identity = null;
+  let explorerPrograms = [];
   try {
     // Allow session/domain auth when GIS token is unavailable.
     identity = assertAuthorizedWebUser_(auth);
@@ -255,6 +256,18 @@ function getWebAppBootstrapData(authPayload) {
         message: sanitizeWebMessage_(err && err.message ? err.message : "Sign in with your school account and retry."),
       },
     };
+  }
+
+  try {
+    const ss = getAdmissionsSpreadsheet_();
+    const programsSheet = ss.getSheetByName("Programs");
+    const programsRange = programsSheet ? programsSheet.getDataRange().getValues() : [];
+    const syncFallback = String(
+      PropertiesService.getScriptProperties().getProperty(LAST_PROGRAMS_SYNC_UTC_PROPERTY) || ""
+    ).trim();
+    explorerPrograms = listExplorerProgramsForWeb_(programsRange, syncFallback || new Date().toISOString());
+  } catch (err) {
+    explorerPrograms = [];
   }
 
   return {
@@ -275,6 +288,7 @@ function getWebAppBootstrapData(authPayload) {
     },
     namedCourseOptions: listNamedCourseOptions_(),
     electiveCourseOptions: listElectiveCourseOptions_(),
+    explorerPrograms: explorerPrograms,
     manualElectiveSlots: MANUAL_ELECTIVE_SLOTS,
     groups: ["A", "B", "C", "D"],
   };
@@ -563,4 +577,3 @@ function getAdmissionsSpreadsheet_() {
   }
   return SpreadsheetApp.openById(sheetId);
 }
-

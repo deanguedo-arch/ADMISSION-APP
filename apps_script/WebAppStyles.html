@@ -380,6 +380,44 @@
         margin-bottom: var(--space-3);
       }
 
+      .mode-tabs {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        margin-bottom: var(--space-3);
+      }
+
+      .mode-tab {
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--ink);
+        min-height: var(--touch-target);
+        padding: 8px 14px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .mode-tab.active {
+        border-color: #8bbfaa;
+        background: #edf7f2;
+        color: var(--brand-dark);
+      }
+
+      .mode-count {
+        min-width: 22px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        border: 1px solid #c7d9d0;
+        font-size: 0.74rem;
+        text-align: center;
+        background: #fff;
+      }
+
       .snapshot-banner {
         border: 1px solid #cfe0d8;
         border-radius: 10px;
@@ -1513,6 +1551,17 @@
 
         .summary {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .mode-tabs {
+          display: grid;
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+
+        .mode-tab {
+          width: 100%;
+          justify-content: space-between;
         }
 
         .toolbar-controls {

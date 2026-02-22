@@ -483,3 +483,72 @@ function parseScienceRequirementText_(rawText) {
   return { kind: "any", courses };
 }
 
+function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
+  if (!programsRange || programsRange.length < 2) return [];
+
+  const header = (programsRange[0] || []).map((x) => String(x || ""));
+  const idx = indexHeader_(header);
+  try {
+    requireProgramsColumns_(idx);
+  } catch (err) {
+    return [];
+  }
+
+  const datasetDate = resolveDatasetDateFromPrograms_(programsRange, fallbackDateValue || new Date().toISOString());
+  const out = [];
+
+  for (let r = 1; r < programsRange.length; r++) {
+    const row = programsRange[r] || [];
+    const institution = getStr_(row, idx, "Institution");
+    const program = getStr_(row, idx, "Program");
+    if (!institution || !program) continue;
+
+    const status = getStr_(row, idx, "Status");
+    if (status && status.toLowerCase() !== "active") continue;
+
+    const credential = getStr_(row, idx, "Credential_Type");
+    const minAvg = toNumber_(getStr_(row, idx, "Min_Avg_Final"));
+    const competitive = getStr_(row, idx, "Competitive_Final");
+    const sourceUrl = normalizeHttpUrlForOutput_(getStr_(row, idx, "Program_URL"));
+    const requirementType = getStr_(row, idx, "Requirement_Type");
+
+    out.push({
+      key: makeExplorerProgramKey_(institution, program, credential, r),
+      institution,
+      program,
+      credential,
+      minAvg: isFinite(minAvg) ? Number(minAvg) : null,
+      competitiveGuidance: competitive || "",
+      requirementType: requirementType || "",
+      sourceUrl,
+      datasetDate: datasetDate || "",
+    });
+  }
+
+  out.sort((a, b) => {
+    const i = String(a.institution || "").localeCompare(String(b.institution || ""));
+    if (i !== 0) return i;
+    const p = String(a.program || "").localeCompare(String(b.program || ""));
+    if (p !== 0) return p;
+    return String(a.credential || "").localeCompare(String(b.credential || ""));
+  });
+
+  return out;
+}
+
+function makeExplorerProgramKey_(institution, program, credential, rowIndex) {
+  const stem = [slugExplorerPart_(institution), slugExplorerPart_(program), slugExplorerPart_(credential)]
+    .filter(Boolean)
+    .join("_");
+  const rowPart = `r${Math.max(1, Number(rowIndex) || 1)}`;
+  return stem ? `${stem}_${rowPart}` : `program_${rowPart}`;
+}
+
+function slugExplorerPart_(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60);
+}
