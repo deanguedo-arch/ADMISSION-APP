@@ -2,6 +2,8 @@
 function boot() {
         resetForm();
         setInputsCollapsed(state.inputsCollapsed);
+        state.meetingMode = loadMeetingModePreference_();
+        setMeetingMode_(state.meetingMode, { persist: false });
         state.mockMode = isMockMode();
         if (state.mockMode) {
           bootMockMode();
@@ -21,6 +23,7 @@ function boot() {
       }
 
       let panelHeightSyncRaf = 0;
+      const MEETING_MODE_KEY = "admissions_meeting_mode";
 
       function schedulePanelHeightSync() {
         if (panelHeightSyncRaf) {
@@ -178,6 +181,7 @@ function boot() {
         if (ui.pasteInput) ui.pasteInput.value = "";
         updateFilterCounts();
         syncFilterButtons();
+        setMeetingMode_(state.meetingMode, { persist: false });
       }
 
       function toggleInputsPanel() {
@@ -197,6 +201,43 @@ function boot() {
           ui.showInputsBtn.setAttribute("aria-expanded", next ? "false" : "true");
         }
         schedulePanelHeightSync();
+      }
+
+      function loadMeetingModePreference_() {
+        try {
+          return window.localStorage.getItem(MEETING_MODE_KEY) === "1";
+        } catch (err) {
+          return false;
+        }
+      }
+
+      function saveMeetingModePreference_(enabled) {
+        try {
+          window.localStorage.setItem(MEETING_MODE_KEY, enabled ? "1" : "0");
+        } catch (err) {
+          // Non-fatal for restricted browser contexts.
+        }
+      }
+
+      function syncMeetingModeButton_() {
+        if (!ui.meetingToggleBtn) return;
+        const on = !!state.meetingMode;
+        ui.meetingToggleBtn.textContent = on ? "Meeting Mode On" : "Meeting Mode";
+        ui.meetingToggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+
+      function setMeetingMode_(enabled, opts) {
+        const on = !!enabled;
+        state.meetingMode = on;
+        document.body.classList.toggle("is-meeting", on);
+        syncMeetingModeButton_();
+        if (on) setInputsCollapsed(true);
+        if (!(opts && opts.persist === false)) saveMeetingModePreference_(on);
+        schedulePanelHeightSync();
+      }
+
+      function toggleMeetingMode() {
+        setMeetingMode_(!state.meetingMode);
       }
 
       function addNamedRow(seed) {
@@ -1853,6 +1894,7 @@ function boot() {
               .map((item) => `<li class="meaning-item ${escapeAttr(item.tone)}">${escapeHtml(item.text)}</li>`)
               .join("")}</ul>`
           : `<p class="ghost">No summary available.</p>`;
+        const highlightsHtml = buildDetailHighlights_(row, detail);
 
         const missingHtml = missing.length
           ? `<ul class="detail-list">${missing.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
@@ -1922,6 +1964,7 @@ function boot() {
             ${programLinkHtml}
           </div>
           ${warningHtml}
+          ${highlightsHtml}
           <div class="meaning-panel">
             <h4>What this means</h4>
             ${meaningHtml}
@@ -1955,6 +1998,68 @@ function boot() {
           ${requirementsSectionHtml}
           ${electiveSectionHtml}
         `;
+      }
+
+      function buildDetailHighlights_(row, detail) {
+        const safeDetail = detail && typeof detail === "object" ? detail : {};
+        const confidence = normalizeConfidence_(safeDetail.confidence || (row && row.confidence));
+        const snapshotStatus = String(
+          safeDetail.snapshotResult || (row && row.snapshotResult) || rowStatusForDisplay_(row).label || "Unknown"
+        ).trim() || "Unknown";
+        const snapshotTone =
+          confidence === "High" ? "ok" : confidence === "Medium" ? "warn" : confidence === "Low" ? "bad" : "info";
+
+        const avg = safeDetail.average && typeof safeDetail.average === "object" ? safeDetail.average : {};
+        let avgTone = "warn";
+        let avgText = "Not fully checkable";
+        if (avg.meetsMinimum === true) {
+          avgTone = "ok";
+          avgText = "Meets minimum";
+        } else if (avg.meetsMinimum === false) {
+          const min = toFiniteNumber(avg.min);
+          const student = toFiniteNumber(avg.student);
+          if (Number.isFinite(min) && Number.isFinite(student)) {
+            avgTone = "bad";
+            avgText = `Short by ${formatMarkDisplay(Math.max(0, min - student))}`;
+          } else {
+            avgTone = "bad";
+            avgText = "Below minimum";
+          }
+        }
+
+        const requirements = Array.isArray(safeDetail.requirements) ? safeDetail.requirements : [];
+        const failedReq = requirements.find((req) => {
+          const status = normalizeReqStatus(req && req.status);
+          return status === "missing" || status === "low_mark";
+        });
+        const missingReasons = (Array.isArray(safeDetail.missingReasons) ? safeDetail.missingReasons : []).filter(Boolean);
+        let gapTone = "ok";
+        let gapText = "No gaps flagged";
+        if (failedReq) {
+          gapTone = "bad";
+          gapText = String(failedReq.label || "Requirement gap").trim() || "Requirement gap";
+        } else if (missingReasons.length) {
+          gapTone = "bad";
+          gapText = missingReasons[0];
+        }
+
+        const nextStepText = String(safeDetail.nextStep || "").trim() || nextActionForConfidence_(confidence);
+
+        const cards = [
+          { label: "Snapshot", tone: snapshotTone, value: `${snapshotStatus} | Confidence ${confidence}` },
+          { label: "Average", tone: avgTone, value: avgText },
+          { label: "Biggest Gap", tone: gapTone, value: gapText },
+          { label: "Next Step", tone: "info", value: nextStepText },
+        ];
+
+        return `<div class="detail-highlights">${cards
+          .map(
+            (card) => `<div class="highlight-card ${escapeAttr(card.tone)}">
+                <div class="highlight-label">${escapeHtml(card.label)}</div>
+                <div class="highlight-value">${escapeHtml(card.value)}</div>
+              </div>`
+          )
+          .join("")}</div>`;
       }
 
       function buildMeaningSummary_(row, detail) {
@@ -2758,4 +2863,3 @@ function boot() {
         return escapeHtml(v);
       }
 </script>
-

@@ -18,10 +18,10 @@ boot();
       ui.credentialFilter.addEventListener("change", onResultControlChange);
       ui.sortSelect.addEventListener("change", onResultControlChange);
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
+      if (ui.meetingToggleBtn) ui.meetingToggleBtn.addEventListener("click", toggleMeetingMode);
       ui.compareStrip.addEventListener("click", onCompareStripClick);
       if (ui.compareResults) ui.compareResults.addEventListener("click", onCompareResultsClick);
       if (ui.pinnedComparisonBtn) ui.pinnedComparisonBtn.addEventListener("click", generatePinnedComparisonSheet);
       if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("toggle", onDetailsDrawerToggle, true);
       window.addEventListener("resize", schedulePanelHeightSync);
 </script>
-

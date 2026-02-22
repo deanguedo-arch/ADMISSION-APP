@@ -658,3 +658,17 @@ Keep entries short and append-only.
   - Baseline dataset date set to `2026-02-20` in `docs/RELEASE_GATE_IPHONE.md`.
   - Profile A expected summary updated to `Likely eligible 262 / Likely ineligible 0 / Uncheckable 37`.
   - Profile B expected summary updated to `Likely eligible 66 / Likely ineligible 196 / Uncheckable 37`.
+## 2026-02-22 (Web app phase 1: meeting mode + requirement highlights)
+- Added Meeting Mode control to results toolbar in `apps_script/WebAppBody.html` and wired state/events in `apps_script/WebAppScriptState.html` + `apps_script/WebAppScriptInit.html`.
+- Implemented Meeting Mode preference + behavior in `apps_script/WebAppScriptFunctions.html` using localStorage key `admissions_meeting_mode` (layout/readability only; collapses inputs when enabled).
+- Added `buildDetailHighlights_` and injected a 4-card Requirement Highlights block into program details rendering (`Snapshot`, `Average`, `Biggest Gap`, `Next Step`).
+- Added styles in `apps_script/WebAppStyles.html` for `.detail-highlights`/highlight cards and `body.is-meeting` readability adjustments with responsive one-column highlights on mobile.
+- Preview checkpoint: Node local preview server launched via `node tools/local-preview-server.js --port 5173` and served `http://localhost:5173/WebApp.html?mock=1`.
+- Validation note: `tools/validate-webapp-surface.ps1` could not run in this environment (`pwsh` unavailable).
+## 2026-02-22 (Web app visual polish pass: professional UI + mobile/accessibility)
+- Applied a design-system cleanup in `apps_script/WebAppStyles.html`: spacing/radius/touch-target/focus tokens, normalized panel spacing, and improved body/shell safe-area behavior.
+- Refined results command area: toolbar now has a unified command-bar container, improved filter/button/input sizing, and stronger scan hierarchy for meeting use.
+- Updated card/link/chip affordances for better touch ergonomics and clearer interaction cues (including 44px target sizing on key controls).
+- Added keyboard focus-visible treatment across interactive controls plus `result-card` focus-within styling for accessibility.
+- Mobile polish: fixed `.toolbar-controls` single-column behavior under `@media (max-width: 980px)` and ensured child controls fill width.
+- Preview verification performed via Node local server at `http://localhost:5173/WebApp.html?mock=1`.
