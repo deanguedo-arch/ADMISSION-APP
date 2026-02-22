@@ -47,6 +47,8 @@ Run this before each production push affecting `apps_script/`.
 - [ ] Decision tags (`Apply`, `Hold`, `Not now`) save per program and show a decision pill on result cards.
 - [ ] Meeting Owner and Follow-up Date fields save/reload in the same browser session.
 - [ ] Meeting notes can be edited/cleared and `Export Packet` count updates correctly.
+- [ ] Student Mode toggle updates copy and simplifies controls (advanced filters/meeting compare actions hidden).
+- [ ] Student Mode keeps results usable with search + card details flow on desktop and mobile.
 
 ## 5) Export
 - [ ] CSV export works for current view.
@@ -73,3 +75,4 @@ Run this before each production push affecting `apps_script/`.
 - [ ] Live status regions announce updates (`status`, `paste status`, `rows stamp`).
 - [ ] At ~1280-1536 desktop widths, details panel content does not collapse into clipped/overlapped blocks.
 - [ ] At `<=980px`, toolbar controls stack cleanly and details sections remain readable.
+- [ ] At `<=980px`, run actions remain reachable with sticky behavior and 44px targets.

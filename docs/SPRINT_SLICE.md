@@ -28,6 +28,7 @@ Ship a clean release candidate: finalize recent web app fixes, verify preflight 
 - [x] 2026-02-10: Ran release preflight automation (`validate-webapp-surface`, `validate-apps-script-structure`) and local preview startup smoke.
 - [x] 2026-02-10: Completed Slice 4 by adding cached `runWebEligibility` responses, dataset fingerprint metadata, and bounded lightweight `WebAudit` logging without raw marks.
 - [x] 2026-02-10: Completed Slice 5 local QA pass by re-running guardrails, validating preview startup, surfacing dataset freshness in UI, and hardening PDF export to iframe-print (no popup dependency).
+- [x] 2026-02-22: Phase 7 pass 1 delivered Student Mode baseline (copy simplification + advanced-control reduction + debounced search + mobile sticky actions/touch targets).
 
 ## Meeting + Mobile Roadmap (2026-02-22)
 - [x] Phase 5: Stability + accessibility hardening for meeting use (keyboard/focus/responsive/details panel fixes).

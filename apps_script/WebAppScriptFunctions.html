@@ -4,6 +4,8 @@ function boot() {
         setInputsCollapsed(state.inputsCollapsed);
         state.meetingMode = loadMeetingModePreference_();
         setMeetingMode_(state.meetingMode, { persist: false });
+        state.studentMode = loadStudentModePreference_();
+        setStudentMode_(state.studentMode, { persist: false });
         state.meetingNotesByKey = loadMeetingNotes_();
         updateMeetingNotesControls_();
         state.mockMode = isMockMode();
@@ -26,7 +28,14 @@ function boot() {
 
       let panelHeightSyncRaf = 0;
       const MEETING_MODE_KEY = "admissions_meeting_mode";
+      const STUDENT_MODE_KEY = "admissions_student_mode";
       const MEETING_NOTES_KEY = "admissions_meeting_notes_v1";
+      const DEFAULT_HERO_SUBTITLE = "Enter marks, triage programs, and review requirements with clear next steps.";
+      const STUDENT_HERO_SUBTITLE = "Enter your final marks to see likely options and clear next steps.";
+      const DEFAULT_INPUTS_HINT = "Add final marks only. Duplicate courses are deduped automatically (latest entry wins).";
+      const STUDENT_INPUTS_HINT = "Add your final marks only. We automatically keep the latest mark for duplicates.";
+      const DEFAULT_SNAPSHOT_TITLE = "Snapshot (advisory) - verify on institution site for final decisions";
+      const STUDENT_SNAPSHOT_TITLE = "Student view (advisory) - confirm details on official program websites.";
       const RESULT_SORT_OPTIONS = [
         { value: "closest", label: "Sort: Closest to eligible" },
         { value: "institution_program", label: "Sort: Institution + Program" },
@@ -207,6 +216,7 @@ function boot() {
         syncFilterButtons();
         updateMeetingNotesControls_();
         setMeetingMode_(state.meetingMode, { persist: false });
+        setStudentMode_(state.studentMode, { persist: false });
       }
 
       function toggleInputsPanel() {
@@ -239,6 +249,22 @@ function boot() {
       function saveMeetingModePreference_(enabled) {
         try {
           window.localStorage.setItem(MEETING_MODE_KEY, enabled ? "1" : "0");
+        } catch (err) {
+          // Non-fatal for restricted browser contexts.
+        }
+      }
+
+      function loadStudentModePreference_() {
+        try {
+          return window.localStorage.getItem(STUDENT_MODE_KEY) === "1";
+        } catch (err) {
+          return false;
+        }
+      }
+
+      function saveStudentModePreference_(enabled) {
+        try {
+          window.localStorage.setItem(STUDENT_MODE_KEY, enabled ? "1" : "0");
         } catch (err) {
           // Non-fatal for restricted browser contexts.
         }
@@ -507,6 +533,22 @@ function boot() {
         ui.meetingToggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
       }
 
+      function syncStudentModeCopy_() {
+        const on = !!state.studentMode;
+        if (ui.heroSubtitle) ui.heroSubtitle.textContent = on ? STUDENT_HERO_SUBTITLE : DEFAULT_HERO_SUBTITLE;
+        if (ui.inputsHint) ui.inputsHint.textContent = on ? STUDENT_INPUTS_HINT : DEFAULT_INPUTS_HINT;
+        if (ui.snapshotBannerTitle) {
+          ui.snapshotBannerTitle.textContent = on ? STUDENT_SNAPSHOT_TITLE : DEFAULT_SNAPSHOT_TITLE;
+        }
+      }
+
+      function syncStudentModeButton_() {
+        if (!ui.studentToggleBtn) return;
+        const on = !!state.studentMode;
+        ui.studentToggleBtn.textContent = on ? "Student Mode On" : "Student Mode";
+        ui.studentToggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+
       function setMeetingMode_(enabled, opts) {
         const on = !!enabled;
         state.meetingMode = on;
@@ -519,6 +561,34 @@ function boot() {
 
       function toggleMeetingMode() {
         setMeetingMode_(!state.meetingMode);
+      }
+
+      function setStudentMode_(enabled, opts) {
+        const on = !!enabled;
+        state.studentMode = on;
+        document.body.classList.toggle("is-student", on);
+        if (on) {
+          state.primaryMode = "results";
+          state.resultFilters.institution = "";
+          state.resultFilters.credential = "";
+          state.resultFilters.requirementType = "";
+          state.resultFilters.sort = DEFAULT_RESULT_SORT;
+          setInputsCollapsed(true);
+        }
+        syncStudentModeButton_();
+        syncStudentModeCopy_();
+        syncModeTabs_();
+        syncResultControlContext_();
+        syncResultControls();
+        populateResultFilterOptions();
+        renderResults();
+        renderDetailsDrawer();
+        if (!(opts && opts.persist === false)) saveStudentModePreference_(on);
+        schedulePanelHeightSync();
+      }
+
+      function toggleStudentMode() {
+        setStudentMode_(!state.studentMode);
       }
 
       function setExplorerProgramsFromBoot_(bootData) {
@@ -1495,11 +1565,16 @@ function boot() {
 
       function syncResultControlContext_() {
         const isExplorerMode = normalizePrimaryMode_(state.primaryMode) === "explorer";
+        const isStudentMode = !!state.studentMode;
         if (ui.requirementTypeFilter) ui.requirementTypeFilter.style.display = isExplorerMode ? "" : "none";
         if (ui.resultSearch) {
-          ui.resultSearch.placeholder = isExplorerMode
-            ? "Search institution, program, credential, requirement..."
-            : "Search institution, program, credential...";
+          if (isStudentMode) {
+            ui.resultSearch.placeholder = "Search programs or institutions...";
+          } else {
+            ui.resultSearch.placeholder = isExplorerMode
+              ? "Search institution, program, credential, requirement..."
+              : "Search institution, program, credential...";
+          }
         }
         syncSortOptionsForMode_();
       }
@@ -1571,6 +1646,17 @@ function boot() {
         return state.resultModel && state.resultModel.rows ? state.resultModel.rows : [];
       }
 
+      function onResultSearchInput() {
+        if (state.resultSearchDebounceTimer) {
+          clearTimeout(state.resultSearchDebounceTimer);
+          state.resultSearchDebounceTimer = 0;
+        }
+        state.resultSearchDebounceTimer = setTimeout(() => {
+          state.resultSearchDebounceTimer = 0;
+          onResultControlChange();
+        }, 140);
+      }
+
       function onResultControlChange() {
         state.resultFilters.query = String(ui.resultSearch.value || "").trim();
         state.resultFilters.institution = String(ui.institutionFilter.value || "").trim();
@@ -1581,6 +1667,10 @@ function boot() {
       }
 
       function clearResultFilters() {
+        if (state.resultSearchDebounceTimer) {
+          clearTimeout(state.resultSearchDebounceTimer);
+          state.resultSearchDebounceTimer = 0;
+        }
         const modeDefaultSort = normalizePrimaryMode_(state.primaryMode) === "explorer" ? "institution_program" : DEFAULT_RESULT_SORT;
         state.resultFilters.query = "";
         state.resultFilters.institution = "";

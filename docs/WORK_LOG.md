@@ -749,3 +749,19 @@ Keep entries short and append-only.
   - Phase 8: iPhone Web Release Operations.
   - Phase 9: App Store Track (deferred wrapper).
 - Validation note: PowerShell guardrails remain unavailable in this environment (`pwsh` not installed); local Node preview remains available for UI verification.
+## 2026-02-22 (Web app phase 7 pass 1: student mode optimization)
+- Added Student Mode UI toggle (`#studentToggleBtn`) in `apps_script/WebAppBody.html` with local preference support in `apps_script/WebAppScriptFunctions.html` (`admissions_student_mode`).
+- Student Mode behavior:
+  - Forces Results mode and collapses inputs for a simplified student flow.
+  - Hides advanced/meeting staff controls via `body.is-student` styles (Explorer tabs, advanced filters, compare/pinned actions, meeting export/toggle controls, optional elective override block).
+  - Updates on-page copy to student-friendly wording (hero subtitle, input hint, snapshot advisory line).
+- Added low-end phone responsiveness improvements:
+  - Debounced result search input (`onResultSearchInput`) to reduce rerenders while typing.
+  - Added `content-visibility` + intrinsic sizing on result cards for faster large-list rendering.
+  - Added reduced-motion fallback (`prefers-reduced-motion`) to cut animation/transition cost.
+- Tightened mobile interaction:
+  - Enforced 44px touch targets on key controls at `<=980px`.
+  - Added sticky `.run-actions` block on mobile so primary actions stay reachable.
+- Included Program Explorer filter readability tweak in the same pass:
+  - `Requirement Type` empty option label shortened to `All Req Types` and sizing widened.
+- Validation note: PowerShell guardrails could not run in this environment (`pwsh` unavailable).
