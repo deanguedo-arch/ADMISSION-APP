@@ -832,3 +832,67 @@ Keep entries short and append-only.
 - Updated default input rows to 5 named courses and 1 elective override row.
 - Updated QA checklist for new scope (no student mode/paste transcript, packet PDF expectations, advanced tools collapse).
 - Validation scripts were not runnable in this environment (`pwsh`/`powershell` not installed); JS syntax checks passed via `node --check` on web app script fragments.
+## 2026-02-22 (Phase 1 visual design refresh for web app)
+- Applied a cohesive visual-system pass to improve product polish/marketability while preserving workflow logic and backend contract.
+- Updated typography stack to `Sora` (headings) + `Source Sans 3` (body) in `apps_script/WebApp.html`.
+- Added a comprehensive style override layer in `apps_script/WebAppStyles.html`:
+  - stronger hierarchy (hero, panel, toolbar, card emphasis)
+  - clearer depth/spacing/radius system
+  - cleaner controls and button treatments
+  - improved details drawer + advanced tools presentation
+  - subtle branded background atmosphere and mobile refinements.
+- Local preview smoke confirmed at `http://localhost:5173/WebApp.html?mock=1` after refresh.
+- Guardrail PowerShell checks remain blocked in this environment (`pwsh`/`powershell` unavailable).
+## 2026-02-22 (UI polish follow-up: hierarchy + workflow clarity)
+- Added hero signal chips and tightened hero copy to better communicate counsellor-first value.
+- Added a compact 3-step input flow row in `Student Inputs` to reduce cognitive load for first use.
+- Added a results primer note in `Program Results` to reinforce the triage workflow.
+- Added subtle panel entry animation (`panel-enter`) and staggered load timing for primary columns.
+- Added mobile overflow handling for hero/workflow chips to prevent wrapping/overflow regressions.
+- Verified additions in source and local preview (`http://localhost:5173/WebApp.html?mock=1`).
+- Guardrail PowerShell checks remain blocked in this environment (`pwsh`/`powershell` unavailable); script fragments were syntax-checked by extracting `<script>` bodies and running `node --check`.
+## 2026-02-22 (Phase 2 UI refinement + copy cleanup)
+- Removed the `Fast meeting flow` note from Program Results (`results-primer` block removed).
+- Applied Phase 2 visual refinement for a cleaner, more premium hierarchy while preserving existing workflow and backend behavior:
+  - tighter typography scale and contrast
+  - cleaner panel/card surfaces and border system
+  - simplified tabs/toolbar controls
+  - stronger but restrained CTA/button styling
+  - improved detail/advanced-tools visual consistency
+  - mobile tuning for tabs/hero/panel spacing.
+- Added `prefers-reduced-motion` fallback for panel/card/button transitions.
+- Confirmed local preview render at `http://localhost:5173/WebApp.html?mock=1` with no `Fast meeting flow` UI.
+- Guardrail PowerShell scripts remain blocked in this environment (`pwsh`/`powershell` unavailable); web app script fragments pass syntax checks via extracted `<script>` bodies and `node --check`.
+## 2026-02-22 (Hero branding cleanup + logo emphasis)
+- Removed hero workflow chips from header (`Counsellor-first workflow`, `Fast triage + compare`, `Snapshot guidance...`) to reduce top-of-page clutter.
+- Increased brand logo prominence in hero with larger sizing and stronger visual framing (border, subtle surface, deeper shadow) for clearer market-facing branding.
+- Added mobile logo sizing adjustments to keep header balanced on narrow screens.
+- Verified local preview no longer contains removed chip copy at `http://localhost:5173/WebApp.html?mock=1`.
+## 2026-02-22 (Phase 3 + 4 executed: stacked hero + layout simplification)
+- Implemented stacked, brand-first hero hierarchy: logo now sits above title/subtitle in visual flow via CSS layout (`brand-lockup` column orientation).
+- Increased logo prominence further (larger desktop/mobile sizing, stronger framed treatment) and reduced header utility stamp visual weight.
+- Simplified overall interface density for cleaner market-ready presentation:
+  - reduced panel shadow/noise and standardized panel rhythm
+  - simplified mode-tab container styling
+  - flattened toolbar/filters into lower-noise controls
+  - tightened summary/stat spacing and reduced decorative effects
+  - normalized result card presentation with consistent minimum height and cleaner hover behavior.
+- Verified local preview rendering at `http://localhost:5173/WebApp.html?mock=1`.
+## 2026-02-22 (Phase 5-7 executed: storytelling + packet branding + mobile polish)
+- Implemented Phase 5 results storytelling upgrades in eligibility cards:
+  - added featured-card logic with dynamic badge (`Top Recommendation` / `Priority Review` / `Manual Review`)
+  - added explicit `Key Gap`/`Readiness` summary block per card for faster triage scanning
+  - strengthened card hierarchy with featured emphasis and clearer title-row structure.
+- Implemented Phase 6 branded packet export refresh (styled PDF packet):
+  - redesigned packet with branded cover, trust/advisory callout, KPI strip, and numbered section headers
+  - kept required content sections (filtered visible list, selected detail summary, meeting decision/note summary)
+  - added styled decision pills in packet tables and selected summary.
+- Implemented Phase 7 responsive/mobile polish guided by responsive + iOS design references:
+  - sticky mobile results toolbar with horizontal chip scrolling for filters
+  - improved touch-target behavior in card actions and meeting decision chips
+  - reduced mobile overflow risk in card actions/decision rows and meeting note area
+  - kept reduced-motion safeguards active.
+- Skill usage during this pass: `ui-ux-pro-max`, `frontend-responsive-design-standards`, `mobile-ios-design`.
+- Validation:
+  - JS syntax checks passed for web app script fragments via extracted `<script>` + `node --check`
+  - PowerShell guardrails remain blocked in this environment (`pwsh`/`powershell` unavailable).

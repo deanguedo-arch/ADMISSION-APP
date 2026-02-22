@@ -1825,22 +1825,30 @@ function boot() {
           return;
         }
 
+        const featuredKey = pickFeaturedRecommendationKey_(filteredRows);
         const bodyHtml = filteredRows
           .map((row) => {
             const isPinned = !!state.shortlist[row.key];
             const isSelected = row.key === state.selectedProgramKey;
             const isCompared = state.compareKeys.indexOf(row.key) >= 0;
+            const isFeatured = row.key === featuredKey;
             const detail = getProgramDetailsForRow(row);
             const confidence = normalizeConfidence_(detail.confidence || row.confidence);
             const status = rowStatusForDisplay_(row);
             const reason = rowReasonForDisplay_(row, status);
+            const keyGap = buildCardKeyGapSummary_(row, detail, status);
             const warning = buildWarningDisplay_(detail, confidence);
             const warningHtml = renderWarningHtml_(warning, "card-warning");
             const sourceLinkHtml = renderSourceLinkInline_(detail, confidence);
             const pinClass = isPinned ? "pin-btn active" : "pin-btn";
             const compareClass = isCompared ? "action-btn active" : "action-btn";
             const viewClass = isSelected ? "action-btn active" : "action-btn";
+            const featuredMeta = isFeatured ? featuredPresentationForStatus_(status) : null;
+            const featuredBadgeHtml = featuredMeta
+              ? `<span class="priority-pill ${escapeAttr(featuredMeta.css)}">${escapeHtml(featuredMeta.label)}</span>`
+              : "";
             const cardClasses = []
+              .concat(isFeatured ? ["row-featured"] : [])
               .concat(isPinned ? ["row-pinned"] : [])
               .concat(isSelected ? ["row-selected"] : [])
               .join(" ");
@@ -1870,7 +1878,10 @@ function boot() {
               >
                 <div class="card-top">
                   <div class="card-title-wrap">
-                    <h3 class="card-title">${escapeHtml(row.program || "Program")}</h3>
+                    <div class="card-title-row">
+                      <h3 class="card-title">${escapeHtml(row.program || "Program")}</h3>
+                      ${featuredBadgeHtml}
+                    </div>
                     <p class="card-subtitle">${escapeHtml(row.institution || "Institution")} | ${escapeHtml(
               row.credential || "Credential"
             )}</p>
@@ -1885,6 +1896,10 @@ function boot() {
                       <div class="student-avg-value">${escapeHtml(studentAvgText)}</div>
                     </div>
                   </div>
+                </div>
+                <div class="card-key-gap ${escapeAttr(keyGap.tone)}">
+                  <span class="card-key-gap-label">${escapeHtml(keyGap.label)}</span>
+                  <span class="card-key-gap-value">${escapeHtml(keyGap.value)}</span>
                 </div>
                 <div class="card-reason">${escapeHtml(reason)}</div>
                 ${warningHtml}
@@ -1999,6 +2014,54 @@ function boot() {
         const detail = getProgramDetailsForRow(row);
         const advisories = Array.isArray(detail.advisories) ? detail.advisories.filter(Boolean) : [];
         return advisories[0] || "Meets marks-based checks.";
+      }
+
+      function pickFeaturedRecommendationKey_(rows) {
+        const list = Array.isArray(rows) ? rows : [];
+        if (!list.length) return "";
+        const topEligible = list.find((row) => rowStatusForDisplay_(row).css === "eligible");
+        if (topEligible && topEligible.key) return topEligible.key;
+        return String((list[0] && list[0].key) || "").trim();
+      }
+
+      function featuredPresentationForStatus_(status) {
+        const safeStatus = status && typeof status === "object" ? status : { css: "eligible" };
+        if (safeStatus.css === "missing") return { label: "Priority Review", css: "review" };
+        if (safeStatus.css === "uncheckable") return { label: "Manual Review", css: "manual" };
+        return { label: "Top Recommendation", css: "recommendation" };
+      }
+
+      function buildCardKeyGapSummary_(row, detail, status) {
+        const rowStatus = status || rowStatusForDisplay_(row);
+        if (rowStatus.css === "missing") {
+          const firstMissing = splitPipedText(row && row.missing).shift();
+          return {
+            label: "Key Gap",
+            tone: "bad",
+            value: firstMissing || "Missing marks-based requirement(s).",
+          };
+        }
+        if (rowStatus.css === "uncheckable") {
+          const reason = String((detail && detail.uncheckableReason) || "").trim();
+          return {
+            label: "Manual Check",
+            tone: "warn",
+            value: reason || "Program has additional requirements beyond marks checks.",
+          };
+        }
+        const advisories = (Array.isArray(detail && detail.advisories) ? detail.advisories : []).filter(Boolean);
+        if (advisories.length) {
+          return {
+            label: "Watch Item",
+            tone: "warn",
+            value: advisories[0],
+          };
+        }
+        return {
+          label: "Readiness",
+          tone: "ok",
+          value: "No critical gaps from marks-based checks.",
+        };
       }
 
       function normalizeConfidence_(value) {
@@ -2984,7 +3047,8 @@ function boot() {
         keys.forEach((key) => {
           const record = normalizeMeetingRecord_(map[key]);
           if (!meetingRecordHasContent_(record)) return;
-          const decisionLabel = meetingDecisionLabel_(record.decision) || "None";
+          const decisionRaw = normalizeMeetingDecision_(record.decision);
+          const decisionLabel = meetingDecisionLabel_(decisionRaw) || "None";
           const note = String(record.note || "").trim();
           const resultRow = resultRowsByKey[key];
           if (resultRow) {
@@ -2994,6 +3058,7 @@ function boot() {
               institution: resultRow.institution || "",
               program: resultRow.program || "",
               credential: resultRow.credential || "",
+              decisionRaw,
               decision: decisionLabel,
               note,
             });
@@ -3007,6 +3072,7 @@ function boot() {
               institution: explorerRow.institution || "",
               program: explorerRow.program || "",
               credential: explorerRow.credential || "",
+              decisionRaw,
               decision: decisionLabel,
               note,
             });
@@ -3018,11 +3084,20 @@ function boot() {
             institution: "",
             program: key,
             credential: "",
+            decisionRaw,
             decision: decisionLabel,
             note,
           });
         });
         return rows;
+      }
+
+      function packetDecisionClass_(decisionRaw) {
+        const decision = normalizeMeetingDecision_(decisionRaw);
+        if (decision === "apply") return "packet-decision-apply";
+        if (decision === "hold") return "packet-decision-hold";
+        if (decision === "not_now") return "packet-decision-not_now";
+        return "packet-decision-none";
       }
 
       function buildPacketVisibleListRowsHtml_(rows) {
@@ -3045,7 +3120,10 @@ function boot() {
                 : Number.isFinite(row.studentAvg)
                 ? formatCell(row.studentAvg)
                 : "n/a";
-            const decision = meetingDecisionLabel_(getMeetingRecordForKey_(row.key).decision) || "";
+            const meetingRecord = getMeetingRecordForKey_(row.key);
+            const decisionRaw = normalizeMeetingDecision_(meetingRecord.decision);
+            const decision = meetingDecisionLabel_(decisionRaw) || "None";
+            const decisionClass = packetDecisionClass_(decisionRaw);
             return `
               <tr>
                 <td>${index + 1}</td>
@@ -3056,7 +3134,7 @@ function boot() {
                 <td>${escapeHtml(confidence || "n/a")}</td>
                 <td>${escapeHtml(minAvg)}</td>
                 <td>${escapeHtml(studentAvgValue)}</td>
-                <td>${escapeHtml(decision || "None")}</td>
+                <td><span class="packet-decision ${escapeAttr(decisionClass)}">${escapeHtml(decision)}</span></td>
               </tr>
             `;
           })
@@ -3086,7 +3164,9 @@ function boot() {
         const missing = (Array.isArray(detail.missingReasons) ? detail.missingReasons : []).filter(Boolean).slice(0, 3);
         const advisories = (Array.isArray(detail.advisories) ? detail.advisories : []).filter(Boolean).slice(0, 3);
         const meetingRecord = getMeetingRecordForKey_(row.key);
-        const decision = meetingDecisionLabel_(meetingRecord.decision) || "None";
+        const decisionRaw = normalizeMeetingDecision_(meetingRecord.decision);
+        const decision = meetingDecisionLabel_(decisionRaw) || "None";
+        const decisionClass = packetDecisionClass_(decisionRaw);
         const note = String(meetingRecord.note || "").trim();
         return `
           <div class="summary-grid">
@@ -3098,7 +3178,9 @@ function boot() {
             <div><strong>Minimum Average</strong><span>${escapeHtml(Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a")}</span></div>
             <div><strong>Missing / Next Steps</strong><span>${escapeHtml(missing.join(" | ") || "None")}</span></div>
             <div><strong>Advisories</strong><span>${escapeHtml(advisories.join(" | ") || "None")}</span></div>
-            <div><strong>Meeting Decision</strong><span>${escapeHtml(decision)}</span></div>
+            <div><strong>Meeting Decision</strong><span><span class="packet-decision ${escapeAttr(decisionClass)}">${escapeHtml(
+              decision
+            )}</span></span></div>
             <div><strong>Meeting Note</strong><span>${escapeHtml(note || "None")}</span></div>
           </div>
         `;
@@ -3111,12 +3193,13 @@ function boot() {
         return rows
           .map((row) => {
             const note = escapeHtml(row.note || "").replace(/\n/g, "<br />");
+            const decisionClass = packetDecisionClass_(row.decisionRaw);
             return `
               <tr>
                 <td>${escapeHtml(row.mode || "")}</td>
                 <td>${escapeHtml(row.institution || "")}</td>
                 <td>${escapeHtml(row.program || "")}</td>
-                <td>${escapeHtml(row.decision || "None")}</td>
+                <td><span class="packet-decision ${escapeAttr(decisionClass)}">${escapeHtml(row.decision || "None")}</span></td>
                 <td>${note || "None"}</td>
               </tr>
             `;
@@ -3140,6 +3223,7 @@ function boot() {
           toYmdDate_((state.boot && state.boot.dataset && state.boot.dataset.lastProgramsSyncUtc) || "") ||
           "n/a";
         const activeView = state.primaryMode === "explorer" ? "Program Explorer" : `Eligibility Results (${viewLabel(state.view)})`;
+        const selectedCount = selectedRow ? 1 : 0;
         const html = `
 <!doctype html>
 <html>
@@ -3147,63 +3231,191 @@ function boot() {
     <meta charset="utf-8" />
     <title>Admissions Meeting Packet</title>
     <style>
-      body { font-family: "Open Sans", sans-serif; margin: 20px; color: #223a33; }
-      h1 { margin: 0 0 4px; font-family: "Rubik", sans-serif; font-size: 22px; color: #135640; }
-      h2 { margin: 18px 0 8px; font-family: "Rubik", sans-serif; font-size: 15px; color: #184f3d; }
-      .meta { margin: 0 0 4px; font-size: 12px; color: #315d4f; }
-      .notice { margin: 0 0 12px; font-size: 12px; color: #6a5000; font-weight: 700; }
-      table { width: 100%; border-collapse: collapse; font-size: 11px; }
-      th, td { border: 1px solid #d2e1db; padding: 6px; text-align: left; vertical-align: top; }
-      th { background: #f2f8f5; color: #184f3d; }
+      body { margin: 0; font-family: "Source Sans 3", "Open Sans", sans-serif; color: #213a33; background: #f4f9f7; }
+      .packet-shell { max-width: 980px; margin: 0 auto; padding: 18px 20px 30px; }
+      .actions { margin: 0 0 10px; }
+      .actions button {
+        border: 1px solid #9fc4b5;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #14533f;
+        padding: 8px 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .packet-cover {
+        border: 1px solid #caded5;
+        border-radius: 14px;
+        background: linear-gradient(145deg, #ffffff, #f4faf7);
+        padding: 14px;
+        box-shadow: 0 8px 18px rgba(11, 49, 36, 0.09);
+      }
+      .packet-brand {
+        margin: 0 0 4px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #2f6554;
+      }
+      h1 { margin: 0 0 4px; font-family: "Sora", "Rubik", sans-serif; font-size: 24px; letter-spacing: -0.01em; color: #0f5841; }
+      .packet-meta { margin: 0; font-size: 12px; color: #3b5f53; }
+      .packet-trust {
+        margin: 10px 0 0;
+        border: 1px solid #e0c88c;
+        border-radius: 10px;
+        background: #fff9eb;
+        padding: 8px 10px;
+        font-size: 12px;
+        color: #6f5200;
+        font-weight: 700;
+      }
+      .packet-kpis {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .packet-kpi {
+        border: 1px solid #d7e6df;
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 7px 8px;
+      }
+      .packet-kpi strong {
+        display: block;
+        font-size: 17px;
+        color: #104f3a;
+        line-height: 1.15;
+      }
+      .packet-kpi span {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #557166;
+      }
+      .packet-section { margin-top: 16px; }
+      .packet-section-head {
+        margin: 0 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .packet-section-index {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #eaf6f1;
+        border: 1px solid #b8d7ca;
+        color: #155742;
+        font-size: 12px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      h2 { margin: 0; font-family: "Sora", "Rubik", sans-serif; font-size: 15px; color: #184f3d; }
+      .section-note { margin: 4px 0 0; font-size: 12px; color: #526b62; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; background: #fff; border: 1px solid #d4e3dd; }
+      th, td { border: 1px solid #d4e3dd; padding: 6px; text-align: left; vertical-align: top; }
+      th { background: #f1f8f4; color: #174d3b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+      .packet-decision {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid #ceded8;
+        padding: 2px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        background: #f7fcfa;
+        color: #2f5448;
+      }
+      .packet-decision.packet-decision-apply { border-color: #9dcfbf; background: #e5f4ee; color: #155942; }
+      .packet-decision.packet-decision-hold { border-color: #e3d39e; background: #fff9ec; color: #7a5600; }
+      .packet-decision.packet-decision-not_now { border-color: #e3b9b1; background: #faece9; color: #7b3a30; }
       .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
       .summary-grid div { border: 1px solid #d4e3dd; border-radius: 8px; padding: 8px; background: #fcfefd; }
       .summary-grid strong { display: block; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; color: #3d6358; }
       .summary-grid span { display: block; font-size: 12px; color: #213b33; }
       .muted { color: #546c63; font-size: 12px; margin: 0; }
-      .actions { margin: 0 0 10px; }
+      .packet-footer {
+        margin-top: 14px;
+        font-size: 11px;
+        color: #567169;
+        border-top: 1px solid #d7e4de;
+        padding-top: 8px;
+      }
       @media print {
-        body { margin: 8mm; }
+        body { margin: 0; background: #fff; }
+        .packet-shell { max-width: none; padding: 7mm; }
         .actions { display: none; }
+        .packet-cover, .packet-section, .summary-grid div, table { break-inside: avoid; }
       }
     </style>
   </head>
   <body>
-    <div class="actions"><button onclick="window.print()">Print</button></div>
-    <h1>Admissions Meeting Packet</h1>
-    <p class="meta">Generated: ${escapeHtml(generated)} | Dataset: ${escapeHtml(datasetStamp)} | Active view: ${escapeHtml(activeView)}</p>
-    <p class="notice">Snapshot tool. Confirm final decisions on official institution program pages.</p>
-    <h2>Filtered Visible Program List</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Institution</th>
-          <th>Program</th>
-          <th>Credential</th>
-          <th>Snapshot</th>
-          <th>Confidence</th>
-          <th>Min Avg</th>
-          <th>Student Avg</th>
-          <th>Decision</th>
-        </tr>
-      </thead>
-      <tbody>${buildPacketVisibleListRowsHtml_(visibleRows)}</tbody>
-    </table>
-    <h2>Selected Program Detail Summary</h2>
-    ${buildPacketSelectedSummaryHtml_(selectedRow)}
-    <h2>Meeting Decision / Note Summary</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Mode</th>
-          <th>Institution</th>
-          <th>Program</th>
-          <th>Decision</th>
-          <th>Meeting Note</th>
-        </tr>
-      </thead>
-      <tbody>${buildPacketMeetingSummaryRowsHtml_(meetingRows)}</tbody>
-    </table>
+    <div class="packet-shell">
+      <div class="actions"><button onclick="window.print()">Print Packet</button></div>
+      <header class="packet-cover">
+        <p class="packet-brand">Next Step Admissions Checker</p>
+        <h1>Admissions Meeting Packet</h1>
+        <p class="packet-meta">Generated: ${escapeHtml(generated)} | Dataset: ${escapeHtml(datasetStamp)}</p>
+        <p class="packet-meta">Active view: ${escapeHtml(activeView)}</p>
+        <div class="packet-kpis">
+          <div class="packet-kpi"><strong>${visibleRows.length}</strong><span>Visible Programs</span></div>
+          <div class="packet-kpi"><strong>${selectedCount ? "Yes" : "No"}</strong><span>Selected Detail</span></div>
+          <div class="packet-kpi"><strong>${meetingRows.length}</strong><span>Meeting Entries</span></div>
+        </div>
+        <p class="packet-trust">Snapshot advisory only. Confirm final decisions on official institution program pages.</p>
+      </header>
+
+      <section class="packet-section">
+        <div class="packet-section-head"><span class="packet-section-index">1</span><h2>Filtered Visible Program List</h2></div>
+        <p class="section-note">Shows the currently filtered programs from the active results view.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Institution</th>
+              <th>Program</th>
+              <th>Credential</th>
+              <th>Snapshot</th>
+              <th>Confidence</th>
+              <th>Min Avg</th>
+              <th>Student Avg</th>
+              <th>Decision</th>
+            </tr>
+          </thead>
+          <tbody>${buildPacketVisibleListRowsHtml_(visibleRows)}</tbody>
+        </table>
+      </section>
+
+      <section class="packet-section">
+        <div class="packet-section-head"><span class="packet-section-index">2</span><h2>Selected Program Detail Summary</h2></div>
+        <p class="section-note">Summary of the program currently selected in the details panel.</p>
+        ${buildPacketSelectedSummaryHtml_(selectedRow)}
+      </section>
+
+      <section class="packet-section">
+        <div class="packet-section-head"><span class="packet-section-index">3</span><h2>Meeting Decision / Note Summary</h2></div>
+        <p class="section-note">Captured decision chips and notes from meeting workflow.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Institution</th>
+              <th>Program</th>
+              <th>Decision</th>
+              <th>Meeting Note</th>
+            </tr>
+          </thead>
+          <tbody>${buildPacketMeetingSummaryRowsHtml_(meetingRows)}</tbody>
+        </table>
+      </section>
+
+      <p class="packet-footer">Prepared by Next Step Admissions Checker. This packet supports counselling workflow and is not a final admission decision document.</p>
+    </div>
   </body>
 </html>`;
 
