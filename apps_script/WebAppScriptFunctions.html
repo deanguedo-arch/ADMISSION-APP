@@ -24,6 +24,19 @@ function boot() {
 
       let panelHeightSyncRaf = 0;
       const MEETING_MODE_KEY = "admissions_meeting_mode";
+      const RESULT_SORT_OPTIONS = [
+        { value: "closest", label: "Sort: Closest to eligible" },
+        { value: "institution_program", label: "Sort: Institution + Program" },
+        { value: "program_az", label: "Sort: Program A-Z" },
+        { value: "min_avg_asc", label: "Sort: Min Avg low-high" },
+        { value: "min_avg_desc", label: "Sort: Min Avg high-low" },
+      ];
+      const EXPLORER_SORT_OPTIONS = [
+        { value: "institution_program", label: "Sort: Institution + Program" },
+        { value: "program_az", label: "Sort: Program A-Z" },
+        { value: "min_avg_asc", label: "Sort: Min Avg low-high" },
+        { value: "min_avg_desc", label: "Sort: Min Avg high-low" },
+      ];
 
       function schedulePanelHeightSync() {
         if (panelHeightSyncRaf) {
@@ -168,10 +181,12 @@ function boot() {
         state.resultFilters.query = "";
         state.resultFilters.institution = "";
         state.resultFilters.credential = "";
+        state.resultFilters.requirementType = "";
         state.resultFilters.sort = DEFAULT_RESULT_SORT;
         state.electiveRulesCollapsed = false;
         ui.csvBtn.disabled = true;
         ui.pdfBtn.disabled = true;
+        syncResultControlContext_();
         syncResultControls();
         populateResultFilterOptions();
         updateSummary({ totalPrograms: 0, eligible: 0, missing: 0, uncheckable: 0 });
@@ -774,6 +789,7 @@ function boot() {
         if (state.primaryMode !== "results") {
           state.primaryMode = "results";
           syncModeTabs_();
+          syncResultControlContext_();
         }
         if (state.mockMode) {
           runMockCheck(requestPayload);
@@ -1193,6 +1209,41 @@ function boot() {
         return PRIMARY_MODES.indexOf(mode) >= 0 ? mode : "results";
       }
 
+      function getSortOptionsForMode_(mode) {
+        return normalizePrimaryMode_(mode) === "explorer" ? EXPLORER_SORT_OPTIONS : RESULT_SORT_OPTIONS;
+      }
+
+      function syncSortOptionsForMode_() {
+        if (!ui.sortSelect) return;
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        const options = getSortOptionsForMode_(mode);
+        const optionSig = options.map((opt) => `${opt.value}|${opt.label}`).join("||");
+        const currentSig = Array.from(ui.sortSelect.options)
+          .map((opt) => `${String(opt.value || "")}|${String(opt.textContent || "")}`)
+          .join("||");
+        if (optionSig !== currentSig) {
+          ui.sortSelect.innerHTML = options
+            .map((opt) => `<option value="${escapeAttr(opt.value)}">${escapeHtml(opt.label)}</option>`)
+            .join("");
+        }
+
+        const allowedValues = options.map((opt) => opt.value);
+        const defaultSort = mode === "explorer" ? "institution_program" : DEFAULT_RESULT_SORT;
+        const requestedSort = String(state.resultFilters.sort || "").trim();
+        state.resultFilters.sort = allowedValues.indexOf(requestedSort) >= 0 ? requestedSort : defaultSort;
+      }
+
+      function syncResultControlContext_() {
+        const isExplorerMode = normalizePrimaryMode_(state.primaryMode) === "explorer";
+        if (ui.requirementTypeFilter) ui.requirementTypeFilter.style.display = isExplorerMode ? "" : "none";
+        if (ui.resultSearch) {
+          ui.resultSearch.placeholder = isExplorerMode
+            ? "Search institution, program, credential, requirement..."
+            : "Search institution, program, credential...";
+        }
+        syncSortOptionsForMode_();
+      }
+
       function updateModeCounts_() {
         const resultsCount = state.resultModel && state.resultModel.rows ? state.resultModel.rows.length : 0;
         const explorerCount = Array.isArray(state.explorerRows) ? state.explorerRows.length : 0;
@@ -1220,6 +1271,7 @@ function boot() {
         }
         state.primaryMode = next;
         syncModeTabs_();
+        syncResultControlContext_();
         populateResultFilterOptions();
         updateModeCounts_();
         renderResults();
@@ -1263,29 +1315,39 @@ function boot() {
         state.resultFilters.query = String(ui.resultSearch.value || "").trim();
         state.resultFilters.institution = String(ui.institutionFilter.value || "").trim();
         state.resultFilters.credential = String(ui.credentialFilter.value || "").trim();
+        state.resultFilters.requirementType = String((ui.requirementTypeFilter && ui.requirementTypeFilter.value) || "").trim();
         state.resultFilters.sort = String(ui.sortSelect.value || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
         renderResults();
       }
 
       function clearResultFilters() {
+        const modeDefaultSort = normalizePrimaryMode_(state.primaryMode) === "explorer" ? "institution_program" : DEFAULT_RESULT_SORT;
         state.resultFilters.query = "";
         state.resultFilters.institution = "";
         state.resultFilters.credential = "";
-        state.resultFilters.sort = DEFAULT_RESULT_SORT;
+        state.resultFilters.requirementType = "";
+        state.resultFilters.sort = modeDefaultSort;
+        syncResultControlContext_();
         syncResultControls();
         renderResults();
       }
 
       function syncResultControls() {
+        syncSortOptionsForMode_();
+        const modeDefaultSort = normalizePrimaryMode_(state.primaryMode) === "explorer" ? "institution_program" : DEFAULT_RESULT_SORT;
         ui.resultSearch.value = state.resultFilters.query || "";
         ui.institutionFilter.value = state.resultFilters.institution || "";
         ui.credentialFilter.value = state.resultFilters.credential || "";
-        ui.sortSelect.value = state.resultFilters.sort || DEFAULT_RESULT_SORT;
+        if (ui.requirementTypeFilter) ui.requirementTypeFilter.value = state.resultFilters.requirementType || "";
+        ui.sortSelect.value = state.resultFilters.sort || modeDefaultSort;
+        const requirementTypeActive =
+          normalizePrimaryMode_(state.primaryMode) === "explorer" && !!state.resultFilters.requirementType;
         ui.clearResultFiltersBtn.disabled =
           !state.resultFilters.query &&
           !state.resultFilters.institution &&
           !state.resultFilters.credential &&
-          (state.resultFilters.sort || DEFAULT_RESULT_SORT) === DEFAULT_RESULT_SORT;
+          !requirementTypeActive &&
+          (state.resultFilters.sort || modeDefaultSort) === modeDefaultSort;
       }
 
       function syncFilterButtons() {
@@ -1314,12 +1376,18 @@ function boot() {
 
       function populateResultFilterOptions() {
         const rows = getFilterSourceRows_();
+        const isExplorerMode = normalizePrimaryMode_(state.primaryMode) === "explorer";
         const institutions = uniqueStrings(
           rows.map((r) => String(r.institution || "").trim()).filter((x) => x)
         ).sort((a, b) => a.localeCompare(b));
         const credentials = uniqueStrings(
           rows.map((r) => String(r.credential || "").trim()).filter((x) => x)
         ).sort((a, b) => a.localeCompare(b));
+        const requirementTypes = isExplorerMode
+          ? uniqueStrings(rows.map((r) => String(r.requirementType || "").trim()).filter((x) => x)).sort((a, b) =>
+              a.localeCompare(b)
+            )
+          : [];
 
         renderSelectOptions(ui.institutionFilter, "All Institutions", institutions, state.resultFilters.institution);
         if (state.resultFilters.institution && institutions.indexOf(state.resultFilters.institution) < 0) {
@@ -1328,6 +1396,17 @@ function boot() {
         renderSelectOptions(ui.credentialFilter, "All Credentials", credentials, state.resultFilters.credential);
         if (state.resultFilters.credential && credentials.indexOf(state.resultFilters.credential) < 0) {
           state.resultFilters.credential = "";
+        }
+        if (ui.requirementTypeFilter && isExplorerMode) {
+          renderSelectOptions(
+            ui.requirementTypeFilter,
+            "All Requirement Types",
+            requirementTypes,
+            state.resultFilters.requirementType
+          );
+          if (state.resultFilters.requirementType && requirementTypes.indexOf(state.resultFilters.requirementType) < 0) {
+            state.resultFilters.requirementType = "";
+          }
         }
         syncResultControls();
       }
@@ -1520,6 +1599,7 @@ function boot() {
       function renderResults() {
         syncModeTabs_();
         updateModeCounts_();
+        syncResultControlContext_();
 
         if (state.primaryMode === "explorer") {
           setResultsModeVisibility_(true);
@@ -2502,9 +2582,14 @@ function boot() {
         const query = String(state.resultFilters.query || "").trim().toLowerCase();
         const institution = String(state.resultFilters.institution || "").trim();
         const credential = String(state.resultFilters.credential || "").trim();
+        const requirementType =
+          normalizePrimaryMode_(state.primaryMode) === "explorer"
+            ? String(state.resultFilters.requirementType || "").trim()
+            : "";
         return (rows || []).filter((row) => {
           if (institution && row.institution !== institution) return false;
           if (credential && row.credential !== credential) return false;
+          if (requirementType && String(row.requirementType || "").trim() !== requirementType) return false;
           if (!query) return true;
           const terms = query.split(/\s+/).filter(Boolean);
           if (!terms.length) return true;

@@ -687,3 +687,15 @@ Keep entries short and append-only.
 ## 2026-02-22 (CI hotfix: Apps Script structure allowlist)
 - Updated `tools/validate-apps-script-structure.ps1` to include new private helpers in `EligibilityProgramsData.gs`: `listExplorerProgramsForWeb_`, `makeExplorerProgramKey_`, `slugExplorerPart_`.
 - Purpose: fix deploy workflow failure at "Validate Apps Script structure" after Program Explorer slice.
+## 2026-02-22 (Web app phase 3 polish: Explorer filter/sort context)
+- Added an Explorer-only toolbar filter `Requirement Type` (`#requirementTypeFilter`) in `apps_script/WebAppBody.html`.
+- Extended web UI state/events to track `resultFilters.requirementType` and wire change handling (`apps_script/WebAppScriptState.html`, `apps_script/WebAppScriptInit.html`).
+- Added mode-aware sort control options in `apps_script/WebAppScriptFunctions.html`:
+  - Results mode keeps `Closest to eligible` default.
+  - Explorer mode removes `Closest` and defaults to `Institution + Program`.
+- Added mode-aware control context behavior:
+  - Explorer mode shows `Requirement Type` filter and expanded search placeholder.
+  - Results mode hides `Requirement Type` filter.
+- Updated filtering logic so `Requirement Type` applies only in Explorer mode.
+- Preview smoke: local Node server confirmed serving updated markup/functions at `http://localhost:5173/WebApp.html?mock=1`.
+- Validation note: `pwsh` not available in this environment, so PowerShell guardrails were not runnable locally.
