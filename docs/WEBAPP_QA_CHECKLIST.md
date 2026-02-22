@@ -33,10 +33,7 @@ Run this before each production push affecting `apps_script/`.
 - [ ] Dataset freshness stamp is visible in UI.
 
 ## 4) UX
-- [ ] Paste parser correctly handles:
-  - [ ] `English 30-1 82`
-  - [ ] `English 30-1: 82%`
-  - [ ] `course,mark` CSV lines
+- [ ] Student Inputs does not show Paste Transcript controls.
 - [ ] Search works across institution/program/credential.
 - [ ] Filter tabs work (`Likely ineligible`, `Likely eligible`, `Uncheckable`, `Shortlist`, `All`).
 - [ ] Sort options work (including closest-to-eligible where computable).
@@ -45,17 +42,22 @@ Run this before each production push affecting `apps_script/`.
 - [ ] Requirements section starts expanded by default in details.
 - [ ] Meeting Workflow block renders fully (not clipped) at desktop widths.
 - [ ] Decision tags (`Apply`, `Hold`, `Not now`) save per program and show a decision pill on result cards.
-- [ ] Meeting Owner and Follow-up Date fields save/reload in the same browser session.
+- [ ] Meeting workflow shows decision chips + note only (no owner/follow-up fields).
 - [ ] Meeting notes can be edited/cleared and `Export Packet` count updates correctly.
-- [ ] Student Mode toggle updates copy and simplifies controls (advanced filters/meeting compare actions hidden).
-- [ ] Student Mode keeps results usable with search + card details flow on desktop and mobile.
+- [ ] Details drawer in Eligibility Results does not include a `Notes` section.
+- [ ] Compare tools are available under `Advanced Tools` and the section is collapsed by default.
+- [ ] Student Mode UI remnants are absent.
+- [ ] Defaults load as 5 named rows and 1 elective override row.
 
 ## 5) Export
 - [ ] CSV export works for current view.
 - [ ] CSV export works for all rows.
 - [ ] PDF export works via iframe print (no popup dependency).
 - [ ] Export includes dataset stamp + generation time.
-- [ ] `Export Packet` includes workflow fields (`Decision`, `Owner`, `Follow-up Date`, `Snapshot`, `Confidence`, `Next Step`, `Source URL`, `Meeting Note`).
+- [ ] `Export Packet` opens a styled PDF packet (no CSV fallback) and includes:
+  - [ ] filtered visible list
+  - [ ] selected detail summary
+  - [ ] meeting decision/note summary
 
 ## 6) Performance + Ops
 - [ ] Repeated runs are faster due to cache hits.
@@ -72,7 +74,7 @@ Run this before each production push affecting `apps_script/`.
 ## 8) Accessibility + Responsive Hardening
 - [ ] Keyboard-only flow works for core actions (run, filter, select card, open details).
 - [ ] Focus indicator is visible on buttons, fields, links, and result cards.
-- [ ] Live status regions announce updates (`status`, `paste status`, `rows stamp`).
+- [ ] Live status regions announce updates (`status`, `rows stamp`).
 - [ ] At ~1280-1536 desktop widths, details panel content does not collapse into clipped/overlapped blocks.
 - [ ] At `<=980px`, toolbar controls stack cleanly and details sections remain readable.
 - [ ] At `<=980px`, run actions remain reachable with sticky behavior and 44px targets.

@@ -69,20 +69,6 @@
             </div>
           </div>
 
-          <h3>Paste Transcript</h3>
-          <p class="ghost">Accepted formats: <code>English 30-1 82</code>, <code>English 30-1: 82%</code>, <code>English 30-1,82</code>.</p>
-          <textarea
-            id="pasteInput"
-            class="paste-input"
-            rows="5"
-            placeholder="Paste one course per line"
-          ></textarea>
-          <div class="actions">
-            <button class="btn btn-subtle" id="pasteApplyBtn" type="button">Apply Paste</button>
-            <button class="btn btn-subtle" id="pasteClearBtn" type="button">Clear Paste</button>
-          </div>
-          <p class="status mini" id="pasteStatus" role="status" aria-live="polite" aria-atomic="true"></p>
-
           <div class="actions run-actions">
             <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
             <button class="btn btn-subtle" id="csvBtn" type="button" disabled>Export CSV</button>
@@ -181,9 +167,6 @@
               <button class="btn btn-subtle meeting-toggle" id="meetingToggleBtn" type="button" aria-pressed="false">
                 Meeting Mode
               </button>
-              <button class="btn btn-subtle student-toggle" id="studentToggleBtn" type="button" aria-pressed="false">
-                Student Mode
-              </button>
             </div>
 
             <div class="ghost" id="rowsStamp" role="status" aria-live="polite" aria-atomic="true">No results yet</div>
@@ -193,16 +176,21 @@
             <div class="empty">Run a check to see program-by-program results.</div>
           </div>
 
-          <div class="compare-strip" id="compareStrip">
-            <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
-          </div>
-          <div class="actions" id="pinnedComparisonActions">
-            <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
-          </div>
+          <details class="advanced-tools" id="advancedTools">
+            <summary>Advanced Tools</summary>
+            <div class="advanced-tools-content">
+              <div class="compare-strip" id="compareStrip">
+                <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
+              </div>
+              <div class="actions" id="pinnedComparisonActions">
+                <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
+              </div>
 
-          <div class="compare-results is-empty" id="compareResults">
-            <div class="ghost">Select at least 2 programs to compare.</div>
-          </div>
+              <div class="compare-results is-empty" id="compareResults">
+                <div class="ghost">Select at least 2 programs to compare.</div>
+              </div>
+            </div>
+          </details>
         </section>
 
         <section class="panel panel-details" id="detailsPanel">

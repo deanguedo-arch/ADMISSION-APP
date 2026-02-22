@@ -786,3 +786,49 @@ Keep entries short and append-only.
   - Phase 9: deferred App Store wrapper track (Capacitor/WKWebView + policy/review prep).
 - Validation/environment note:
   - PowerShell guardrails were not runnable here (`pwsh` unavailable in this terminal); run `tools/validate-webapp-surface.ps1` and `tools/validate-apps-script-structure.ps1` on workstation before release/deploy.
+## 2026-02-22 (Queued implementation plan for next agent: UI simplification pass)
+- Objective: reduce UI clutter and keep only high-value meeting workflow.
+- Remove Student Mode entirely (UI/state/storage/styles/event wiring).
+- Keep Meeting Mode.
+- Simplify meeting workflow to:
+  - decision chips only (`Apply`, `Hold`, `Not now`)
+  - freeform note only
+  - remove `owner` + `followUpDate` fields and handlers.
+- Keep `Export Packet`, but change behavior to styled PDF packet (no CSV):
+  - include filtered visible list
+  - include selected detail summary
+  - include meeting decision/note summary section.
+- Remove details drawer `Notes` section from Eligibility Results view.
+- Reduce default input complexity:
+  - named courses default rows: 5
+  - elective override default rows: 1
+- Remove Paste Transcript UI and related bindings/handlers from active flow.
+- Keep Program Explorer.
+- Compare tools: keep functionality, but collapse under `Advanced Tools` (closed by default).
+- No backend contract changes (`runWebEligibility` payload unchanged).
+- Files expected to change:
+  - apps_script/WebAppBody.html
+  - apps_script/WebAppScriptState.html
+  - apps_script/WebAppScriptInit.html
+  - apps_script/WebAppScriptFunctions.html
+  - apps_script/WebAppStyles.html
+  - docs/WEBAPP_QA_CHECKLIST.md
+  - docs/WORK_LOG.md
+  - docs/SESSION_HANDOFF.md
+- QA focus:
+  - packet PDF styling/content correctness
+  - no student mode UI remnants
+  - meeting note/decision persistence
+  - defaults (5 named / 1 elective)
+  - no paste transcript controls
+  - mobile readability + overflow checks
+## 2026-02-22 (UI simplification pass executed)
+- Removed Student Mode end-to-end (button/state/storage/functions/styles) and kept Meeting Mode only.
+- Simplified meeting workflow to decision chips (`Apply`, `Hold`, `Not now`) + freeform note; removed owner/follow-up fields and handlers.
+- Replaced `Export Packet` behavior with styled PDF packet output (filtered visible list + selected detail summary + meeting decision/note summary), no packet CSV flow.
+- Removed Paste Transcript UI and transcript paste bindings/handlers.
+- Moved compare tools under collapsed `Advanced Tools` (default closed) while keeping compare functionality.
+- Removed Eligibility Results details drawer `Notes` block.
+- Updated default input rows to 5 named courses and 1 elective override row.
+- Updated QA checklist for new scope (no student mode/paste transcript, packet PDF expectations, advanced tools collapse).
+- Validation scripts were not runnable in this environment (`pwsh`/`powershell` not installed); JS syntax checks passed via `node --check` on web app script fragments.

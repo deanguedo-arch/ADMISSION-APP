@@ -4,8 +4,6 @@ function boot() {
         setInputsCollapsed(state.inputsCollapsed);
         state.meetingMode = loadMeetingModePreference_();
         setMeetingMode_(state.meetingMode, { persist: false });
-        state.studentMode = loadStudentModePreference_();
-        setStudentMode_(state.studentMode, { persist: false });
         state.meetingNotesByKey = loadMeetingNotes_();
         updateMeetingNotesControls_();
         state.mockMode = isMockMode();
@@ -28,14 +26,9 @@ function boot() {
 
       let panelHeightSyncRaf = 0;
       const MEETING_MODE_KEY = "admissions_meeting_mode";
-      const STUDENT_MODE_KEY = "admissions_student_mode";
       const MEETING_NOTES_KEY = "admissions_meeting_notes_v1";
-      const DEFAULT_HERO_SUBTITLE = "Enter marks, triage programs, and review requirements with clear next steps.";
-      const STUDENT_HERO_SUBTITLE = "Enter your final marks to see likely options and clear next steps.";
-      const DEFAULT_INPUTS_HINT = "Add final marks only. Duplicate courses are deduped automatically (latest entry wins).";
-      const STUDENT_INPUTS_HINT = "Add your final marks only. We automatically keep the latest mark for duplicates.";
-      const DEFAULT_SNAPSHOT_TITLE = "Snapshot (advisory) - verify on institution site for final decisions";
-      const STUDENT_SNAPSHOT_TITLE = "Student view (advisory) - confirm details on official program websites.";
+      const DEFAULT_NAMED_ROW_COUNT = 5;
+      const DEFAULT_ELECTIVE_ROW_COUNT = 1;
       const RESULT_SORT_OPTIONS = [
         { value: "closest", label: "Sort: Closest to eligible" },
         { value: "institution_program", label: "Sort: Institution + Program" },
@@ -167,8 +160,8 @@ function boot() {
       }
 
       function seedRows() {
-        const namedTarget = 8;
-        const electiveTarget = Number(state.boot && state.boot.manualElectiveSlots) || 5;
+        const namedTarget = DEFAULT_NAMED_ROW_COUNT;
+        const electiveTarget = DEFAULT_ELECTIVE_ROW_COUNT;
         while (ui.namedBody.children.length < namedTarget) addNamedRow();
         while (ui.electiveBody.children.length < electiveTarget) addElectiveRow();
         while (ui.electiveBody.children.length > electiveTarget) {
@@ -179,8 +172,8 @@ function boot() {
       function resetForm() {
         ui.namedBody.innerHTML = "";
         ui.electiveBody.innerHTML = "";
-        for (let i = 0; i < 8; i++) addNamedRow();
-        const electiveSlots = Number(state.boot && state.boot.manualElectiveSlots) || 5;
+        for (let i = 0; i < DEFAULT_NAMED_ROW_COUNT; i++) addNamedRow();
+        const electiveSlots = DEFAULT_ELECTIVE_ROW_COUNT;
         for (let i = 0; i < electiveSlots; i++) addElectiveRow();
         state.result = null;
         state.resultModel = null;
@@ -208,15 +201,12 @@ function boot() {
         renderCompareResults();
         renderDetailsDrawer();
         setStatus("");
-        setPasteStatus("");
-        if (ui.pasteInput) ui.pasteInput.value = "";
         updateFilterCounts();
         updateModeCounts_();
         syncModeTabs_();
         syncFilterButtons();
         updateMeetingNotesControls_();
         setMeetingMode_(state.meetingMode, { persist: false });
-        setStudentMode_(state.studentMode, { persist: false });
       }
 
       function toggleInputsPanel() {
@@ -254,22 +244,6 @@ function boot() {
         }
       }
 
-      function loadStudentModePreference_() {
-        try {
-          return window.localStorage.getItem(STUDENT_MODE_KEY) === "1";
-        } catch (err) {
-          return false;
-        }
-      }
-
-      function saveStudentModePreference_(enabled) {
-        try {
-          window.localStorage.setItem(STUDENT_MODE_KEY, enabled ? "1" : "0");
-        } catch (err) {
-          // Non-fatal for restricted browser contexts.
-        }
-      }
-
       function normalizeMeetingDecision_(value) {
         const t = String(value || "").trim().toLowerCase();
         if (t === "apply") return "apply";
@@ -294,31 +268,20 @@ function boot() {
 
       function normalizeMeetingRecord_(value) {
         if (value && typeof value === "object" && !Array.isArray(value)) {
-          const followRaw = String(value.followUpDate || "").trim();
-          const followMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(followRaw);
           return {
             note: String(value.note || "").trim(),
             decision: normalizeMeetingDecision_(value.decision),
-            owner: String(value.owner || "").trim(),
-            followUpDate: followMatch ? followRaw : "",
           };
         }
         return {
           note: String(value || "").trim(),
           decision: "",
-          owner: "",
-          followUpDate: "",
         };
       }
 
       function meetingRecordHasContent_(record) {
         if (!record || typeof record !== "object") return false;
-        return !!(
-          String(record.note || "").trim() ||
-          normalizeMeetingDecision_(record.decision) ||
-          String(record.owner || "").trim() ||
-          String(record.followUpDate || "").trim()
-        );
+        return !!(String(record.note || "").trim() || normalizeMeetingDecision_(record.decision));
       }
 
       function parseMeetingNotesMap_(raw) {
@@ -425,7 +388,9 @@ function boot() {
       function updateMeetingNotesControls_() {
         if (!ui.exportMeetingNotesBtn) return;
         const count = countMeetingNotes_();
-        ui.exportMeetingNotesBtn.disabled = count <= 0;
+        const visibleRows = getVisibleRowsForPacket_();
+        const hasPacketContext = !!visibleRows.length || !!getSelectedDetailRowForPacket_();
+        ui.exportMeetingNotesBtn.disabled = count <= 0 && !hasPacketContext;
         ui.exportMeetingNotesBtn.textContent = count > 0 ? `Export Packet (${count})` : "Export Packet";
         ui.exportMeetingNotesBtn.title = meetingNotesStorageLabel_();
       }
@@ -448,12 +413,6 @@ function boot() {
         state.meetingNotesByKey = map;
         const current = normalizeMeetingRecord_(map[safeKey]);
         if (field === "note") current.note = String(value || "").replace(/\r\n/g, "\n").trim();
-        if (field === "owner") current.owner = String(value || "").trim();
-        if (field === "followUpDate") {
-          const raw = String(value || "").trim();
-          const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-          current.followUpDate = match ? raw : "";
-        }
         if (field === "decision") current.decision = normalizeMeetingDecision_(value);
         if (meetingRecordHasContent_(current)) map[safeKey] = current;
         else delete map[safeKey];
@@ -489,38 +448,15 @@ function boot() {
               <button class="${holdClass}" type="button" data-meeting-decision-key="${escapeAttr(safeKey)}" data-meeting-decision="hold">Hold</button>
               <button class="${notNowClass}" type="button" data-meeting-decision-key="${escapeAttr(safeKey)}" data-meeting-decision="not_now">Not now</button>
             </div>
-            <div class="meeting-meta-grid">
-              <label class="meeting-field">
-                <span class="meeting-field-label">Owner</span>
-                <input
-                  type="text"
-                  class="meeting-meta-input"
-                  data-meeting-owner-key="${escapeAttr(safeKey)}"
-                  aria-label="Meeting owner"
-                  placeholder="Counsellor or staff name"
-                  value="${escapeAttr(record.owner || "")}"
-                />
-              </label>
-              <label class="meeting-field">
-                <span class="meeting-field-label">Follow-up Date</span>
-                <input
-                  type="date"
-                  class="meeting-meta-input"
-                  data-meeting-followup-key="${escapeAttr(safeKey)}"
-                  aria-label="Follow-up date"
-                  value="${escapeAttr(record.followUpDate || "")}"
-                />
-              </label>
-            </div>
             <textarea
               class="meeting-note-input"
               rows="6"
               data-meeting-note-key="${escapeAttr(safeKey)}"
               aria-label="Meeting notes"
-              placeholder="Capture meeting decision, concerns, and follow-up..."
+              placeholder="Capture decision context and next steps..."
             >${escapeHtml(record.note || "")}</textarea>
             <div class="actions meeting-note-actions">
-              <button class="btn btn-subtle" type="button" data-meeting-note-clear="${escapeAttr(safeKey)}">Clear Meeting Fields</button>
+              <button class="btn btn-subtle" type="button" data-meeting-note-clear="${escapeAttr(safeKey)}">Clear Decision + Note</button>
             </div>
           </div>
         `;
@@ -531,22 +467,6 @@ function boot() {
         const on = !!state.meetingMode;
         ui.meetingToggleBtn.textContent = on ? "Meeting Mode On" : "Meeting Mode";
         ui.meetingToggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
-      }
-
-      function syncStudentModeCopy_() {
-        const on = !!state.studentMode;
-        if (ui.heroSubtitle) ui.heroSubtitle.textContent = on ? STUDENT_HERO_SUBTITLE : DEFAULT_HERO_SUBTITLE;
-        if (ui.inputsHint) ui.inputsHint.textContent = on ? STUDENT_INPUTS_HINT : DEFAULT_INPUTS_HINT;
-        if (ui.snapshotBannerTitle) {
-          ui.snapshotBannerTitle.textContent = on ? STUDENT_SNAPSHOT_TITLE : DEFAULT_SNAPSHOT_TITLE;
-        }
-      }
-
-      function syncStudentModeButton_() {
-        if (!ui.studentToggleBtn) return;
-        const on = !!state.studentMode;
-        ui.studentToggleBtn.textContent = on ? "Student Mode On" : "Student Mode";
-        ui.studentToggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
       }
 
       function setMeetingMode_(enabled, opts) {
@@ -561,34 +481,6 @@ function boot() {
 
       function toggleMeetingMode() {
         setMeetingMode_(!state.meetingMode);
-      }
-
-      function setStudentMode_(enabled, opts) {
-        const on = !!enabled;
-        state.studentMode = on;
-        document.body.classList.toggle("is-student", on);
-        if (on) {
-          state.primaryMode = "results";
-          state.resultFilters.institution = "";
-          state.resultFilters.credential = "";
-          state.resultFilters.requirementType = "";
-          state.resultFilters.sort = DEFAULT_RESULT_SORT;
-          setInputsCollapsed(true);
-        }
-        syncStudentModeButton_();
-        syncStudentModeCopy_();
-        syncModeTabs_();
-        syncResultControlContext_();
-        syncResultControls();
-        populateResultFilterOptions();
-        renderResults();
-        renderDetailsDrawer();
-        if (!(opts && opts.persist === false)) saveStudentModePreference_(on);
-        schedulePanelHeightSync();
-      }
-
-      function toggleStudentMode() {
-        setStudentMode_(!state.studentMode);
       }
 
       function setExplorerProgramsFromBoot_(bootData) {
@@ -923,172 +815,6 @@ function boot() {
           manualElectives: Array.from(manualMap.values()),
           errors,
         };
-      }
-
-      function setPasteStatus(message, isError) {
-        if (!ui.pasteStatus) return;
-        ui.pasteStatus.textContent = message || "";
-        ui.pasteStatus.classList.toggle("error", !!isError);
-      }
-
-      function clearTranscriptPaste() {
-        if (ui.pasteInput) ui.pasteInput.value = "";
-        setPasteStatus("");
-      }
-
-      function parseTranscriptLine(line) {
-        const raw = String(line || "").trim();
-        if (!raw) return { skip: true };
-
-        if (raw.indexOf(",") >= 0) {
-          const tokens = raw.split(",").map((x) => String(x || "").trim()).filter(Boolean);
-          if (tokens.length === 2) {
-            return { course: tokens[0], markText: tokens[1], group: "" };
-          }
-          if (tokens.length === 3) {
-            const groupMid = normalizeGroupValue(tokens[1]);
-            if (groupMid) return { course: tokens[0], markText: tokens[2], group: groupMid };
-            const groupEnd = normalizeGroupValue(tokens[2]);
-            if (groupEnd) return { course: tokens[0], markText: tokens[1], group: groupEnd };
-          }
-        }
-
-        const match = raw.match(/^(.*?)[\s:]+([0-9]+(?:\.[0-9]+)?%?)\s*(?:\(?\s*(?:group\s*)?([ABCD])\s*\)?)?$/i);
-        if (!match) return { invalid: true };
-        return {
-          course: String(match[1] || "").trim(),
-          markText: String(match[2] || "").trim(),
-          group: normalizeGroupValue(match[3]),
-        };
-      }
-
-      function upsertNamedRowFromEntry(entry) {
-        const key = normalizeCourseToken(entry.course);
-        if (!key) return "skipped";
-        const rows = Array.from(ui.namedBody.querySelectorAll("tr"));
-        let target = null;
-        rows.forEach((tr) => {
-          const courseInput = tr.querySelector('td:nth-child(1) input');
-          const rowKey = normalizeCourseToken(courseInput && courseInput.value);
-          if (rowKey === key && !target) target = tr;
-        });
-        if (!target) {
-          addNamedRow({ course: entry.course, mark: entry.mark });
-          dedupeNamedRowsForActiveRow_(ui.namedBody.lastElementChild);
-          return "added";
-        }
-        const courseInput = target.querySelector('td:nth-child(1) input');
-        const markInput = target.querySelector("input.mark-input");
-        const markError = target.querySelector(".cell-error");
-        if (courseInput) courseInput.value = entry.course;
-        if (markInput) markInput.value = formatMarkDisplay(entry.mark);
-        validateMarkField(markInput, markError);
-        dedupeNamedRowsForActiveRow_(target);
-        return "updated";
-      }
-
-      function upsertManualRowFromEntry(entry) {
-        const key = `${normalizeCourseToken(entry.course)}||${entry.group || "AUTO"}`;
-        if (key === "||AUTO") return "skipped";
-        const rows = Array.from(ui.electiveBody.querySelectorAll("tr"));
-        let target = null;
-        rows.forEach((tr) => {
-          const courseInput = tr.querySelector('td:nth-child(1) input');
-          const groupSelect = tr.querySelector("select");
-          const rowKey = `${normalizeCourseToken(courseInput && courseInput.value)}||${
-            normalizeGroupValue(groupSelect && groupSelect.value) || "AUTO"
-          }`;
-          if (rowKey === key && !target) target = tr;
-        });
-        if (!target) {
-          addElectiveRow({ course: entry.course, group: entry.group, mark: entry.mark });
-          dedupeManualRowsForActiveRow_(ui.electiveBody.lastElementChild);
-          return "added";
-        }
-        const courseInput = target.querySelector('td:nth-child(1) input');
-        const groupSelect = target.querySelector("select");
-        const markInput = target.querySelector("input.mark-input");
-        const markError = target.querySelector(".cell-error");
-        if (courseInput) courseInput.value = entry.course;
-        if (groupSelect) groupSelect.value = entry.group || "";
-        if (markInput) markInput.value = formatMarkDisplay(entry.mark);
-        validateMarkField(markInput, markError);
-        dedupeManualRowsForActiveRow_(target);
-        return "updated";
-      }
-
-      function applyTranscriptPaste() {
-        const text = String((ui.pasteInput && ui.pasteInput.value) || "").trim();
-        if (!text) {
-          setPasteStatus("Paste area is empty.", true);
-          return;
-        }
-
-        const namedMap = new Map();
-        const manualMap = new Map();
-        let skipped = 0;
-        let invalid = 0;
-
-        text.split(/\r?\n/).forEach((line) => {
-          const parsed = parseTranscriptLine(line);
-          if (parsed.skip) {
-            skipped++;
-            return;
-          }
-          if (parsed.invalid) {
-            invalid++;
-            return;
-          }
-
-          const markParsed = parseMarkInput(parsed.markText);
-          if (!markParsed.ok || markParsed.empty) {
-            invalid++;
-            return;
-          }
-
-          const group = normalizeGroupValue(parsed.group);
-          const resolved = resolveCourseLabel(parsed.course, group ? "elective" : "named");
-          if (!resolved) {
-            invalid++;
-            return;
-          }
-
-          if (group) {
-            const k = `${resolved.key}||${group}`;
-            if (manualMap.has(k)) manualMap.delete(k);
-            manualMap.set(k, { course: resolved.label, group, mark: markParsed.value });
-            return;
-          }
-
-          if (namedMap.has(resolved.key)) namedMap.delete(resolved.key);
-          namedMap.set(resolved.key, { course: resolved.label, mark: markParsed.value });
-        });
-
-        let added = 0;
-        let updated = 0;
-        Array.from(namedMap.values()).forEach((entry) => {
-          const outcome = upsertNamedRowFromEntry(entry);
-          if (outcome === "added") added++;
-          if (outcome === "updated") updated++;
-        });
-        Array.from(manualMap.values()).forEach((entry) => {
-          const outcome = upsertManualRowFromEntry(entry);
-          if (outcome === "added") added++;
-          if (outcome === "updated") updated++;
-        });
-
-        dedupeAllInputRows_();
-
-        const applied = added + updated;
-        if (!applied && invalid > 0) {
-          setPasteStatus(`No rows applied. ${invalid} line(s) were invalid.`, true);
-          return;
-        }
-
-        setPasteStatus(
-          `Paste applied: ${added} added, ${updated} updated, ${skipped} skipped, ${invalid} invalid.`,
-          invalid > 0
-        );
       }
 
       function runCheck() {
@@ -1565,16 +1291,11 @@ function boot() {
 
       function syncResultControlContext_() {
         const isExplorerMode = normalizePrimaryMode_(state.primaryMode) === "explorer";
-        const isStudentMode = !!state.studentMode;
         if (ui.requirementTypeFilter) ui.requirementTypeFilter.style.display = isExplorerMode ? "" : "none";
         if (ui.resultSearch) {
-          if (isStudentMode) {
-            ui.resultSearch.placeholder = "Search programs or institutions...";
-          } else {
-            ui.resultSearch.placeholder = isExplorerMode
-              ? "Search institution, program, credential, requirement..."
-              : "Search institution, program, credential...";
-          }
+          ui.resultSearch.placeholder = isExplorerMode
+            ? "Search institution, program, credential, requirement..."
+            : "Search institution, program, credential...";
         }
         syncSortOptionsForMode_();
       }
@@ -1954,26 +1675,10 @@ function boot() {
 
       function onDetailsDrawerInput(e) {
         const noteInput = e.target && e.target.closest("textarea[data-meeting-note-key]");
-        if (noteInput) {
-          const noteKey = String(noteInput.getAttribute("data-meeting-note-key") || "").trim();
-          if (!noteKey) return;
-          setMeetingRecordField_(noteKey, "note", noteInput.value);
-          return;
-        }
-
-        const ownerInput = e.target && e.target.closest("input[data-meeting-owner-key]");
-        if (ownerInput) {
-          const ownerKey = String(ownerInput.getAttribute("data-meeting-owner-key") || "").trim();
-          if (!ownerKey) return;
-          setMeetingRecordField_(ownerKey, "owner", ownerInput.value);
-          return;
-        }
-
-        const followInput = e.target && e.target.closest("input[data-meeting-followup-key]");
-        if (!followInput) return;
-        const followKey = String(followInput.getAttribute("data-meeting-followup-key") || "").trim();
-        if (!followKey) return;
-        setMeetingRecordField_(followKey, "followUpDate", followInput.value);
+        if (!noteInput) return;
+        const noteKey = String(noteInput.getAttribute("data-meeting-note-key") || "").trim();
+        if (!noteKey) return;
+        setMeetingRecordField_(noteKey, "note", noteInput.value);
       }
 
       function onDetailsDrawerClick(e) {
@@ -2203,9 +1908,7 @@ function boot() {
       function setResultsModeVisibility_(isExplorerMode) {
         const hide = !!isExplorerMode;
         if (ui.filterGroup) ui.filterGroup.style.display = hide ? "none" : "";
-        if (ui.compareStrip) ui.compareStrip.style.display = hide ? "none" : "";
-        if (ui.compareResults) ui.compareResults.style.display = hide ? "none" : "";
-        if (ui.pinnedComparisonActions) ui.pinnedComparisonActions.style.display = hide ? "none" : "";
+        if (ui.advancedTools) ui.advancedTools.style.display = hide ? "none" : "";
       }
 
       function getExplorerSortKey_() {
@@ -2697,7 +2400,6 @@ function boot() {
         const warningHtml = renderWarningHtml_(warning, "detail-warning");
         const programUrl = normalizeHttpUrl_(detail.programUrl || row.sourceUrl);
         const missing = (Array.isArray(detail.missingReasons) ? detail.missingReasons : []).filter(Boolean);
-        const notes = (Array.isArray(detail.notes) ? detail.notes : []).filter(Boolean);
         const advisories = (Array.isArray(detail.advisories) ? detail.advisories : []).filter(Boolean);
         const why = (Array.isArray(detail.why) ? detail.why : []).filter(Boolean);
         const requirementLines = (Array.isArray(detail.requirements) ? detail.requirements : [])
@@ -2728,9 +2430,6 @@ function boot() {
         const missingHtml = missing.length
           ? `<ul class="detail-list">${missing.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
           : `<p class="ghost">No missing items from marks-based checks.</p>`;
-        const notesHtml = notes.length
-          ? `<ul class="detail-list">${notes.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
-          : `<p class="ghost">No extra notes.</p>`;
         const advisoryHtml = advisories.length
           ? `<ul class="detail-list">${advisories.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
           : `<p class="ghost">No additional advisory flags.</p>`;
@@ -2817,10 +2516,6 @@ function boot() {
             <div class="detail-block">
               <h4>Advisories</h4>
               ${advisoryHtml}
-            </div>
-            <div class="detail-block">
-              <h4>Notes</h4>
-              ${notesHtml}
             </div>
             ${explainabilityHtml}
           </div>
@@ -3247,7 +2942,32 @@ function boot() {
         setStatus(`Generated Program Comparison Sheet for ${pinnedRows.length} pinned program(s).`);
       }
 
-      function buildMeetingNoteExportRows_() {
+      function getVisibleRowsForPacket_() {
+        if (state.primaryMode === "explorer") {
+          const explorerRows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
+          return sortRows(filterRows(explorerRows), getExplorerSortKey_());
+        }
+        const safeSort = state.resultFilters.sort || DEFAULT_RESULT_SORT;
+        return sortRows(filterRows(getRowsForView(state.view)), safeSort);
+      }
+
+      function getSelectedDetailRowForPacket_() {
+        if (state.primaryMode === "explorer") {
+          const rows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
+          if (!rows.length) return null;
+          return state.selectedExplorerKey ? rows.find((x) => x.key === state.selectedExplorerKey) || null : rows[0] || null;
+        }
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey) return null;
+        if (state.selectedProgramKey && model.rowsByKey[state.selectedProgramKey]) {
+          return model.rowsByKey[state.selectedProgramKey];
+        }
+        const compareRows = getCompareRows_();
+        if (compareRows.length === 1) return compareRows[0];
+        return null;
+      }
+
+      function getMeetingPacketSummaryRows_() {
         const map = state.meetingNotesByKey && typeof state.meetingNotesByKey === "object" ? state.meetingNotesByKey : {};
         const keys = Object.keys(map).sort((a, b) => a.localeCompare(b));
         if (!keys.length) return [];
@@ -3264,98 +2984,235 @@ function boot() {
         keys.forEach((key) => {
           const record = normalizeMeetingRecord_(map[key]);
           if (!meetingRecordHasContent_(record)) return;
-          const decisionLabel = meetingDecisionLabel_(record.decision);
-          const owner = String(record.owner || "").trim();
-          const followUpDate = String(record.followUpDate || "").trim();
+          const decisionLabel = meetingDecisionLabel_(record.decision) || "None";
           const note = String(record.note || "").trim();
-
           const resultRow = resultRowsByKey[key];
           if (resultRow) {
-            const detail = getProgramDetailsForRow(resultRow);
-            const confidence = normalizeConfidence_(detail.confidence || resultRow.confidence);
-            const snapshot = String(
-              detail.snapshotResult || resultRow.snapshotResult || rowStatusForDisplay_(resultRow).label || ""
-            ).trim();
-            const minAvg = Number.isFinite(resultRow.minAvg) ? formatCell(resultRow.minAvg) : "";
-            const source = normalizeHttpUrl_(detail.programUrl || resultRow.sourceUrl || "");
-            const nextStep = String(detail.nextStep || nextActionForConfidence_(confidence) || "").trim();
-            rows.push([
+            rows.push({
               key,
-              "Eligibility Results",
-              resultRow.institution || "",
-              resultRow.program || "",
-              resultRow.credential || "",
-              decisionLabel,
-              owner,
-              followUpDate,
-              snapshot,
-              confidence,
-              minAvg,
-              nextStep,
-              source,
+              mode: "Eligibility Results",
+              institution: resultRow.institution || "",
+              program: resultRow.program || "",
+              credential: resultRow.credential || "",
+              decision: decisionLabel,
               note,
-            ]);
+            });
             return;
           }
-
           const explorerRow = explorerByKey[key];
           if (explorerRow) {
-            const minAvg = Number.isFinite(explorerRow.minAvg) ? formatCell(explorerRow.minAvg) : "";
-            rows.push([
+            rows.push({
               key,
-              "Program Explorer",
-              explorerRow.institution || "",
-              explorerRow.program || "",
-              explorerRow.credential || "",
-              decisionLabel,
-              owner,
-              followUpDate,
-              "Catalog view",
-              "",
-              minAvg,
-              "Run Check Eligibility with student marks for personalized next steps.",
-              explorerRow.sourceUrl || "",
+              mode: "Program Explorer",
+              institution: explorerRow.institution || "",
+              program: explorerRow.program || "",
+              credential: explorerRow.credential || "",
+              decision: decisionLabel,
               note,
-            ]);
+            });
             return;
           }
-
-          rows.push([key, "Archived", "", "", "", decisionLabel, owner, followUpDate, "", "", "", "", "", note]);
+          rows.push({
+            key,
+            mode: "Archived",
+            institution: "",
+            program: key,
+            credential: "",
+            decision: decisionLabel,
+            note,
+          });
         });
         return rows;
       }
 
-      function exportMeetingNotesCsv() {
-        const rows = buildMeetingNoteExportRows_();
+      function buildPacketVisibleListRowsHtml_(rows) {
         if (!rows.length) {
-          setStatus("No meeting workflow entries to export yet.", true);
+          return `<tr><td colspan="9">No rows are currently visible under this filter.</td></tr>`;
+        }
+        return rows
+          .map((row, index) => {
+            const isExplorerRow = state.primaryMode === "explorer";
+            const detail = isExplorerRow ? {} : getProgramDetailsForRow(row);
+            const snapshot = isExplorerRow
+              ? "Program Explorer"
+              : String(detail.snapshotResult || row.snapshotResult || rowStatusForDisplay_(row).label || "").trim() || "n/a";
+            const confidence = isExplorerRow ? "" : normalizeConfidence_(detail.confidence || row.confidence);
+            const minAvg = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
+            const avg = detail && detail.average && typeof detail.average === "object" ? detail.average : {};
+            const studentAvgValue =
+              !isExplorerRow && Number.isFinite(toFiniteNumber(avg.student))
+                ? formatCell(avg.student)
+                : Number.isFinite(row.studentAvg)
+                ? formatCell(row.studentAvg)
+                : "n/a";
+            const decision = meetingDecisionLabel_(getMeetingRecordForKey_(row.key).decision) || "";
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(row.institution || "")}</td>
+                <td>${escapeHtml(row.program || "")}</td>
+                <td>${escapeHtml(row.credential || "")}</td>
+                <td>${escapeHtml(snapshot)}</td>
+                <td>${escapeHtml(confidence || "n/a")}</td>
+                <td>${escapeHtml(minAvg)}</td>
+                <td>${escapeHtml(studentAvgValue)}</td>
+                <td>${escapeHtml(decision || "None")}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      function buildPacketSelectedSummaryHtml_(row) {
+        if (!row) {
+          return `<p class="muted">No program is selected in the details drawer right now.</p>`;
+        }
+        if (state.primaryMode === "explorer") {
+          const minAvg = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
+          return `
+            <div class="summary-grid">
+              <div><strong>Institution</strong><span>${escapeHtml(row.institution || "n/a")}</span></div>
+              <div><strong>Program</strong><span>${escapeHtml(row.program || "n/a")}</span></div>
+              <div><strong>Credential</strong><span>${escapeHtml(row.credential || "n/a")}</span></div>
+              <div><strong>Minimum Average</strong><span>${escapeHtml(minAvg)}</span></div>
+              <div><strong>Requirement Type</strong><span>${escapeHtml(row.requirementType || "Not listed")}</span></div>
+              <div><strong>Competitive Guidance</strong><span>${escapeHtml(row.competitiveGuidance || "Not listed")}</span></div>
+            </div>
+          `;
+        }
+        const detail = getProgramDetailsForRow(row);
+        const confidence = normalizeConfidence_(detail.confidence || row.confidence);
+        const snapshot = String(detail.snapshotResult || row.snapshotResult || rowStatusForDisplay_(row).label || "").trim() || "n/a";
+        const missing = (Array.isArray(detail.missingReasons) ? detail.missingReasons : []).filter(Boolean).slice(0, 3);
+        const advisories = (Array.isArray(detail.advisories) ? detail.advisories : []).filter(Boolean).slice(0, 3);
+        const meetingRecord = getMeetingRecordForKey_(row.key);
+        const decision = meetingDecisionLabel_(meetingRecord.decision) || "None";
+        const note = String(meetingRecord.note || "").trim();
+        return `
+          <div class="summary-grid">
+            <div><strong>Institution</strong><span>${escapeHtml(row.institution || "n/a")}</span></div>
+            <div><strong>Program</strong><span>${escapeHtml(row.program || "n/a")}</span></div>
+            <div><strong>Credential</strong><span>${escapeHtml(row.credential || "n/a")}</span></div>
+            <div><strong>Snapshot</strong><span>${escapeHtml(snapshot)}</span></div>
+            <div><strong>Confidence</strong><span>${escapeHtml(confidence)}</span></div>
+            <div><strong>Minimum Average</strong><span>${escapeHtml(Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a")}</span></div>
+            <div><strong>Missing / Next Steps</strong><span>${escapeHtml(missing.join(" | ") || "None")}</span></div>
+            <div><strong>Advisories</strong><span>${escapeHtml(advisories.join(" | ") || "None")}</span></div>
+            <div><strong>Meeting Decision</strong><span>${escapeHtml(decision)}</span></div>
+            <div><strong>Meeting Note</strong><span>${escapeHtml(note || "None")}</span></div>
+          </div>
+        `;
+      }
+
+      function buildPacketMeetingSummaryRowsHtml_(rows) {
+        if (!rows.length) {
+          return `<tr><td colspan="5">No meeting decisions/notes captured yet.</td></tr>`;
+        }
+        return rows
+          .map((row) => {
+            const note = escapeHtml(row.note || "").replace(/\n/g, "<br />");
+            return `
+              <tr>
+                <td>${escapeHtml(row.mode || "")}</td>
+                <td>${escapeHtml(row.institution || "")}</td>
+                <td>${escapeHtml(row.program || "")}</td>
+                <td>${escapeHtml(row.decision || "None")}</td>
+                <td>${note || "None"}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      function exportMeetingPacketPdf() {
+        const visibleRows = getVisibleRowsForPacket_();
+        const selectedRow = getSelectedDetailRowForPacket_();
+        const meetingRows = getMeetingPacketSummaryRows_();
+        if (!visibleRows.length && !selectedRow && !meetingRows.length) {
+          setStatus("Nothing to export yet. Run a check or capture a meeting note first.", true);
           return;
         }
-        const generated = formatUtcStamp(new Date().toISOString()) || "n/a";
-        const csvRows = [
-          ["Generated At (UTC)", generated],
-          ["Total Meeting Entries", String(rows.length)],
-          [],
-          [
-            "Program Key",
-            "Mode",
-            "Institution",
-            "Program",
-            "Credential",
-            "Decision",
-            "Owner",
-            "Follow-up Date",
-            "Snapshot",
-            "Confidence",
-            "Min Avg",
-            "Next Step",
-            "Source URL",
-            "Meeting Note",
-          ],
-        ].concat(rows);
-        const csv = csvRows.map((r) => r.map(csvCell).join(",")).join("\r\n");
-        downloadBlob(csv, "text/csv;charset=utf-8", fileStamp("admissions_meeting_packet", "csv"));
-        setStatus(`Exported meeting packet with ${rows.length} entr${rows.length === 1 ? "y" : "ies"}.`);
+
+        const nowIso = new Date().toISOString();
+        const generated = formatUtcStamp(nowIso) || "n/a";
+        const datasetStamp =
+          getResultDatasetStamp() ||
+          toYmdDate_((state.boot && state.boot.dataset && state.boot.dataset.lastProgramsSyncUtc) || "") ||
+          "n/a";
+        const activeView = state.primaryMode === "explorer" ? "Program Explorer" : `Eligibility Results (${viewLabel(state.view)})`;
+        const html = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Admissions Meeting Packet</title>
+    <style>
+      body { font-family: "Open Sans", sans-serif; margin: 20px; color: #223a33; }
+      h1 { margin: 0 0 4px; font-family: "Rubik", sans-serif; font-size: 22px; color: #135640; }
+      h2 { margin: 18px 0 8px; font-family: "Rubik", sans-serif; font-size: 15px; color: #184f3d; }
+      .meta { margin: 0 0 4px; font-size: 12px; color: #315d4f; }
+      .notice { margin: 0 0 12px; font-size: 12px; color: #6a5000; font-weight: 700; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      th, td { border: 1px solid #d2e1db; padding: 6px; text-align: left; vertical-align: top; }
+      th { background: #f2f8f5; color: #184f3d; }
+      .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+      .summary-grid div { border: 1px solid #d4e3dd; border-radius: 8px; padding: 8px; background: #fcfefd; }
+      .summary-grid strong { display: block; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; color: #3d6358; }
+      .summary-grid span { display: block; font-size: 12px; color: #213b33; }
+      .muted { color: #546c63; font-size: 12px; margin: 0; }
+      .actions { margin: 0 0 10px; }
+      @media print {
+        body { margin: 8mm; }
+        .actions { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="actions"><button onclick="window.print()">Print</button></div>
+    <h1>Admissions Meeting Packet</h1>
+    <p class="meta">Generated: ${escapeHtml(generated)} | Dataset: ${escapeHtml(datasetStamp)} | Active view: ${escapeHtml(activeView)}</p>
+    <p class="notice">Snapshot tool. Confirm final decisions on official institution program pages.</p>
+    <h2>Filtered Visible Program List</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Institution</th>
+          <th>Program</th>
+          <th>Credential</th>
+          <th>Snapshot</th>
+          <th>Confidence</th>
+          <th>Min Avg</th>
+          <th>Student Avg</th>
+          <th>Decision</th>
+        </tr>
+      </thead>
+      <tbody>${buildPacketVisibleListRowsHtml_(visibleRows)}</tbody>
+    </table>
+    <h2>Selected Program Detail Summary</h2>
+    ${buildPacketSelectedSummaryHtml_(selectedRow)}
+    <h2>Meeting Decision / Note Summary</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Mode</th>
+          <th>Institution</th>
+          <th>Program</th>
+          <th>Decision</th>
+          <th>Meeting Note</th>
+        </tr>
+      </thead>
+      <tbody>${buildPacketMeetingSummaryRowsHtml_(meetingRows)}</tbody>
+    </table>
+  </body>
+</html>`;
+
+        printHtmlDocument_(html, "Packet export failed in this browser.");
+        setStatus(
+          `Opened packet print view with ${visibleRows.length} visible program${visibleRows.length === 1 ? "" : "s"} and ${meetingRows.length} meeting entr${
+            meetingRows.length === 1 ? "y" : "ies"
+          }.`
+        );
       }
 
       function exportCsv() {
@@ -3373,6 +3230,48 @@ function boot() {
         ].concat(visible.map((r) => r.cells));
         const csv = rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
         downloadBlob(csv, "text/csv;charset=utf-8", fileStamp(`admissions_${viewSlug(state.view)}`, "csv"));
+      }
+
+      function printHtmlDocument_(html, errorMessage) {
+        const failMessage = String(errorMessage || "").trim() || "PDF export failed in this browser.";
+        const frameId = "pdfExportFrame";
+        let frame = document.getElementById(frameId);
+        if (!frame) {
+          frame = document.createElement("iframe");
+          frame.id = frameId;
+          frame.style.position = "fixed";
+          frame.style.right = "0";
+          frame.style.bottom = "0";
+          frame.style.width = "0";
+          frame.style.height = "0";
+          frame.style.border = "0";
+          frame.setAttribute("aria-hidden", "true");
+          document.body.appendChild(frame);
+        }
+        frame.onload = () => {
+          setTimeout(() => {
+            try {
+              const win = frame.contentWindow;
+              if (!win) throw new Error("Print frame unavailable");
+              win.focus();
+              win.print();
+            } catch (err) {
+              setStatus(failMessage, true);
+            }
+          }, 160);
+        };
+        if ("srcdoc" in frame) {
+          frame.srcdoc = html;
+          return;
+        }
+        const doc = frame.contentWindow && frame.contentWindow.document;
+        if (!doc) {
+          setStatus(failMessage, true);
+          return;
+        }
+        doc.open();
+        doc.write(html);
+        doc.close();
       }
 
       function exportPdf() {
@@ -3411,44 +3310,7 @@ function boot() {
     </table>
   </body>
 </html>`;
-        const frameId = "pdfExportFrame";
-        let frame = document.getElementById(frameId);
-        if (!frame) {
-          frame = document.createElement("iframe");
-          frame.id = frameId;
-          frame.style.position = "fixed";
-          frame.style.right = "0";
-          frame.style.bottom = "0";
-          frame.style.width = "0";
-          frame.style.height = "0";
-          frame.style.border = "0";
-          frame.setAttribute("aria-hidden", "true");
-          document.body.appendChild(frame);
-        }
-        frame.onload = () => {
-          setTimeout(() => {
-            try {
-              const win = frame.contentWindow;
-              if (!win) throw new Error("Print frame unavailable");
-              win.focus();
-              win.print();
-            } catch (err) {
-              setStatus("PDF export failed in this browser. Use CSV export instead.", true);
-            }
-          }, 160);
-        };
-        if ("srcdoc" in frame) {
-          frame.srcdoc = html;
-          return;
-        }
-        const doc = frame.contentWindow && frame.contentWindow.document;
-        if (!doc) {
-          setStatus("PDF export failed in this browser. Use CSV export instead.", true);
-          return;
-        }
-        doc.open();
-        doc.write(html);
-        doc.close();
+        printHtmlDocument_(html, "PDF export failed in this browser.");
       }
 
       function buildResultModel(result) {

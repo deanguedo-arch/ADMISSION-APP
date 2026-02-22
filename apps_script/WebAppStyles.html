@@ -329,10 +329,6 @@
         background: #fff7f5;
       }
 
-      .paste-input {
-        resize: vertical;
-      }
-
       .actions {
         margin-top: 8px;
         display: flex;
@@ -574,17 +570,6 @@
       }
 
       .meeting-toggle[aria-pressed="true"] {
-        border-color: #8bbfaa;
-        background: #edf7f2;
-        color: var(--brand-dark);
-        font-weight: 700;
-      }
-
-      .student-toggle {
-        min-height: var(--touch-target);
-      }
-
-      .student-toggle[aria-pressed="true"] {
         border-color: #8bbfaa;
         background: #edf7f2;
         color: var(--brand-dark);
@@ -874,6 +859,45 @@
 
       .panel-details > h2 {
         margin: 0;
+      }
+
+      .advanced-tools {
+        margin-top: 8px;
+        border: 1px solid #d1e1da;
+        border-radius: 10px;
+        background: #f9fcfa;
+      }
+
+      .advanced-tools > summary {
+        padding: 9px 12px;
+        cursor: pointer;
+        font-family: "Rubik", sans-serif;
+        font-size: 0.86rem;
+        color: #1f5945;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        list-style: none;
+      }
+
+      .advanced-tools > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .advanced-tools > summary::after {
+        content: "+";
+        font-size: 0.95rem;
+        color: #2f6653;
+      }
+
+      .advanced-tools[open] > summary::after {
+        content: "-";
+      }
+
+      .advanced-tools-content {
+        padding: 0 8px 8px;
+        display: grid;
+        gap: 8px;
       }
 
       .compare-strip {
@@ -1247,30 +1271,6 @@
         border-color: #e3b9b1;
         background: #faece9;
         color: #7b3a30;
-      }
-
-      .meeting-meta-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-      }
-
-      .meeting-field {
-        display: grid;
-        gap: 4px;
-        min-width: 0;
-      }
-
-      .meeting-field-label {
-        font-size: 0.74rem;
-        font-weight: 700;
-        color: #2a5948;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
-
-      .meeting-meta-input {
-        width: 100%;
       }
 
       .meeting-note-input {
@@ -1661,30 +1661,6 @@
         font-size: 0.8rem;
       }
 
-      body.is-student .optional-electives-block,
-      body.is-student #modeTabs,
-      body.is-student #filterGroup,
-      body.is-student #institutionFilter,
-      body.is-student #credentialFilter,
-      body.is-student #requirementTypeFilter,
-      body.is-student #sortSelect,
-      body.is-student #clearResultFiltersBtn,
-      body.is-student #exportMeetingNotesBtn,
-      body.is-student #meetingToggleBtn,
-      body.is-student #compareStrip,
-      body.is-student #compareResults,
-      body.is-student #pinnedComparisonActions {
-        display: none !important;
-      }
-
-      body.is-student #resultSearch {
-        flex: 1 1 340px;
-      }
-
-      body.is-student .toolbar-controls {
-        gap: 10px;
-      }
-
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -1749,10 +1725,6 @@
 
         .meeting-note-input {
           min-height: 120px;
-        }
-
-        .meeting-meta-grid {
-          grid-template-columns: 1fr;
         }
       }
 
