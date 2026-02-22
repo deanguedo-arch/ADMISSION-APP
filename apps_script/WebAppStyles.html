@@ -123,13 +123,13 @@
 
       .workflow {
         display: grid;
-        grid-template-columns: minmax(300px, 360px) minmax(520px, 1fr) minmax(300px, 380px);
+        grid-template-columns: minmax(300px, 360px) minmax(500px, 1fr) minmax(340px, 430px);
         gap: 14px;
         align-items: start;
       }
 
       .workflow.inputs-collapsed {
-        grid-template-columns: minmax(560px, 1fr) minmax(320px, 420px);
+        grid-template-columns: minmax(540px, 1fr) minmax(340px, 460px);
       }
 
       .workflow.inputs-collapsed .panel-inputs {
@@ -150,6 +150,17 @@
         border-radius: var(--radius-lg);
         padding: var(--space-4);
         box-shadow: var(--shadow);
+      }
+
+      .panel-inputs,
+      .panel-results,
+      .panel-details {
+        min-width: 0;
+      }
+
+      .panel-results {
+        container-type: inline-size;
+        container-name: results-panel;
       }
 
       .panel h2 {
@@ -547,6 +558,11 @@
         flex: 1.3 1 220px;
       }
 
+      #requirementTypeFilter {
+        flex: 1.3 1 230px;
+        min-width: 210px;
+      }
+
       .clear-control {
         white-space: nowrap;
         flex: 0 0 auto;
@@ -670,6 +686,32 @@
         color: #184e82;
         border-color: #b2d0ec;
         background: #eaf3fc;
+      }
+
+      .decision-pill {
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+      }
+
+      .decision-pill.decision-apply {
+        color: #155942;
+        border-color: #9dcfbf;
+        background: #e5f4ee;
+      }
+
+      .decision-pill.decision-hold {
+        color: #7a5600;
+        border-color: #e3d39e;
+        background: #fff9ec;
+      }
+
+      .decision-pill.decision-not_now {
+        color: #7b3a30;
+        border-color: #e3b9b1;
+        background: #faece9;
       }
 
       .student-avg-block {
@@ -813,6 +855,8 @@
         flex-direction: column;
         gap: 8px;
         min-width: 0;
+        container-type: inline-size;
+        container-name: details-panel;
       }
 
       .panel-details > h2 {
@@ -1021,7 +1065,7 @@
 
       .detail-highlights {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 8px;
       }
 
@@ -1107,7 +1151,7 @@
       .detail-grid {
         display: grid;
         gap: 8px;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         min-width: 0;
       }
 
@@ -1140,6 +1184,104 @@
         font-size: 0.84rem;
         overflow-wrap: anywhere;
         word-break: break-word;
+      }
+
+      .meeting-notes-block {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 8px;
+        overflow: visible;
+      }
+
+      .meeting-note-meta {
+        margin: 0;
+      }
+
+      .meeting-decision-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .meeting-decision-btn {
+        border: 1px solid #cadcd3;
+        border-radius: 999px;
+        background: #fff;
+        color: #2d5a49;
+        font-size: 0.76rem;
+        padding: 8px 12px;
+        min-height: var(--touch-target);
+        cursor: pointer;
+      }
+
+      .meeting-decision-btn.active {
+        font-weight: 700;
+      }
+
+      .meeting-decision-btn.active.decision-apply {
+        border-color: #9dcfbf;
+        background: #e5f4ee;
+        color: #155942;
+      }
+
+      .meeting-decision-btn.active.decision-hold {
+        border-color: #e3d39e;
+        background: #fff9ec;
+        color: #7a5600;
+      }
+
+      .meeting-decision-btn.active.decision-not_now {
+        border-color: #e3b9b1;
+        background: #faece9;
+        color: #7b3a30;
+      }
+
+      .meeting-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .meeting-field {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .meeting-field-label {
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #2a5948;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .meeting-meta-input {
+        width: 100%;
+      }
+
+      .meeting-note-input {
+        display: block;
+        width: 100%;
+        min-height: 132px;
+        max-width: 100%;
+        border: 1px solid var(--line-strong);
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+        color: var(--ink);
+        background: #fff;
+        resize: vertical;
+        overflow: auto;
+      }
+
+      .meeting-note-input:focus-visible {
+        outline: 2px solid #4f9bff;
+        outline-offset: 1px;
+      }
+
+      .meeting-note-actions {
+        margin-top: 0;
       }
 
       .requirement-line {
@@ -1495,6 +1637,71 @@
       body.is-meeting .meaning-item,
       body.is-meeting .highlight-value {
         font-size: 0.88rem;
+      }
+
+      body.is-meeting .meeting-note-input {
+        font-size: 0.9rem;
+        min-height: 140px;
+      }
+
+      body.is-meeting .meeting-decision-btn {
+        font-size: 0.8rem;
+      }
+
+      @container results-panel (max-width: 760px) {
+        .toolbar-controls {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .toolbar-controls > * {
+          width: 100%;
+        }
+
+        #resultSearch,
+        #sortSelect {
+          flex: 1 1 auto;
+        }
+
+        .card-top {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .card-metrics {
+          justify-content: flex-start;
+        }
+      }
+
+      @container details-panel (max-width: 430px) {
+        .details-drawer {
+          padding: 8px;
+          gap: 8px;
+        }
+
+        .detail-highlights,
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .detail-block,
+        .collapsible,
+        .meaning-panel,
+        .detail-warning {
+          padding: 8px;
+        }
+
+        .detail-link {
+          width: 100%;
+        }
+
+        .meeting-note-input {
+          min-height: 120px;
+        }
+
+        .meeting-meta-grid {
+          grid-template-columns: 1fr;
+        }
       }
 
       @media (max-width: 1480px) {

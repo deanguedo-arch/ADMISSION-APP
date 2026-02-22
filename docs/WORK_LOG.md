@@ -699,3 +699,53 @@ Keep entries short and append-only.
 - Updated filtering logic so `Requirement Type` applies only in Explorer mode.
 - Preview smoke: local Node server confirmed serving updated markup/functions at `http://localhost:5173/WebApp.html?mock=1`.
 - Validation note: `pwsh` not available in this environment, so PowerShell guardrails were not runnable locally.
+## 2026-02-22 (Web app phase 4 slice: Meeting Notes capture + CSV export)
+- Added `Export Notes` action in results toolbar (`#exportMeetingNotesBtn`) in `apps_script/WebAppBody.html`.
+- Added frontend-only local notes state and persistence in `apps_script/WebAppScriptFunctions.html` using `localStorage` key `admissions_meeting_notes_v1`.
+- Added per-program meeting notes editor in details drawer for both Results and Program Explorer via `renderMeetingNoteEditor_`.
+- Added details drawer event wiring in `apps_script/WebAppScriptInit.html` for note input and clear actions.
+- Added `exportMeetingNotesCsv()` to export all captured notes (results/explorer/archived keys) to CSV.
+- Added styles for notes editor UI in `apps_script/WebAppStyles.html`.
+- No backend/API contract changes; notes remain local to browser.
+## 2026-02-22 (Web app phase 4 follow-up: notes persistence hardening)
+- Added storage fallback for meeting notes in `apps_script/WebAppScriptFunctions.html`: `localStorage` -> `sessionStorage` -> in-memory.
+- Added storage-mode guidance text in notes editor and button tooltip so users know persistence scope.
+- Added details drawer `change` event wiring in `apps_script/WebAppScriptInit.html` as a backup save path.
+## 2026-02-22 (Web app phase 4 follow-up: details layout + requirements default-open)
+- Fixed details-panel squish by widening the desktop details column and making internal details grids responsive via `auto-fit` minmax rules in `apps_script/WebAppStyles.html`.
+- Updated requirements section in `apps_script/WebAppScriptFunctions.html` to render expanded by default (`<details ... open>`).
+## 2026-02-22 (Web app phase 4 follow-up: meeting-notes panel rendering)
+- Refactored meeting notes UI to render as a dedicated collapsible section (`.meeting-notes-panel`) open by default with a structured body wrapper.
+- Purpose: prevent header-only/clipped appearance in narrow details layouts and keep notes editor consistently visible.
+## 2026-02-22 (Web app phase 4 follow-up: meeting notes de-collapsed)
+- Replaced meeting-notes collapsible UI with a full always-visible `detail-block` (`<h4>Meeting Notes</h4>` + textarea + actions) to prevent clipped summary-only rendering.
+- Increased meeting-notes textarea baseline height for readability and reduced perceived squish in meeting mode.
+## 2026-02-22 (Web app phase 5 slice: stability + accessibility hardening)
+- Added accessibility semantics in `apps_script/WebAppBody.html`:
+  - live-region status attributes for auth/status/paste/rows stamp.
+  - aria-labels for search/filter/sort controls and clear action.
+- Added keyboard access for results cards in `apps_script/WebAppScriptInit.html` + `apps_script/WebAppScriptFunctions.html`:
+  - results/explorer cards are focusable (`tabindex="0"`).
+  - Enter/Space on focused card opens details.
+- Added panel-width responsive hardening in `apps_script/WebAppStyles.html` using container queries:
+  - results panel control stacking when panel is narrow.
+  - details panel switches to single-column internals when panel width is constrained.
+- Finalized details behavior updates in `apps_script/WebAppScriptFunctions.html`:
+  - requirements details open by default.
+  - meeting notes render as a full detail block with larger textarea (no clipped summary row).
+- Updated regression guidance in `docs/WEBAPP_QA_CHECKLIST.md` with Phase 5 coverage (Explorer, notes, keyboard flow, responsive checks).
+## 2026-02-22 (Web app phase 6 slice: meeting workflow decisions + packet export)
+- Upgraded meeting-note storage in `apps_script/WebAppScriptFunctions.html` from note-only strings to structured records (`decision`, `owner`, `followUpDate`, `note`) with backward compatibility for existing saved notes.
+- Rebuilt details editor into a `Meeting Workflow` block with decision tags (`Apply`, `Hold`, `Not now`), owner/date fields, notes textarea, and `Clear Meeting Fields` action.
+- Added decision status pills on both Eligibility Results cards and Program Explorer cards so meeting status is visible without opening details.
+- Renamed toolbar export action to `Export Packet` in `apps_script/WebAppBody.html` and expanded export rows/headers to include workflow fields (decision, owner, follow-up date, snapshot/confidence context, next step, source URL, note).
+- Updated `docs/WEBAPP_QA_CHECKLIST.md` with Phase 6 workflow checks and packet-export column coverage.
+- Validation note: PowerShell guardrails (`validate-webapp-surface`, `validate-apps-script-structure`) are not runnable in this environment because `pwsh` is unavailable; Node preview content check passed at `http://localhost:5173/WebApp.html?mock=1`.
+## 2026-02-22 (Web app phase 6 closeout + Explorer filter readability fix + roadmap handoff)
+- Fixed Program Explorer toolbar clipping for `Requirement Type` by widening `#requirementTypeFilter` in `apps_script/WebAppStyles.html` and shortening the empty label to `All Req Types` in `apps_script/WebAppBody.html` + `apps_script/WebAppScriptFunctions.html`.
+- Confirmed Phase 5 + Phase 6 are complete in current working tree (meeting workflow, decision pills, packet export, accessibility/responsive hardening).
+- Added forward roadmap handoff in `docs/SPRINT_SLICE.md` so next session can continue directly:
+  - Phase 7: Student Mode Optimization.
+  - Phase 8: iPhone Web Release Operations.
+  - Phase 9: App Store Track (deferred wrapper).
+- Validation note: PowerShell guardrails remain unavailable in this environment (`pwsh` not installed); local Node preview remains available for UI verification.

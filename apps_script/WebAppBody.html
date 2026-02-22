@@ -15,7 +15,7 @@
       </header>
 
       <section class="auth-strip">
-        <p class="auth-line" id="authLine">Checking sign-in requirements...</p>
+        <p class="auth-line" id="authLine" role="status" aria-live="polite">Checking sign-in requirements...</p>
         <div class="auth-actions">
           <div id="googleSignIn"></div>
         </div>
@@ -79,7 +79,7 @@
             <button class="btn btn-subtle" id="pasteApplyBtn" type="button">Apply Paste</button>
             <button class="btn btn-subtle" id="pasteClearBtn" type="button">Clear Paste</button>
           </div>
-          <p class="status mini" id="pasteStatus"></p>
+          <p class="status mini" id="pasteStatus" role="status" aria-live="polite" aria-atomic="true"></p>
 
           <div class="actions run-actions">
             <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
@@ -87,7 +87,7 @@
             <button class="btn btn-subtle" id="pdfBtn" type="button" disabled>Export PDF</button>
             <button class="btn btn-danger-lite" id="resetBtn" type="button">Reset Form</button>
           </div>
-          <p class="status" id="status"></p>
+          <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></p>
         </section>
 
         <section class="panel panel-results" id="resultsPanel">
@@ -151,31 +151,37 @@
                 class="result-control"
                 id="resultSearch"
                 type="text"
+                aria-label="Search programs"
                 placeholder="Search institution, program, credential..."
               />
-              <select class="result-control" id="institutionFilter">
+              <select class="result-control" id="institutionFilter" aria-label="Filter by institution">
                 <option value="">All Institutions</option>
               </select>
-              <select class="result-control" id="credentialFilter">
+              <select class="result-control" id="credentialFilter" aria-label="Filter by credential">
                 <option value="">All Credentials</option>
               </select>
-              <select class="result-control" id="requirementTypeFilter" style="display: none">
-                <option value="">All Requirement Types</option>
+              <select class="result-control" id="requirementTypeFilter" style="display: none" aria-label="Filter by requirement type">
+                <option value="">All Req Types</option>
               </select>
-              <select class="result-control" id="sortSelect">
+              <select class="result-control" id="sortSelect" aria-label="Sort programs">
                 <option value="closest">Sort: Closest to eligible</option>
                 <option value="institution_program">Sort: Institution + Program</option>
                 <option value="program_az">Sort: Program A-Z</option>
                 <option value="min_avg_asc">Sort: Min Avg low-high</option>
                 <option value="min_avg_desc">Sort: Min Avg high-low</option>
               </select>
-              <button class="btn btn-subtle clear-control" id="clearResultFiltersBtn" type="button">Clear</button>
+              <button class="btn btn-subtle clear-control" id="clearResultFiltersBtn" type="button" aria-label="Clear filters">
+                Clear
+              </button>
+              <button class="btn btn-subtle clear-control" id="exportMeetingNotesBtn" type="button" disabled>
+                Export Packet
+              </button>
               <button class="btn btn-subtle meeting-toggle" id="meetingToggleBtn" type="button" aria-pressed="false">
                 Meeting Mode
               </button>
             </div>
 
-            <div class="ghost" id="rowsStamp">No results yet</div>
+            <div class="ghost" id="rowsStamp" role="status" aria-live="polite" aria-atomic="true">No results yet</div>
           </div>
 
           <div class="results-wrap" id="resultsWrap">

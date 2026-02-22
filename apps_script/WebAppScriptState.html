@@ -19,6 +19,8 @@
         electiveRulesCollapsed: false,
         inputsCollapsed: false,
         meetingMode: false,
+        meetingNotesByKey: {},
+        meetingNotesStorageMode: "memory",
         resultFilters: {
           query: "",
           institution: "",
@@ -75,6 +77,7 @@
         requirementTypeFilter: document.getElementById("requirementTypeFilter"),
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        exportMeetingNotesBtn: document.getElementById("exportMeetingNotesBtn"),
         meetingToggleBtn: document.getElementById("meetingToggleBtn"),
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonActions: document.getElementById("pinnedComparisonActions"),

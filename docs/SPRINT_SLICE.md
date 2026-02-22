@@ -28,3 +28,19 @@ Ship a clean release candidate: finalize recent web app fixes, verify preflight 
 - [x] 2026-02-10: Ran release preflight automation (`validate-webapp-surface`, `validate-apps-script-structure`) and local preview startup smoke.
 - [x] 2026-02-10: Completed Slice 4 by adding cached `runWebEligibility` responses, dataset fingerprint metadata, and bounded lightweight `WebAudit` logging without raw marks.
 - [x] 2026-02-10: Completed Slice 5 local QA pass by re-running guardrails, validating preview startup, surfacing dataset freshness in UI, and hardening PDF export to iframe-print (no popup dependency).
+
+## Meeting + Mobile Roadmap (2026-02-22)
+- [x] Phase 5: Stability + accessibility hardening for meeting use (keyboard/focus/responsive/details panel fixes).
+- [x] Phase 6: Meeting workflow decisions + packet export (decision tags, owner/date, packet CSV, card decision pills).
+- [ ] Phase 7: Student Mode Optimization
+  - simplified student-facing mode with reduced controls and clearer copy.
+  - speed/load optimizations for low-end phones.
+  - tighter mobile touch targets and sticky action controls.
+- [ ] Phase 8: iPhone Web Release Operations
+  - automate release-gate checks and expected-count smoke tests.
+  - confirm 2 consecutive weekly successful cycles.
+  - finalize support playbook and incident handling flow.
+- [ ] Phase 9: App Store Track (Deferred Wrapper)
+  - Capacitor/WKWebView packaging path.
+  - App Store metadata/privacy/review preparation.
+  - update strategy decision (online-only vs bundled snapshot).

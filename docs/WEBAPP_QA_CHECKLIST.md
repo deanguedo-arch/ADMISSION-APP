@@ -38,15 +38,22 @@ Run this before each production push affecting `apps_script/`.
   - [ ] `English 30-1: 82%`
   - [ ] `course,mark` CSV lines
 - [ ] Search works across institution/program/credential.
-- [ ] Filter tabs work (`Eligible`, `Missing`, `Uncheckable`, `All`, `Starred`).
+- [ ] Filter tabs work (`Likely ineligible`, `Likely eligible`, `Uncheckable`, `Shortlist`, `All`).
 - [ ] Sort options work (including closest-to-eligible where computable).
 - [ ] Row click opens details drawer with matching row content.
+- [ ] Program Explorer tab works with shared search/filter/sort controls.
+- [ ] Requirements section starts expanded by default in details.
+- [ ] Meeting Workflow block renders fully (not clipped) at desktop widths.
+- [ ] Decision tags (`Apply`, `Hold`, `Not now`) save per program and show a decision pill on result cards.
+- [ ] Meeting Owner and Follow-up Date fields save/reload in the same browser session.
+- [ ] Meeting notes can be edited/cleared and `Export Packet` count updates correctly.
 
 ## 5) Export
 - [ ] CSV export works for current view.
 - [ ] CSV export works for all rows.
 - [ ] PDF export works via iframe print (no popup dependency).
 - [ ] Export includes dataset stamp + generation time.
+- [ ] `Export Packet` includes workflow fields (`Decision`, `Owner`, `Follow-up Date`, `Snapshot`, `Confidence`, `Next Step`, `Source URL`, `Meeting Note`).
 
 ## 6) Performance + Ops
 - [ ] Repeated runs are faster due to cache hits.
@@ -59,3 +66,10 @@ Run this before each production push affecting `apps_script/`.
 - [ ] `docs/WORK_LOG.md` updated with outcome.
 - [ ] Push to `main` completed.
 - [ ] Deployed web app smoke-tested once.
+
+## 8) Accessibility + Responsive Hardening
+- [ ] Keyboard-only flow works for core actions (run, filter, select card, open details).
+- [ ] Focus indicator is visible on buttons, fields, links, and result cards.
+- [ ] Live status regions announce updates (`status`, `paste status`, `rows stamp`).
+- [ ] At ~1280-1536 desktop widths, details panel content does not collapse into clipped/overlapped blocks.
+- [ ] At `<=980px`, toolbar controls stack cleanly and details sections remain readable.

@@ -4,6 +4,8 @@ function boot() {
         setInputsCollapsed(state.inputsCollapsed);
         state.meetingMode = loadMeetingModePreference_();
         setMeetingMode_(state.meetingMode, { persist: false });
+        state.meetingNotesByKey = loadMeetingNotes_();
+        updateMeetingNotesControls_();
         state.mockMode = isMockMode();
         if (state.mockMode) {
           bootMockMode();
@@ -24,6 +26,7 @@ function boot() {
 
       let panelHeightSyncRaf = 0;
       const MEETING_MODE_KEY = "admissions_meeting_mode";
+      const MEETING_NOTES_KEY = "admissions_meeting_notes_v1";
       const RESULT_SORT_OPTIONS = [
         { value: "closest", label: "Sort: Closest to eligible" },
         { value: "institution_program", label: "Sort: Institution + Program" },
@@ -202,6 +205,7 @@ function boot() {
         updateModeCounts_();
         syncModeTabs_();
         syncFilterButtons();
+        updateMeetingNotesControls_();
         setMeetingMode_(state.meetingMode, { persist: false });
       }
 
@@ -238,6 +242,262 @@ function boot() {
         } catch (err) {
           // Non-fatal for restricted browser contexts.
         }
+      }
+
+      function normalizeMeetingDecision_(value) {
+        const t = String(value || "").trim().toLowerCase();
+        if (t === "apply") return "apply";
+        if (t === "hold") return "hold";
+        if (t === "not_now") return "not_now";
+        return "";
+      }
+
+      function meetingDecisionLabel_(decision) {
+        const normalized = normalizeMeetingDecision_(decision);
+        if (normalized === "apply") return "Apply";
+        if (normalized === "hold") return "Hold";
+        if (normalized === "not_now") return "Not now";
+        return "";
+      }
+
+      function meetingDecisionClass_(decision) {
+        const normalized = normalizeMeetingDecision_(decision);
+        if (!normalized) return "";
+        return `decision-${normalized}`;
+      }
+
+      function normalizeMeetingRecord_(value) {
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+          const followRaw = String(value.followUpDate || "").trim();
+          const followMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(followRaw);
+          return {
+            note: String(value.note || "").trim(),
+            decision: normalizeMeetingDecision_(value.decision),
+            owner: String(value.owner || "").trim(),
+            followUpDate: followMatch ? followRaw : "",
+          };
+        }
+        return {
+          note: String(value || "").trim(),
+          decision: "",
+          owner: "",
+          followUpDate: "",
+        };
+      }
+
+      function meetingRecordHasContent_(record) {
+        if (!record || typeof record !== "object") return false;
+        return !!(
+          String(record.note || "").trim() ||
+          normalizeMeetingDecision_(record.decision) ||
+          String(record.owner || "").trim() ||
+          String(record.followUpDate || "").trim()
+        );
+      }
+
+      function parseMeetingNotesMap_(raw) {
+        if (!raw) return {};
+        try {
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+          const out = {};
+          Object.keys(parsed).forEach((key) => {
+            const safeKey = sanitizeProgramKey(key);
+            if (!safeKey) return;
+            const record = normalizeMeetingRecord_(parsed[key]);
+            if (!meetingRecordHasContent_(record)) return;
+            out[safeKey] = record;
+          });
+          return out;
+        } catch (err) {
+          return {};
+        }
+      }
+
+      function getUsableStorage_(propName) {
+        try {
+          const storage = window[propName];
+          if (!storage) return null;
+          const probeKey = `${MEETING_NOTES_KEY}__probe__`;
+          storage.setItem(probeKey, "1");
+          storage.removeItem(probeKey);
+          return storage;
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function meetingNotesStorageLabel_() {
+        const mode = String(state.meetingNotesStorageMode || "memory").trim();
+        if (mode === "local") return "Saved in this browser and persists after refresh.";
+        if (mode === "session") return "Saved for this tab session; clears when tab closes.";
+        return "Browser storage is restricted; notes stay until this page refreshes.";
+      }
+
+      function loadMeetingNotes_() {
+        const local = getUsableStorage_("localStorage");
+        if (local) {
+          state.meetingNotesStorageMode = "local";
+          const localMap = parseMeetingNotesMap_(local.getItem(MEETING_NOTES_KEY));
+          if (Object.keys(localMap).length) return localMap;
+          const session = getUsableStorage_("sessionStorage");
+          if (session) {
+            const sessionMap = parseMeetingNotesMap_(session.getItem(MEETING_NOTES_KEY));
+            if (Object.keys(sessionMap).length) {
+              state.meetingNotesStorageMode = "session";
+              return sessionMap;
+            }
+          }
+          return {};
+        }
+
+        const session = getUsableStorage_("sessionStorage");
+        if (session) {
+          state.meetingNotesStorageMode = "session";
+          return parseMeetingNotesMap_(session.getItem(MEETING_NOTES_KEY));
+        }
+
+        state.meetingNotesStorageMode = "memory";
+        return {};
+      }
+
+      function saveMeetingNotes_() {
+        const payload = JSON.stringify(state.meetingNotesByKey || {});
+        const local = getUsableStorage_("localStorage");
+        if (local) {
+          try {
+            local.setItem(MEETING_NOTES_KEY, payload);
+            state.meetingNotesStorageMode = "local";
+            return true;
+          } catch (err) {
+            // fall through
+          }
+        }
+
+        const session = getUsableStorage_("sessionStorage");
+        if (session) {
+          try {
+            session.setItem(MEETING_NOTES_KEY, payload);
+            state.meetingNotesStorageMode = "session";
+            return true;
+          } catch (err) {
+            // fall through
+          }
+        }
+
+        state.meetingNotesStorageMode = "memory";
+        return false;
+      }
+
+      function countMeetingNotes_() {
+        const map = state.meetingNotesByKey && typeof state.meetingNotesByKey === "object" ? state.meetingNotesByKey : {};
+        return Object.keys(map).filter((key) => {
+          return meetingRecordHasContent_(normalizeMeetingRecord_(map[key]));
+        }).length;
+      }
+
+      function updateMeetingNotesControls_() {
+        if (!ui.exportMeetingNotesBtn) return;
+        const count = countMeetingNotes_();
+        ui.exportMeetingNotesBtn.disabled = count <= 0;
+        ui.exportMeetingNotesBtn.textContent = count > 0 ? `Export Packet (${count})` : "Export Packet";
+        ui.exportMeetingNotesBtn.title = meetingNotesStorageLabel_();
+      }
+
+      function getMeetingRecordForKey_(key) {
+        const safeKey = sanitizeProgramKey(key);
+        if (!safeKey) return normalizeMeetingRecord_(null);
+        const map = state.meetingNotesByKey && typeof state.meetingNotesByKey === "object" ? state.meetingNotesByKey : {};
+        return normalizeMeetingRecord_(map[safeKey]);
+      }
+
+      function getMeetingNoteForKey_(key) {
+        return getMeetingRecordForKey_(key).note || "";
+      }
+
+      function setMeetingRecordField_(key, field, value) {
+        const safeKey = sanitizeProgramKey(key);
+        if (!safeKey) return;
+        const map = state.meetingNotesByKey && typeof state.meetingNotesByKey === "object" ? state.meetingNotesByKey : {};
+        state.meetingNotesByKey = map;
+        const current = normalizeMeetingRecord_(map[safeKey]);
+        if (field === "note") current.note = String(value || "").replace(/\r\n/g, "\n").trim();
+        if (field === "owner") current.owner = String(value || "").trim();
+        if (field === "followUpDate") {
+          const raw = String(value || "").trim();
+          const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+          current.followUpDate = match ? raw : "";
+        }
+        if (field === "decision") current.decision = normalizeMeetingDecision_(value);
+        if (meetingRecordHasContent_(current)) map[safeKey] = current;
+        else delete map[safeKey];
+        saveMeetingNotes_();
+        updateMeetingNotesControls_();
+      }
+
+      function clearMeetingRecordForKey_(key) {
+        const safeKey = sanitizeProgramKey(key);
+        if (!safeKey) return;
+        const map = state.meetingNotesByKey && typeof state.meetingNotesByKey === "object" ? state.meetingNotesByKey : {};
+        if (map[safeKey] !== undefined) {
+          delete map[safeKey];
+          saveMeetingNotes_();
+          updateMeetingNotesControls_();
+        }
+      }
+
+      function renderMeetingNoteEditor_(key) {
+        const safeKey = sanitizeProgramKey(key);
+        if (!safeKey) return "";
+        const record = getMeetingRecordForKey_(safeKey);
+        const decision = normalizeMeetingDecision_(record.decision);
+        const applyClass = decision === "apply" ? "meeting-decision-btn active decision-apply" : "meeting-decision-btn";
+        const holdClass = decision === "hold" ? "meeting-decision-btn active decision-hold" : "meeting-decision-btn";
+        const notNowClass = decision === "not_now" ? "meeting-decision-btn active decision-not_now" : "meeting-decision-btn";
+        return `
+          <div class="detail-block meeting-notes-block">
+            <h4>Meeting Workflow</h4>
+            <p class="ghost meeting-note-meta">${escapeHtml(meetingNotesStorageLabel_())}</p>
+            <div class="meeting-decision-row" role="group" aria-label="Decision tags">
+              <button class="${applyClass}" type="button" data-meeting-decision-key="${escapeAttr(safeKey)}" data-meeting-decision="apply">Apply</button>
+              <button class="${holdClass}" type="button" data-meeting-decision-key="${escapeAttr(safeKey)}" data-meeting-decision="hold">Hold</button>
+              <button class="${notNowClass}" type="button" data-meeting-decision-key="${escapeAttr(safeKey)}" data-meeting-decision="not_now">Not now</button>
+            </div>
+            <div class="meeting-meta-grid">
+              <label class="meeting-field">
+                <span class="meeting-field-label">Owner</span>
+                <input
+                  type="text"
+                  class="meeting-meta-input"
+                  data-meeting-owner-key="${escapeAttr(safeKey)}"
+                  aria-label="Meeting owner"
+                  placeholder="Counsellor or staff name"
+                  value="${escapeAttr(record.owner || "")}"
+                />
+              </label>
+              <label class="meeting-field">
+                <span class="meeting-field-label">Follow-up Date</span>
+                <input
+                  type="date"
+                  class="meeting-meta-input"
+                  data-meeting-followup-key="${escapeAttr(safeKey)}"
+                  aria-label="Follow-up date"
+                  value="${escapeAttr(record.followUpDate || "")}"
+                />
+              </label>
+            </div>
+            <textarea
+              class="meeting-note-input"
+              rows="6"
+              data-meeting-note-key="${escapeAttr(safeKey)}"
+              aria-label="Meeting notes"
+              placeholder="Capture meeting decision, concerns, and follow-up..."
+            >${escapeHtml(record.note || "")}</textarea>
+            <div class="actions meeting-note-actions">
+              <button class="btn btn-subtle" type="button" data-meeting-note-clear="${escapeAttr(safeKey)}">Clear Meeting Fields</button>
+            </div>
+          </div>
+        `;
       }
 
       function syncMeetingModeButton_() {
@@ -1400,7 +1660,7 @@ function boot() {
         if (ui.requirementTypeFilter && isExplorerMode) {
           renderSelectOptions(
             ui.requirementTypeFilter,
-            "All Requirement Types",
+            "All Req Types",
             requirementTypes,
             state.resultFilters.requirementType
           );
@@ -1423,6 +1683,19 @@ function boot() {
             })
             .join("");
         select.innerHTML = html;
+      }
+
+      function onResultsWrapKeydown(e) {
+        const key = String((e && e.key) || "");
+        if (key !== "Enter" && key !== " ") return;
+        const target = e && e.target;
+        if (!target || !(target instanceof Element)) return;
+        const tag = String(target.tagName || "").toUpperCase();
+        if (tag === "BUTTON" || tag === "A" || tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+        const card = target.closest(".result-card");
+        if (!card) return;
+        e.preventDefault();
+        card.click();
       }
 
       function onResultsWrapClick(e) {
@@ -1589,6 +1862,51 @@ function boot() {
         renderCompareResults();
       }
 
+      function onDetailsDrawerInput(e) {
+        const noteInput = e.target && e.target.closest("textarea[data-meeting-note-key]");
+        if (noteInput) {
+          const noteKey = String(noteInput.getAttribute("data-meeting-note-key") || "").trim();
+          if (!noteKey) return;
+          setMeetingRecordField_(noteKey, "note", noteInput.value);
+          return;
+        }
+
+        const ownerInput = e.target && e.target.closest("input[data-meeting-owner-key]");
+        if (ownerInput) {
+          const ownerKey = String(ownerInput.getAttribute("data-meeting-owner-key") || "").trim();
+          if (!ownerKey) return;
+          setMeetingRecordField_(ownerKey, "owner", ownerInput.value);
+          return;
+        }
+
+        const followInput = e.target && e.target.closest("input[data-meeting-followup-key]");
+        if (!followInput) return;
+        const followKey = String(followInput.getAttribute("data-meeting-followup-key") || "").trim();
+        if (!followKey) return;
+        setMeetingRecordField_(followKey, "followUpDate", followInput.value);
+      }
+
+      function onDetailsDrawerClick(e) {
+        const decisionBtn = e.target && e.target.closest("button[data-meeting-decision-key]");
+        if (decisionBtn) {
+          const key = String(decisionBtn.getAttribute("data-meeting-decision-key") || "").trim();
+          const decision = String(decisionBtn.getAttribute("data-meeting-decision") || "").trim();
+          if (!key) return;
+          setMeetingRecordField_(key, "decision", decision);
+          renderResults();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const clearBtn = e.target && e.target.closest("button[data-meeting-note-clear]");
+        if (!clearBtn) return;
+        const key = String(clearBtn.getAttribute("data-meeting-note-clear") || "").trim();
+        if (!key) return;
+        clearMeetingRecordForKey_(key);
+        renderResults();
+        renderDetailsDrawer();
+      }
+
       function onDetailsDrawerToggle(e) {
         const target = e && e.target;
         if (!(target instanceof HTMLDetailsElement)) return;
@@ -1636,8 +1954,21 @@ function boot() {
                 row.competitiveGuidance ||
                 row.requirementType ||
                 "General admissions snapshot. Run eligibility check with marks for personalized results.";
+              const meetingRecord = getMeetingRecordForKey_(row.key);
+              const decision = normalizeMeetingDecision_(meetingRecord.decision);
+              const decisionPillHtml = decision
+                ? `<span class="decision-pill ${escapeAttr(meetingDecisionClass_(decision))}">${escapeHtml(
+                    meetingDecisionLabel_(decision)
+                  )}</span>`
+                : "";
+              const cardAria = `Open details for ${row.program || "program"} at ${row.institution || "institution"}`;
               return `
-                <article class="result-card${cardClass}" data-explorer-key="${escapeAttr(row.key)}">
+                <article
+                  class="result-card${cardClass}"
+                  data-explorer-key="${escapeAttr(row.key)}"
+                  tabindex="0"
+                  aria-label="${escapeAttr(cardAria)}"
+                >
                   <div class="card-top">
                     <div class="card-title-wrap">
                       <h3 class="card-title">${escapeHtml(row.program || "Program")}</h3>
@@ -1648,6 +1979,7 @@ function boot() {
                     <div class="card-metrics">
                       <span class="metric-pill">Min Avg: ${escapeHtml(minAvgText)}</span>
                       <span class="metric-pill">${escapeHtml(row.datasetDate || "Data date n/a")}</span>
+                      ${decisionPillHtml}
                       <span class="status-pill uncheckable">Explorer</span>
                     </div>
                   </div>
@@ -1726,8 +2058,21 @@ function boot() {
               status.css === "eligible" || status.css === "missing" || status.css === "uncheckable"
                 ? status.css
                 : "neutral";
+            const meetingRecord = getMeetingRecordForKey_(row.key);
+            const decision = normalizeMeetingDecision_(meetingRecord.decision);
+            const decisionPillHtml = decision
+              ? `<span class="decision-pill ${escapeAttr(meetingDecisionClass_(decision))}">${escapeHtml(
+                  meetingDecisionLabel_(decision)
+                )}</span>`
+              : "";
+            const cardAria = `Open details for ${row.program || "program"} at ${row.institution || "institution"}`;
             return `
-              <article class="result-card${cardClass}" data-row-key="${escapeAttr(row.key)}">
+              <article
+                class="result-card${cardClass}"
+                data-row-key="${escapeAttr(row.key)}"
+                tabindex="0"
+                aria-label="${escapeAttr(cardAria)}"
+              >
                 <div class="card-top">
                   <div class="card-title-wrap">
                     <h3 class="card-title">${escapeHtml(row.program || "Program")}</h3>
@@ -1738,6 +2083,7 @@ function boot() {
                   <div class="card-metrics">
                     <span class="metric-pill">Min Avg: ${escapeHtml(Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a")}</span>
                     <span class="metric-pill">Confidence: ${escapeHtml(confidence)}</span>
+                    ${decisionPillHtml}
                     <span class="status-pill ${escapeAttr(status.css)}">${escapeHtml(status.label)}</span>
                     <div class="student-avg-block ${escapeAttr(avgToneClass)}">
                       <div class="student-avg-label">Student Avg Used</div>
@@ -1798,6 +2144,7 @@ function boot() {
         const competitiveText = row.competitiveGuidance || "Not listed";
         const requirementText = row.requirementType || "Not listed";
         const nextStepText = "Enter student marks and run Check Eligibility to get a personalized decision and gaps.";
+        const meetingNoteHtml = renderMeetingNoteEditor_(row.key);
         const programLinkHtml = row.sourceUrl
           ? `<div class="detail-link-row"><a class="detail-link" href="${escapeAttr(
               row.sourceUrl
@@ -1833,6 +2180,7 @@ function boot() {
             <h4>Requirement Type</h4>
             <p>${escapeHtml(requirementText)}</p>
           </div>
+          ${meetingNoteHtml}
         `;
       }
 
@@ -2285,6 +2633,7 @@ function boot() {
               .join("")}</ul>`
           : `<p class="ghost">No summary available.</p>`;
         const highlightsHtml = buildDetailHighlights_(row, detail);
+        const meetingNoteHtml = renderMeetingNoteEditor_(row && row.key);
 
         const missingHtml = missing.length
           ? `<ul class="detail-list">${missing.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`
@@ -2310,8 +2659,8 @@ function boot() {
         const selectedElectives = Array.isArray(electives.selected) ? electives.selected : [];
 
         const requirementsSectionHtml = requirementLines
-          ? `<details class="collapsible"><summary>Requirements</summary><ul class="detail-list">${requirementLines}</ul></details>`
-          : `<details class="collapsible"><summary>Requirements</summary><p class="ghost">Requirement details are unavailable for this row.</p></details>`;
+          ? `<details class="collapsible" open><summary>Requirements</summary><ul class="detail-list">${requirementLines}</ul></details>`
+          : `<details class="collapsible" open><summary>Requirements</summary><p class="ghost">Requirement details are unavailable for this row.</p></details>`;
 
         const selectedElectivesText = selectedElectives.length
           ? selectedElectives.map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${formatCell(e.mark)}`).join(", ")
@@ -2385,6 +2734,7 @@ function boot() {
             </div>
             ${explainabilityHtml}
           </div>
+          ${meetingNoteHtml}
           ${requirementsSectionHtml}
           ${electiveSectionHtml}
         `;
@@ -2805,6 +3155,117 @@ function boot() {
         win.document.write(html);
         win.document.close();
         setStatus(`Generated Program Comparison Sheet for ${pinnedRows.length} pinned program(s).`);
+      }
+
+      function buildMeetingNoteExportRows_() {
+        const map = state.meetingNotesByKey && typeof state.meetingNotesByKey === "object" ? state.meetingNotesByKey : {};
+        const keys = Object.keys(map).sort((a, b) => a.localeCompare(b));
+        if (!keys.length) return [];
+
+        const resultRowsByKey = state.resultModel && state.resultModel.rowsByKey ? state.resultModel.rowsByKey : {};
+        const explorerRows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
+        const explorerByKey = {};
+        explorerRows.forEach((row) => {
+          if (!row || !row.key) return;
+          explorerByKey[row.key] = row;
+        });
+
+        const rows = [];
+        keys.forEach((key) => {
+          const record = normalizeMeetingRecord_(map[key]);
+          if (!meetingRecordHasContent_(record)) return;
+          const decisionLabel = meetingDecisionLabel_(record.decision);
+          const owner = String(record.owner || "").trim();
+          const followUpDate = String(record.followUpDate || "").trim();
+          const note = String(record.note || "").trim();
+
+          const resultRow = resultRowsByKey[key];
+          if (resultRow) {
+            const detail = getProgramDetailsForRow(resultRow);
+            const confidence = normalizeConfidence_(detail.confidence || resultRow.confidence);
+            const snapshot = String(
+              detail.snapshotResult || resultRow.snapshotResult || rowStatusForDisplay_(resultRow).label || ""
+            ).trim();
+            const minAvg = Number.isFinite(resultRow.minAvg) ? formatCell(resultRow.minAvg) : "";
+            const source = normalizeHttpUrl_(detail.programUrl || resultRow.sourceUrl || "");
+            const nextStep = String(detail.nextStep || nextActionForConfidence_(confidence) || "").trim();
+            rows.push([
+              key,
+              "Eligibility Results",
+              resultRow.institution || "",
+              resultRow.program || "",
+              resultRow.credential || "",
+              decisionLabel,
+              owner,
+              followUpDate,
+              snapshot,
+              confidence,
+              minAvg,
+              nextStep,
+              source,
+              note,
+            ]);
+            return;
+          }
+
+          const explorerRow = explorerByKey[key];
+          if (explorerRow) {
+            const minAvg = Number.isFinite(explorerRow.minAvg) ? formatCell(explorerRow.minAvg) : "";
+            rows.push([
+              key,
+              "Program Explorer",
+              explorerRow.institution || "",
+              explorerRow.program || "",
+              explorerRow.credential || "",
+              decisionLabel,
+              owner,
+              followUpDate,
+              "Catalog view",
+              "",
+              minAvg,
+              "Run Check Eligibility with student marks for personalized next steps.",
+              explorerRow.sourceUrl || "",
+              note,
+            ]);
+            return;
+          }
+
+          rows.push([key, "Archived", "", "", "", decisionLabel, owner, followUpDate, "", "", "", "", "", note]);
+        });
+        return rows;
+      }
+
+      function exportMeetingNotesCsv() {
+        const rows = buildMeetingNoteExportRows_();
+        if (!rows.length) {
+          setStatus("No meeting workflow entries to export yet.", true);
+          return;
+        }
+        const generated = formatUtcStamp(new Date().toISOString()) || "n/a";
+        const csvRows = [
+          ["Generated At (UTC)", generated],
+          ["Total Meeting Entries", String(rows.length)],
+          [],
+          [
+            "Program Key",
+            "Mode",
+            "Institution",
+            "Program",
+            "Credential",
+            "Decision",
+            "Owner",
+            "Follow-up Date",
+            "Snapshot",
+            "Confidence",
+            "Min Avg",
+            "Next Step",
+            "Source URL",
+            "Meeting Note",
+          ],
+        ].concat(rows);
+        const csv = csvRows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+        downloadBlob(csv, "text/csv;charset=utf-8", fileStamp("admissions_meeting_packet", "csv"));
+        setStatus(`Exported meeting packet with ${rows.length} entr${rows.length === 1 ? "y" : "ies"}.`);
       }
 
       function exportCsv() {
