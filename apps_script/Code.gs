@@ -227,7 +227,7 @@ function runEligibility_() {
 function doGet(e) {
   return HtmlService.createTemplateFromFile("WebApp")
     .evaluate()
-    .setTitle("Next Step Admissions Checker")
+    .setTitle("Admissions Checker")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 

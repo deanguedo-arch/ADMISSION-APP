@@ -206,6 +206,84 @@
     return out;
   }
 
+  function buildExplorerProgramsForBootstrap() {
+    var range = Array.isArray(snapshot.programsRange) ? snapshot.programsRange : [];
+    if (range.length < 2) return [];
+
+    var header = Array.isArray(range[0]) ? range[0] : [];
+    var idx = {};
+    for (var i = 0; i < header.length; i++) {
+      var key = normalizeText(header[i]).toLowerCase();
+      if (!key) continue;
+      if (!hasOwn(idx, key)) idx[key] = i;
+    }
+
+    var colInstitution = idx.institution;
+    var colProgram = idx.program;
+    if (colInstitution === undefined || colProgram === undefined) return [];
+    var colCredential = idx.credential_type;
+    var colStatus = idx.status;
+    var colMinAvg = idx.min_avg_final;
+    var colCompetitive = idx.competitive_final;
+    var colRequirementType = idx.requirement_type;
+    var colProgramUrl = idx.program_url;
+    var datasetDate = normalizeText(snapshot.datasetDate);
+
+    var out = [];
+    for (var r = 1; r < range.length; r++) {
+      var row = Array.isArray(range[r]) ? range[r] : [];
+      var institution = normalizeText(row[colInstitution]);
+      var program = normalizeText(row[colProgram]);
+      if (!institution || !program) continue;
+
+      var status = normalizeText(colStatus === undefined ? "" : row[colStatus]).toLowerCase();
+      if (status && status !== "active") continue;
+
+      var credential = normalizeText(colCredential === undefined ? "" : row[colCredential]);
+      var minAvgRaw = colMinAvg === undefined ? NaN : toNumber(row[colMinAvg]);
+      var minAvg = Number.isFinite(minAvgRaw) ? Number(minAvgRaw) : null;
+      var competitiveGuidance = normalizeText(colCompetitive === undefined ? "" : row[colCompetitive]);
+      var requirementType = normalizeText(colRequirementType === undefined ? "" : row[colRequirementType]);
+      var sourceUrlRaw = normalizeText(colProgramUrl === undefined ? "" : row[colProgramUrl]);
+      var sourceUrl = /^https?:\/\//i.test(sourceUrlRaw) ? sourceUrlRaw : "";
+      var key =
+        normalizeText(institution)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 40) +
+        "_" +
+        normalizeText(program)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 40) +
+        "_r" +
+        String(r);
+
+      out.push({
+        key: key || "program_r" + String(r),
+        institution: institution,
+        program: program,
+        credential: credential,
+        minAvg: minAvg,
+        competitiveGuidance: competitiveGuidance,
+        requirementType: requirementType,
+        sourceUrl: sourceUrl,
+        datasetDate: datasetDate,
+      });
+    }
+
+    out.sort(function (a, b) {
+      var i = String(a.institution || "").localeCompare(String(b.institution || ""));
+      if (i !== 0) return i;
+      var p = String(a.program || "").localeCompare(String(b.program || ""));
+      if (p !== 0) return p;
+      return String(a.credential || "").localeCompare(String(b.credential || ""));
+    });
+    return out;
+  }
+
   function buildBootstrapResponse() {
     return {
       generatedAt: new Date().toISOString(),
@@ -223,6 +301,7 @@
       namedCourseOptions: window.listNamedCourseOptions_(),
       electiveCourseOptions:
         typeof window.listElectiveCourseOptions_ === "function" ? window.listElectiveCourseOptions_() : [],
+      explorerPrograms: buildExplorerProgramsForBootstrap(),
       manualElectiveSlots: Number(snapshot.manualElectiveSlots || 5),
       groups: ["A", "B", "C", "D"],
     };

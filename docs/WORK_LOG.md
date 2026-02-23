@@ -1076,3 +1076,13 @@ Keep entries short and append-only.
 - Added yes/no diagnostics for legacy source presence to make secret-scope troubleshooting explicit in run logs.
 ## 2026-02-23 (quality-gates branch protection indexing assist)
 - Added `push` trigger on `main` to `.github/workflows/pr-quality-gates.yml` so `quality-gates` check context is consistently indexed for branch-protection required-check selection.
+## 2026-02-23 (restore mobile compare/results UI pass into POST SECONDARY SCRAPING)
+- Synced web app fragments from C:\Users\dean.guedo\Documents\GitHub\ADMISSION-APP into this workspace to restore previously approved mobile/compare UX changes:
+  - compact compare prep + smaller clear control
+  - integrated panel-header Print Packet button (no sloppy floating behavior)
+  - mobile compare columns fit viewport without horizontal scroll
+  - mobile snapshot advisory hidden on Results/Pinned; summary behavior stabilized
+  - tighter mobile Grid/Filters toolbar treatment
+  - retained updated logo/header branding state
+- Rebuilt offline snapshot: python offline_snapshot/build_snapshot.py
+- Guardrails: 	ools/validate-webapp-surface.ps1 PASS; 	ools/validate-apps-script-structure.ps1 PASS.
