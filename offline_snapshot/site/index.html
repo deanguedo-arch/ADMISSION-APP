@@ -344,6 +344,44 @@
         margin-bottom: 10px;
       }
 
+      .mode-tabs {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .mode-tab {
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--ink);
+        min-height: 40px;
+        padding: 8px 12px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .mode-tab.active {
+        border-color: #8bbfaa;
+        background: #edf7f2;
+        color: var(--brand-dark);
+      }
+
+      .mode-count {
+        min-width: 20px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        border: 1px solid #c7d9d0;
+        background: #fff;
+        font-size: 0.74rem;
+        text-align: center;
+      }
+
       .snapshot-banner {
         border: 1px solid #cfe0d8;
         border-radius: 10px;
@@ -483,6 +521,13 @@
         white-space: nowrap;
         padding: 7px 10px;
         flex: 0 0 auto;
+      }
+
+      .clear-control.is-active {
+        border-color: #84bca9;
+        background: #eaf6f0;
+        color: var(--brand-dark);
+        font-weight: 700;
       }
 
       .results-wrap {
@@ -732,6 +777,16 @@
 
       .panel-details > h2 {
         margin: 0;
+      }
+
+      .compare-panel {
+        margin-top: 8px;
+        border: 1px solid #d1e1da;
+        border-radius: 10px;
+        background: #f9fcfa;
+        padding: 8px;
+        display: grid;
+        gap: 8px;
       }
 
       .compare-strip {
@@ -1497,10 +1552,6 @@
           display: none !important;
         }
 
-        #resultsPanel .tab-group {
-          display: none !important;
-        }
-
         #resultsPanel .summary {
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
@@ -1518,22 +1569,34 @@
           margin-bottom: 2px;
         }
 
+        .mobile-toolbar-actions .btn {
+          min-height: 40px;
+          padding: 6px 10px;
+          font-size: 0.83rem;
+          min-width: 0;
+        }
+
         body[data-screen="compare"] #resultsPanel .mobile-toolbar-actions,
         body[data-screen="compare"] #resultsPanel .snapshot-banner,
         body[data-screen="compare"] #resultsPanel .summary,
         body[data-screen="compare"] #resultsPanel #rowsStamp,
-        body[data-screen="compare"] #resultsPanel .tab-group,
         body[data-screen="compare"] #resultsPanel #resultsWrap {
           display: none !important;
         }
 
-        body[data-screen="results"] #resultsPanel #compareStrip,
-        body[data-screen="results"] #resultsPanel #compareResults,
-        body[data-screen="results"] #resultsPanel #pinnedComparisonBtn,
-        body[data-screen="pinned"] #resultsPanel #compareStrip,
-        body[data-screen="pinned"] #resultsPanel #compareResults,
-        body[data-screen="pinned"] #resultsPanel #pinnedComparisonBtn {
+        body[data-screen="results"] #resultsPanel .compare-panel,
+        body[data-screen="pinned"] #resultsPanel .compare-panel {
           display: none;
+        }
+
+        body[data-screen="compare"] #resultsPanel .compare-panel {
+          display: block;
+          margin-top: 0;
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-top: 0;
         }
 
         #resultsWrap {
@@ -1867,6 +1930,21 @@
             </button>
           </div>
 
+          <div class="mode-tabs" id="modeTabs" role="tablist" aria-label="Program views">
+            <button class="mode-tab" type="button" data-mode="explorer" aria-selected="false">
+              Program Explorer <span class="mode-count" id="modeCountExplorer">0</span>
+            </button>
+            <button class="mode-tab active" type="button" data-mode="results" aria-selected="true">
+              Eligibility Results <span class="mode-count" id="modeCountResults">0</span>
+            </button>
+            <button class="mode-tab" type="button" data-mode="pinned" aria-selected="false">
+              Pinned <span class="mode-count" id="modeCountPinned">0</span>
+            </button>
+            <button class="mode-tab" type="button" data-mode="compare" aria-selected="false">
+              Compare <span class="mode-count" id="modeCountCompare">0</span>
+            </button>
+          </div>
+
           <div class="snapshot-banner" id="snapshotBanner">
             <div class="snapshot-banner-title">Snapshot (advisory) - verify on institution site for final decisions</div>
             <div class="snapshot-banner-date" id="snapshotDataDate">Data date: n/a</div>
@@ -1892,13 +1970,6 @@
           </div>
 
           <div class="result-toolbar">
-            <div class="tab-group" id="filterGroup" role="tablist" aria-label="Result views">
-              <button class="filter-btn active" type="button" data-view="ineligible">Likely ineligible <span class="tab-count" id="tabCountIneligible">0</span></button>
-              <button class="filter-btn" type="button" data-view="eligible">Likely eligible <span class="tab-count" id="tabCountEligible">0</span></button>
-              <button class="filter-btn" type="button" data-view="uncheckable">Uncheckable <span class="tab-count" id="tabCountUncheckable">0</span></button>
-              <button class="filter-btn" type="button" data-view="shortlist">Shortlist <span class="tab-count" id="tabCountShortlist">0</span></button>
-              <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
-            </div>
             <div class="mobile-toolbar-actions">
               <button class="btn btn-subtle" id="mobileLayoutToggleBtn" type="button" aria-label="Toggle program layout">Grid</button>
               <button class="btn btn-subtle" id="mobileFiltersBtn" type="button" aria-haspopup="dialog" aria-controls="filtersDrawer">Filters</button>
@@ -1925,6 +1996,7 @@
                 <option value="min_avg_desc">Sort: Min Avg high-low</option>
               </select>
               <button class="btn btn-subtle clear-control" id="clearResultFiltersBtn" type="button">Clear</button>
+              <button class="btn btn-subtle clear-control" id="showAllBtn" type="button">All</button>
             </div>
 
             <div class="ghost" id="rowsStamp">No results yet</div>
@@ -1934,16 +2006,18 @@
             <div class="empty">Run a check to see program-by-program results.</div>
           </div>
 
-          <div class="compare-strip" id="compareStrip">
-            <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
-          </div>
-          <div class="actions">
-            <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
-          </div>
+          <section class="compare-panel" id="comparePanel">
+            <div class="compare-strip" id="compareStrip">
+              <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
+            </div>
 
-          <div class="compare-results is-empty" id="compareResults">
-            <div class="ghost">Select at least 2 programs to compare.</div>
-          </div>
+            <div class="compare-results is-empty" id="compareResults">
+              <div class="ghost">Select at least 2 programs to compare.</div>
+            </div>
+          </section>
         </section>
 
         <section class="panel panel-details mobile-screen" id="detailsPanel" data-mobile-screen="details">
@@ -2007,7 +2081,8 @@
 
     ﻿<script>
 
-      const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all", "shortlist"];
+      const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all"];
+      const PRIMARY_MODES = ["results", "explorer", "pinned", "compare"];
       const DEFAULT_RESULT_SORT = "closest";
       const MOBILE_BREAKPOINT = 980;
       const MOBILE_PAGE_SIZE = 40;
@@ -2019,6 +2094,8 @@
         boot: null,
         result: null,
         resultModel: null,
+        primaryMode: "results",
+        explorerRows: [],
         view: "ineligible",
         shortlist: {},
         selectedProgramKey: "",
@@ -2071,27 +2148,29 @@
         detailsPanel: document.getElementById("detailsPanel"),
         resultsWrap: document.getElementById("resultsWrap"),
         rowsStamp: document.getElementById("rowsStamp"),
+        modeTabs: document.getElementById("modeTabs"),
+        modeCountResults: document.getElementById("modeCountResults"),
+        modeCountExplorer: document.getElementById("modeCountExplorer"),
+        modeCountPinned: document.getElementById("modeCountPinned"),
+        modeCountCompare: document.getElementById("modeCountCompare"),
         summaryFilters: document.getElementById("mobileSummaryFilters"),
         sumTotal: document.getElementById("sumTotal"),
         sumEligible: document.getElementById("sumEligible"),
         sumMissing: document.getElementById("sumMissing"),
         sumUncheckable: document.getElementById("sumUncheckable"),
-        tabCountEligible: document.getElementById("tabCountEligible"),
-        tabCountIneligible: document.getElementById("tabCountIneligible"),
-        tabCountUncheckable: document.getElementById("tabCountUncheckable"),
-        tabCountShortlist: document.getElementById("tabCountShortlist"),
-        tabCountAll: document.getElementById("tabCountAll"),
         filterGroup: document.getElementById("filterGroup"),
         resultSearch: document.getElementById("resultSearch"),
         institutionFilter: document.getElementById("institutionFilter"),
         credentialFilter: document.getElementById("credentialFilter"),
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        showAllBtn: document.getElementById("showAllBtn"),
         mobileLayoutToggleBtn: document.getElementById("mobileLayoutToggleBtn"),
         mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonBtn: document.getElementById("pinnedComparisonBtn"),
         compareResults: document.getElementById("compareResults"),
+        comparePanel: document.getElementById("comparePanel"),
         bottomNav: document.getElementById("bottomNav"),
         mobileActionBar: document.getElementById("mobileActionBar"),
         mobileClearFiltersBtn: document.getElementById("mobileClearFiltersBtn"),
@@ -2210,6 +2289,8 @@ function boot() {
         ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
         ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
         updateSnapshotBannerFromBoot_(state.boot);
+        syncModeTabs_();
+        updateModeCounts_();
         setStatus("Ready.");
       }
 
@@ -2252,8 +2333,8 @@ function boot() {
       }
 
       function seedRows() {
-        const namedTarget = 8;
-        const electiveTarget = Number(state.boot && state.boot.manualElectiveSlots) || 5;
+        const namedTarget = 5;
+        const electiveTarget = Number(state.boot && state.boot.manualElectiveSlots) || 1;
         while (ui.namedBody.children.length < namedTarget) addNamedRow();
         while (ui.electiveBody.children.length < electiveTarget) addElectiveRow();
         while (ui.electiveBody.children.length > electiveTarget) {
@@ -2264,11 +2345,12 @@ function boot() {
       function resetForm() {
         ui.namedBody.innerHTML = "";
         ui.electiveBody.innerHTML = "";
-        for (let i = 0; i < 8; i++) addNamedRow();
-        const electiveSlots = Number(state.boot && state.boot.manualElectiveSlots) || 5;
+        for (let i = 0; i < 5; i++) addNamedRow();
+        const electiveSlots = Number(state.boot && state.boot.manualElectiveSlots) || 1;
         for (let i = 0; i < electiveSlots; i++) addElectiveRow();
         state.result = null;
         state.resultModel = null;
+        state.primaryMode = "results";
         state.view = "ineligible";
         state.shortlist = {};
         state.selectedProgramKey = "";
@@ -2385,15 +2467,10 @@ function boot() {
         if (next !== previous) resetMobileRenderLimit_();
 
         if (onMobile) {
-          if (next === "pinned") {
-            state.view = "shortlist";
-            syncFilterButtons();
-          } else if (next === "results" || next === "compare") {
-            if (state.view === "shortlist") state.view = "ineligible";
-            syncFilterButtons();
-          }
-
-          if (next !== "results") closeFiltersDrawer_({ silent: true });
+          if (next === "pinned") setPrimaryMode_("pinned", { skipRender: true });
+          if (next === "compare") setPrimaryMode_("compare", { skipRender: true });
+          if (next === "results") setPrimaryMode_("results", { skipRender: true });
+          if (next !== "results" && next !== "pinned") closeFiltersDrawer_({ silent: true });
         }
 
         if (onMobile) {
@@ -3027,6 +3104,9 @@ function boot() {
           namedCourses: Array.isArray(payload.namedCourses) ? payload.namedCourses : [],
           manualElectives: Array.isArray(payload.manualElectives) ? payload.manualElectives : [],
         };
+        if (normalizePrimaryMode_(state.primaryMode) !== "results") {
+          setPrimaryMode_("results", { skipRender: true });
+        }
         if (state.mockMode) {
           runMockCheck(requestPayload);
           return;
@@ -3068,9 +3148,6 @@ function boot() {
         }
         syncResultControls();
         populateResultFilterOptions();
-        if (state.view === "shortlist" && countShortlistRows() === 0) {
-          state.view = "ineligible";
-        }
         ui.csvBtn.disabled = !state.result;
         ui.pdfBtn.disabled = !state.result;
         updateSummary((state.result && state.result.summary) || {});
@@ -3078,6 +3155,8 @@ function boot() {
         updateSnapshotBannerFromResult_();
         updateFilterCounts();
         syncFilterButtons();
+        syncModeTabs_();
+        updateModeCounts_();
         resetMobileRenderLimit_();
         if (isMobileAppShell_()) {
           state.mobileScreen = "results";
@@ -3308,7 +3387,7 @@ function boot() {
             "Social Studies 30-1",
           ],
           electiveCourseOptions: ["Art 30", "Drama 30", "Physics 30", "Computer Science Advanced CTS"],
-          manualElectiveSlots: 5,
+          manualElectiveSlots: 1,
         };
         bindDatalist("namedCourses", state.boot.namedCourseOptions);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions);
@@ -3316,6 +3395,8 @@ function boot() {
         ui.stamp.textContent = "Mock mode";
         ui.authLine.textContent = "Local preview mode (no real student data is sent).";
         updateSnapshotBannerDate_("2026-02-10");
+        syncModeTabs_();
+        updateModeCounts_();
         setStatus("Mock mode enabled. UI changes can be tested locally.");
       }
 
@@ -3409,19 +3490,70 @@ function boot() {
         ui.stamp.title = hidden.join(" | ");
       }
 
+      function normalizePrimaryMode_(value) {
+        const mode = String(value || "results").trim().toLowerCase();
+        return PRIMARY_MODES.indexOf(mode) >= 0 ? mode : "results";
+      }
+
+      function updateModeCounts_() {
+        const resultsCount = state.resultModel && state.resultModel.rows ? state.resultModel.rows.length : 0;
+        const explorerCount = Array.isArray(state.explorerRows) ? state.explorerRows.length : 0;
+        const pinnedCount = countShortlistRows();
+        const compareCount = getCompareRows_().length;
+        if (ui.modeCountResults) ui.modeCountResults.textContent = String(resultsCount);
+        if (ui.modeCountExplorer) ui.modeCountExplorer.textContent = String(explorerCount);
+        if (ui.modeCountPinned) ui.modeCountPinned.textContent = String(pinnedCount);
+        if (ui.modeCountCompare) ui.modeCountCompare.textContent = String(compareCount);
+      }
+
+      function syncModeTabs_() {
+        if (!ui.modeTabs) return;
+        const next = normalizePrimaryMode_(state.primaryMode);
+        state.primaryMode = next;
+        const tabs = ui.modeTabs.querySelectorAll("button[data-mode]");
+        tabs.forEach((btn) => {
+          const active = String(btn.getAttribute("data-mode") || "") === next;
+          btn.classList.toggle("active", active);
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+        });
+      }
+
+      function setPrimaryMode_(mode, opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const next = normalizePrimaryMode_(mode);
+        if (next === "explorer" && (!state.explorerRows || !state.explorerRows.length)) {
+          setStatus("Program Explorer is not included in this offline snapshot.", true);
+          return;
+        }
+        state.primaryMode = next;
+        if (next === "results" && RESULT_VIEWS.indexOf(state.view) < 0) state.view = "ineligible";
+        if (next !== "results" && next !== "pinned") closeFiltersDrawer_({ silent: true });
+        syncModeTabs_();
+        syncResultControls();
+        updateFilterCounts();
+        updateModeCounts_();
+        if (!options.skipRender) {
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+        }
+      }
+
+      function onModeTabClick(e) {
+        const btn = e.target && e.target.closest("button[data-mode]");
+        if (!btn) return;
+        const mode = String(btn.getAttribute("data-mode") || "results").trim();
+        if (mode === state.primaryMode) return;
+        setPrimaryMode_(mode);
+      }
+
       function onFilterClick(e) {
+        if (normalizePrimaryMode_(state.primaryMode) !== "results") return;
         const btn = e.target && e.target.closest("button[data-view]");
         if (!btn) return;
         const nextView = String(btn.dataset.view || "ineligible").trim();
         if (RESULT_VIEWS.indexOf(nextView) < 0) return;
-        if (nextView === "shortlist" && countShortlistRows() === 0) {
-          state.view = "shortlist";
-          updateFilterCounts();
-          syncFilterButtons();
-          renderResults();
-          setStatus("Shortlist is empty. Pin programs from any view to add them.");
-          return;
-        }
         state.view = nextView;
         resetMobileRenderLimit_();
         updateFilterCounts();
@@ -3433,6 +3565,7 @@ function boot() {
         const btn = e.target && e.target.closest("button[data-view-target]");
         if (!btn) return;
         if (!isMobileAppShell_()) return;
+        if (normalizePrimaryMode_(state.primaryMode) !== "results") return;
         if (normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT) !== "results") return;
         const nextView = String(btn.getAttribute("data-view-target") || "").trim();
         if (RESULT_VIEWS.indexOf(nextView) < 0) return;
@@ -3465,6 +3598,16 @@ function boot() {
         renderResults();
       }
 
+      function showAllPrograms_() {
+        if (normalizePrimaryMode_(state.primaryMode) !== "results") {
+          setPrimaryMode_("results", { skipRender: true });
+        }
+        state.view = "all";
+        resetMobileRenderLimit_();
+        syncFilterButtons();
+        renderResults();
+      }
+
       function syncResultControls() {
         ui.resultSearch.value = state.resultFilters.query || "";
         ui.institutionFilter.value = state.resultFilters.institution || "";
@@ -3475,18 +3618,15 @@ function boot() {
           !state.resultFilters.institution &&
           !state.resultFilters.credential &&
           (state.resultFilters.sort || DEFAULT_RESULT_SORT) === DEFAULT_RESULT_SORT;
+        if (ui.showAllBtn) {
+          const active = normalizePrimaryMode_(state.primaryMode) === "results" && state.view === "all";
+          ui.showAllBtn.classList.toggle("is-active", active);
+          ui.showAllBtn.setAttribute("aria-pressed", active ? "true" : "false");
+        }
         syncFiltersDrawerControls_();
       }
 
       function syncFilterButtons() {
-        if (ui.filterGroup) {
-          const all = ui.filterGroup.querySelectorAll("button[data-view]");
-          all.forEach((btn) => {
-            const active = btn.dataset.view === state.view;
-            btn.classList.toggle("active", active);
-            btn.setAttribute("aria-selected", active ? "true" : "false");
-          });
-        }
         if (ui.summaryFilters) {
           const summaryButtons = ui.summaryFilters.querySelectorAll("button[data-view-target]");
           summaryButtons.forEach((btn) => {
@@ -3501,16 +3641,15 @@ function boot() {
       function updateFilterCounts() {
         const model = state.resultModel;
         const keysByView = model && model.keysByView ? model.keysByView : {};
-        const all = (keysByView.all || []).length;
+        const total = (keysByView.all || []).length;
         const eligible = (keysByView.eligible || []).length;
         const ineligible = (keysByView.ineligible || []).length;
         const uncheckable = (keysByView.uncheckable || []).length;
-        const shortlist = countShortlistRows();
-        if (ui.tabCountAll) ui.tabCountAll.textContent = String(all);
-        if (ui.tabCountEligible) ui.tabCountEligible.textContent = String(eligible);
-        if (ui.tabCountIneligible) ui.tabCountIneligible.textContent = String(ineligible);
-        if (ui.tabCountUncheckable) ui.tabCountUncheckable.textContent = String(uncheckable);
-        if (ui.tabCountShortlist) ui.tabCountShortlist.textContent = String(shortlist);
+        if (ui.sumTotal) ui.sumTotal.textContent = String(total);
+        if (ui.sumEligible) ui.sumEligible.textContent = String(eligible);
+        if (ui.sumMissing) ui.sumMissing.textContent = String(ineligible);
+        if (ui.sumUncheckable) ui.sumUncheckable.textContent = String(uncheckable);
+        updateModeCounts_();
       }
 
       function populateResultFilterOptions() {
@@ -3567,11 +3706,6 @@ function boot() {
           const key = String(pinBtn.getAttribute("data-pin-key") || "").trim();
           if (!key) return;
           toggleShortlistKey(key);
-          if (state.view === "shortlist" && countShortlistRows() === 0) {
-            state.view = "ineligible";
-            syncFilterButtons();
-            setStatus("Shortlist is empty. Showing likely ineligible view.");
-          }
           updateFilterCounts();
           renderResults();
           renderCompareStrip();
@@ -3747,11 +3881,18 @@ function boot() {
       }
 
       function renderResults() {
+        if (isMobileAppShell_() && state.primaryMode === "explorer") {
+          state.primaryMode = "results";
+        }
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        state.primaryMode = mode;
+        syncModeTabs_();
+        updateModeCounts_();
         updateMobileShellForScreen_({ syncHash: false });
         const mobileShell = isMobileAppShell_();
         const mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
-        const compareScreen = mobileShell && mobileScreen === "compare";
-        const pinnedScreen = mobileShell && mobileScreen === "pinned";
+        const compareScreen = mode === "compare" || (mobileShell && mobileScreen === "compare");
+        const pinnedScreen = mode === "pinned" || (mobileShell && mobileScreen === "pinned");
         const toolbarControls = ui.resultsPanel ? ui.resultsPanel.querySelector(".toolbar-controls") : null;
         const summaryEl = ui.resultsPanel ? ui.resultsPanel.querySelector(".summary") : null;
         const mobileGrid = mobileShell &&
@@ -3761,11 +3902,20 @@ function boot() {
         if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.style.display = compareScreen ? "none" : "";
         if (ui.resultsWrap) ui.resultsWrap.classList.toggle("mobile-grid-layout", mobileGrid);
         if (toolbarControls) toolbarControls.style.display = compareScreen ? "none" : "";
-        if (summaryEl) summaryEl.style.display = compareScreen || pinnedScreen ? "none" : "";
+        if (summaryEl) summaryEl.style.display = compareScreen || pinnedScreen || mode === "explorer" ? "none" : "";
         if (ui.snapshotBanner) ui.snapshotBanner.style.display = compareScreen || pinnedScreen ? "none" : "";
-        if (ui.filterGroup) ui.filterGroup.style.display = mobileShell || compareScreen ? "none" : "";
+        if (ui.modeTabs) ui.modeTabs.style.display = mobileShell ? "none" : "";
+        if (ui.comparePanel) ui.comparePanel.style.display = compareScreen ? "" : "none";
         if (ui.rowsStamp) ui.rowsStamp.style.display = compareScreen ? "none" : "";
         if (ui.resultsWrap) ui.resultsWrap.style.display = compareScreen ? "none" : "";
+
+        if (mode === "explorer") {
+          ui.resultsWrap.innerHTML = `<div class="empty">Program Explorer is not included in this offline snapshot.</div>`;
+          ui.rowsStamp.textContent = "0 programs";
+          syncResultControls();
+          renderDetailsDrawer();
+          return;
+        }
 
         if (!state.result || !state.resultModel) {
           ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
@@ -3778,7 +3928,16 @@ function boot() {
           return;
         }
 
-        const viewRows = getRowsForView(state.view);
+        if (mode === "compare") {
+          syncResultControls();
+          updateFilterCounts();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const viewRows = getRowsForPrimaryMode_();
         const filteredRows = sortRows(filterRows(viewRows), state.resultFilters.sort || DEFAULT_RESULT_SORT);
         const mobileListMode = mobileShell && (mobileScreen === "results" || mobileScreen === "pinned");
         const renderLimit = mobileListMode
@@ -4558,15 +4717,26 @@ function boot() {
       function getRowsForView(view) {
         const model = state.resultModel;
         if (!model || !model.keysByView || !model.rowsByKey) return [];
-        if (view === "shortlist") {
-          return (model.keysByView.all || [])
-            .filter((k) => !!state.shortlist[k])
-            .map((k) => model.rowsByKey[k])
-            .filter(Boolean);
-        }
         const safeView = RESULT_VIEWS.indexOf(view) >= 0 ? view : "all";
         const keys = model.keysByView[safeView] || [];
         return keys.map((k) => model.rowsByKey[k]).filter(Boolean);
+      }
+
+      function getRowsForPinned_() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey || !model.keysByView) return [];
+        return (model.keysByView.all || [])
+          .filter((k) => !!state.shortlist[k])
+          .map((k) => model.rowsByKey[k])
+          .filter(Boolean);
+      }
+
+      function getRowsForPrimaryMode_() {
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        if (mode === "explorer") return [];
+        if (mode === "pinned") return getRowsForPinned_();
+        if (mode === "compare") return getCompareRows_();
+        return getRowsForView(state.view);
       }
 
       function filterRows(rows) {
@@ -4640,12 +4810,7 @@ function boot() {
       }
 
       function getPinnedRowsForComparison_() {
-        const model = state.resultModel;
-        if (!model || !model.rowsByKey || !model.keysByView) return [];
-        return (model.keysByView.all || [])
-          .filter((k) => !!state.shortlist[k])
-          .map((k) => model.rowsByKey[k])
-          .filter(Boolean);
+        return getRowsForPinned_();
       }
 
       function normalizeSnapshotResultForComparison_(row, detail, confidence) {
@@ -4795,10 +4960,18 @@ function boot() {
 
       function exportCsv() {
         if (!state.result || !state.resultModel) return;
-        const label = viewLabel(state.view);
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        const label =
+          mode === "explorer"
+            ? "Program Explorer"
+            : mode === "pinned"
+            ? "Pinned"
+            : mode === "compare"
+            ? "Compare"
+            : viewLabel(state.view);
         const generated = formatUtcStamp(state.result.generatedAt || getResultMeta().generatedAt || "");
         const datasetStamp = getResultDatasetStamp() || "n/a";
-        const visible = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const visible = sortRows(filterRows(getRowsForPrimaryMode_()), state.resultFilters.sort || DEFAULT_RESULT_SORT);
         const rows = [
           ["Report View", label],
           ["Generated At (UTC)", generated || "n/a"],
@@ -4813,10 +4986,18 @@ function boot() {
       function exportPdf() {
         if (!state.result || !state.resultModel) return;
         const headers = state.resultModel.headers || [];
-        const rows = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT).map(
+        const rows = sortRows(filterRows(getRowsForPrimaryMode_()), state.resultFilters.sort || DEFAULT_RESULT_SORT).map(
           (r) => r.cells
         );
-        const label = viewLabel(state.view);
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        const label =
+          mode === "explorer"
+            ? "Program Explorer"
+            : mode === "pinned"
+            ? "Pinned"
+            : mode === "compare"
+            ? "Compare"
+            : viewLabel(state.view);
         const generated = formatUtcStamp(state.result.generatedAt || getResultMeta().generatedAt || "");
         const datasetStamp = getResultDatasetStamp() || "n/a";
         const html = `
@@ -5227,7 +5408,6 @@ function boot() {
         if (view === "eligible") return "Likely eligible";
         if (view === "ineligible") return "Likely ineligible";
         if (view === "uncheckable") return "Uncheckable";
-        if (view === "shortlist") return "Shortlist";
         return "All Programs";
       }
 
@@ -5277,7 +5457,8 @@ boot();
       document.getElementById("pasteClearBtn").addEventListener("click", clearTranscriptPaste);
       if (ui.toggleInputsBtn) ui.toggleInputsBtn.addEventListener("click", toggleInputsPanel);
       if (ui.showInputsBtn) ui.showInputsBtn.addEventListener("click", toggleInputsPanel);
-      ui.filterGroup.addEventListener("click", onFilterClick);
+      if (ui.modeTabs) ui.modeTabs.addEventListener("click", onModeTabClick);
+      if (ui.filterGroup) ui.filterGroup.addEventListener("click", onFilterClick);
       if (ui.summaryFilters) ui.summaryFilters.addEventListener("click", onSummaryFilterClick_);
       ui.resultsWrap.addEventListener("click", onResultsWrapClick);
       ui.resultSearch.addEventListener("input", onResultControlChange);
@@ -5285,6 +5466,7 @@ boot();
       ui.credentialFilter.addEventListener("change", onResultControlChange);
       ui.sortSelect.addEventListener("change", onResultControlChange);
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
+      if (ui.showAllBtn) ui.showAllBtn.addEventListener("click", showAllPrograms_);
       if (ui.mobileLayoutToggleBtn) ui.mobileLayoutToggleBtn.addEventListener("click", toggleMobileProgramLayout_);
       if (ui.mobileActionBar) ui.mobileActionBar.addEventListener("click", (e) => {
         const btn = e.target && e.target.closest("button");

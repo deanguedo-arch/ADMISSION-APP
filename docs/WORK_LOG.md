@@ -1027,3 +1027,21 @@ Keep entries short and append-only.
 - Validation:
   - `node --check /tmp/apps_script_combined.js`
   - `node --check /tmp/offline_snapshot_combined.js`
+## 2026-02-23 (4-mode navigation + mobile simplification convergence: Apps Script + offline snapshot)
+- Implemented the top-mode model on both surfaces with tabs ordered as:
+  - `Program Explorer`, `Eligibility Results`, `Pinned`, `Compare`.
+- Removed shortlist as a result-view mode while retaining pin state as `Pinned` mode.
+- Replaced compare placement with dedicated `compare-panel` behavior (shown in Compare mode; hidden in Results/Pinned).
+- Added `All` quick action in toolbar logic (`showAllBtn`) and wired mode-aware state handling.
+- Updated mobile behavior:
+  - compact quick filters remain 4 tap targets (Programs Checked / Likely eligible / Likely ineligible / Uncheckable)
+  - `Data updated` + local preview/auth strip remain hidden in compact mobile flow
+  - tighter mobile toolbar actions (`Grid`/`Filters`) for reduced vertical footprint.
+- Updated row-source routing for render/export paths to be mode-aware (`results` / `pinned` / `compare` / `explorer`).
+- Offline snapshot aligned to the same model and defaults updated to:
+  - named rows: 5
+  - elective rows: 1.
+- Validation:
+  - `node --check /tmp/apps_script_combined.js`
+  - `node --check /tmp/offline_snapshot_combined.js`
+  - PowerShell guardrails not run in this environment (`pwsh` unavailable).

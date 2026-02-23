@@ -193,6 +193,7 @@ function boot() {
         for (let i = 0; i < electiveSlots; i++) addElectiveRow();
         state.result = null;
         state.resultModel = null;
+        state.primaryMode = "results";
         state.view = "ineligible";
         state.shortlist = {};
         state.selectedProgramKey = "";
@@ -326,20 +327,10 @@ function boot() {
         if (next !== previous) resetMobileRenderLimit_();
 
         if (onMobile) {
-          if (next === "pinned") {
-            state.primaryMode = "results";
-            state.view = "shortlist";
-            syncFilterButtons();
-          } else if (next === "compare") {
-            state.primaryMode = "results";
-            if (state.view === "shortlist" && countShortlistRows() === 0) state.view = "ineligible";
-            syncFilterButtons();
-          } else if (next === "results") {
-            state.primaryMode = "results";
-            if (state.view === "shortlist") state.view = "ineligible";
-            syncFilterButtons();
-          }
-          if (next !== "results") closeFiltersDrawer_({ silent: true });
+          if (next === "pinned") setPrimaryMode_("pinned", { skipRender: true, track: false });
+          if (next === "compare") setPrimaryMode_("compare", { skipRender: true, track: false });
+          if (next === "results") setPrimaryMode_("results", { skipRender: true, track: false });
+          if (next !== "results" && next !== "pinned") closeFiltersDrawer_({ silent: true });
         }
 
         if (onMobile) {
@@ -410,12 +401,11 @@ function boot() {
       }
 
       function updateResultsModeByScreen_() {
-        if (!ui.resultsPanel || !ui.advancedTools) return;
+        if (!ui.resultsPanel) return;
         const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
         const onMobile = isMobileAppShell_();
         const compareMode = onMobile && screen === "compare";
         ui.resultsPanel.classList.toggle("is-compare-screen", compareMode);
-        if (compareMode) ui.advancedTools.open = true;
       }
 
       function updateMobileShellForScreen_(opts) {
@@ -1368,9 +1358,6 @@ function boot() {
         }
         syncResultControls();
         populateResultFilterOptions();
-        if (state.view === "shortlist" && countShortlistRows() === 0) {
-          state.view = "ineligible";
-        }
         if (ui.csvBtn) ui.csvBtn.disabled = !state.result;
         if (ui.pdfBtn) ui.pdfBtn.disabled = !state.result;
         updateSummary((state.result && state.result.summary) || {});
@@ -1796,8 +1783,12 @@ function boot() {
       function updateModeCounts_() {
         const resultsCount = state.resultModel && state.resultModel.rows ? state.resultModel.rows.length : 0;
         const explorerCount = Array.isArray(state.explorerRows) ? state.explorerRows.length : 0;
+        const pinnedCount = countShortlistRows();
+        const compareCount = getCompareRows_().length;
         if (ui.modeCountResults) ui.modeCountResults.textContent = String(resultsCount);
         if (ui.modeCountExplorer) ui.modeCountExplorer.textContent = String(explorerCount);
+        if (ui.modeCountPinned) ui.modeCountPinned.textContent = String(pinnedCount);
+        if (ui.modeCountCompare) ui.modeCountCompare.textContent = String(compareCount);
       }
 
       function syncModeTabs_() {
@@ -1812,7 +1803,8 @@ function boot() {
         });
       }
 
-      function setPrimaryMode_(mode) {
+      function setPrimaryMode_(mode, opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
         const previous = normalizePrimaryMode_(state.primaryMode);
         const next = normalizePrimaryMode_(mode);
         if (next === "explorer" && (!state.explorerRows || !state.explorerRows.length)) {
@@ -1820,13 +1812,20 @@ function boot() {
           return;
         }
         state.primaryMode = next;
-        if (next !== previous) trackUiEvent_("mode_switch", { to: next });
+        if (next === "results" && RESULT_VIEWS.indexOf(state.view) < 0) state.view = "ineligible";
+        if (next !== "results" && next !== "pinned") closeFiltersDrawer_({ silent: true });
+        if (next !== previous && options.track !== false) trackUiEvent_("mode_switch", { to: next });
         syncModeTabs_();
         syncResultControlContext_();
         populateResultFilterOptions();
         updateModeCounts_();
-        renderResults();
-        renderDetailsDrawer();
+        updateFilterCounts();
+        if (!options.skipRender) {
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+        }
       }
 
       function onModeTabClick(e) {
@@ -1843,14 +1842,6 @@ function boot() {
         if (!btn) return;
         const nextView = String(btn.dataset.view || "ineligible").trim();
         if (RESULT_VIEWS.indexOf(nextView) < 0) return;
-        if (nextView === "shortlist" && countShortlistRows() === 0) {
-          state.view = "shortlist";
-          updateFilterCounts();
-          syncFilterButtons();
-          renderResults();
-          setStatus("Shortlist is empty. Pin programs from any view to add them.");
-          return;
-        }
         state.view = nextView;
         resetMobileRenderLimit_();
         trackUiEvent_("view_switch", { to: nextView });
@@ -1877,7 +1868,10 @@ function boot() {
       }
 
       function getFilterSourceRows_() {
-        if (state.primaryMode === "explorer") return Array.isArray(state.explorerRows) ? state.explorerRows : [];
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        if (mode === "explorer") return Array.isArray(state.explorerRows) ? state.explorerRows : [];
+        if (mode === "pinned") return getRowsForPinned_();
+        if (mode === "compare") return getCompareRows_();
         return state.resultModel && state.resultModel.rows ? state.resultModel.rows : [];
       }
 
@@ -1922,6 +1916,17 @@ function boot() {
         trackUiEvent_("filters_cleared", { mode: normalizePrimaryMode_(state.primaryMode) });
       }
 
+      function showAllPrograms_() {
+        if (normalizePrimaryMode_(state.primaryMode) !== "results") {
+          setPrimaryMode_("results", { skipRender: true });
+        }
+        state.view = "all";
+        resetMobileRenderLimit_();
+        syncFilterButtons();
+        renderResults();
+        trackUiEvent_("view_switch", { to: "all", source: "show_all_button" });
+      }
+
       function syncResultControls() {
         syncSortOptionsForMode_();
         const modeDefaultSort = normalizePrimaryMode_(state.primaryMode) === "explorer" ? "institution_program" : DEFAULT_RESULT_SORT;
@@ -1938,18 +1943,15 @@ function boot() {
           !state.resultFilters.credential &&
           !requirementTypeActive &&
           (state.resultFilters.sort || modeDefaultSort) === modeDefaultSort;
+        if (ui.showAllBtn) {
+          const active = normalizePrimaryMode_(state.primaryMode) === "results" && state.view === "all";
+          ui.showAllBtn.classList.toggle("is-active", active);
+          ui.showAllBtn.setAttribute("aria-pressed", active ? "true" : "false");
+        }
         syncFiltersDrawerControls_();
       }
 
       function syncFilterButtons() {
-        if (ui.filterGroup) {
-          const all = ui.filterGroup.querySelectorAll("button[data-view]");
-          all.forEach((btn) => {
-            const active = btn.dataset.view === state.view;
-            btn.classList.toggle("active", active);
-            btn.setAttribute("aria-selected", active ? "true" : "false");
-          });
-        }
         if (ui.summaryFilters) {
           const summaryButtons = ui.summaryFilters.querySelectorAll("button[data-view-target]");
           summaryButtons.forEach((btn) => {
@@ -1964,16 +1966,15 @@ function boot() {
       function updateFilterCounts() {
         const model = state.resultModel;
         const keysByView = model && model.keysByView ? model.keysByView : {};
-        const all = (keysByView.all || []).length;
+        const total = (keysByView.all || []).length;
         const eligible = (keysByView.eligible || []).length;
         const ineligible = (keysByView.ineligible || []).length;
         const uncheckable = (keysByView.uncheckable || []).length;
-        const shortlist = countShortlistRows();
-        if (ui.tabCountAll) ui.tabCountAll.textContent = String(all);
-        if (ui.tabCountEligible) ui.tabCountEligible.textContent = String(eligible);
-        if (ui.tabCountIneligible) ui.tabCountIneligible.textContent = String(ineligible);
-        if (ui.tabCountUncheckable) ui.tabCountUncheckable.textContent = String(uncheckable);
-        if (ui.tabCountShortlist) ui.tabCountShortlist.textContent = String(shortlist);
+        if (ui.sumTotal) ui.sumTotal.textContent = String(total);
+        if (ui.sumEligible) ui.sumEligible.textContent = String(eligible);
+        if (ui.sumMissing) ui.sumMissing.textContent = String(ineligible);
+        if (ui.sumUncheckable) ui.sumUncheckable.textContent = String(uncheckable);
+        updateModeCounts_();
       }
 
       function populateResultFilterOptions() {
@@ -2089,11 +2090,6 @@ function boot() {
           const key = String(pinBtn.getAttribute("data-pin-key") || "").trim();
           if (!key) return;
           toggleShortlistKey(key);
-          if (state.view === "shortlist" && countShortlistRows() === 0) {
-            state.view = "ineligible";
-            syncFilterButtons();
-            setStatus("Shortlist is empty. Showing likely ineligible view.");
-          }
           updateFilterCounts();
           renderResults();
           renderCompareStrip();
@@ -2338,6 +2334,8 @@ function boot() {
         if (isMobileAppShell_() && state.primaryMode === "explorer") {
           state.primaryMode = "results";
         }
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        state.primaryMode = mode;
         syncModeTabs_();
         updateModeCounts_();
         syncResultControlContext_();
@@ -2348,9 +2346,9 @@ function boot() {
           (mobileScreen === "results" || mobileScreen === "pinned") &&
           normalizeMobileProgramLayout_(state.mobileProgramLayout) === "grid";
         if (ui.resultsWrap) ui.resultsWrap.classList.toggle("mobile-grid-layout", mobileGrid);
+        setResultsModeVisibility_(mode === "explorer");
 
-        if (state.primaryMode === "explorer") {
-          setResultsModeVisibility_(true);
+        if (mode === "explorer") {
           const viewRows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
           const filteredRows = sortRows(filterRows(viewRows), getExplorerSortKey_());
           const viewCount = viewRows.length;
@@ -2428,7 +2426,6 @@ function boot() {
           return;
         }
 
-        setResultsModeVisibility_(false);
         if (!state.result || !state.resultModel) {
           ui.resultsWrap.innerHTML = renderEmptyStateHtml_(
             "Run Eligibility Check",
@@ -2443,7 +2440,16 @@ function boot() {
           return;
         }
 
-        const viewRows = getRowsForView(state.view);
+        if (mode === "compare") {
+          syncResultControls();
+          updateFilterCounts();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const viewRows = getRowsForPrimaryMode_();
         const filteredRows = sortRows(filterRows(viewRows), state.resultFilters.sort || DEFAULT_RESULT_SORT);
         const mobileListMode = mobileShell && (mobileScreen === "results" || mobileScreen === "pinned");
         const renderLimit = mobileListMode
@@ -2469,13 +2475,13 @@ function boot() {
           return;
         }
 
-        const featuredKey = pickFeaturedRecommendationKey_(filteredRows);
+        const featuredKey = mode === "results" ? pickFeaturedRecommendationKey_(filteredRows) : "";
         const bodyHtml = renderedRows
           .map((row) => {
             const isPinned = !!state.shortlist[row.key];
             const isSelected = row.key === state.selectedProgramKey;
             const isCompared = state.compareKeys.indexOf(row.key) >= 0;
-            const isFeatured = row.key === featuredKey;
+            const isFeatured = mode === "results" && row.key === featuredKey;
             const detail = getProgramDetailsForRow(row);
             const confidence = normalizeConfidence_(detail.confidence || row.confidence);
             const status = rowStatusForDisplay_(row);
@@ -2576,27 +2582,24 @@ function boot() {
 
       function setResultsModeVisibility_(isExplorerMode) {
         const explorerMode = !!isExplorerMode;
+        const primaryMode = normalizePrimaryMode_(state.primaryMode);
         const mobile = isMobileAppShell_();
         const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
-        const compareScreen = mobile && screen === "compare";
-        const pinnedScreen = mobile && screen === "pinned";
+        const compareMode = primaryMode === "compare";
+        const compareScreen = compareMode || (mobile && screen === "compare");
+        const pinnedScreen = primaryMode === "pinned" || (mobile && screen === "pinned");
         const summaryEl = ui.resultsPanel ? ui.resultsPanel.querySelector(".summary") : null;
         const snapshotEl = ui.snapshotBanner || null;
         const toolbarControls = ui.resultsPanel ? ui.resultsPanel.querySelector(".toolbar-controls") : null;
 
         if (ui.modeTabs) ui.modeTabs.style.display = mobile ? "none" : "";
-        if (ui.filterGroup) ui.filterGroup.style.display = mobile ? "none" : explorerMode || compareScreen ? "none" : "";
-        if (snapshotEl) snapshotEl.style.display = compareScreen || pinnedScreen ? "none" : "";
-        if (summaryEl) summaryEl.style.display = compareScreen || explorerMode || pinnedScreen ? "none" : "";
-        if (toolbarControls) toolbarControls.style.display = compareScreen ? "none" : "";
-        if (ui.rowsStamp) ui.rowsStamp.style.display = compareScreen ? "none" : "";
-        if (ui.resultsWrap) ui.resultsWrap.style.display = compareScreen ? "none" : "";
+        if (snapshotEl) snapshotEl.style.display = compareMode || pinnedScreen ? "none" : "";
+        if (summaryEl) summaryEl.style.display = compareMode || explorerMode || pinnedScreen ? "none" : "";
+        if (toolbarControls) toolbarControls.style.display = compareMode ? "none" : "";
+        if (ui.rowsStamp) ui.rowsStamp.style.display = compareMode ? "none" : "";
+        if (ui.resultsWrap) ui.resultsWrap.style.display = compareMode ? "none" : "";
         if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.style.display = mobile && !compareScreen && !explorerMode ? "" : "none";
-
-        if (ui.advancedTools) {
-          ui.advancedTools.style.display = explorerMode ? "none" : "";
-          if (compareScreen) ui.advancedTools.open = true;
-        }
+        if (ui.comparePanel) ui.comparePanel.style.display = compareMode ? "" : "none";
       }
 
       function getExplorerSortKey_() {
@@ -3471,15 +3474,26 @@ function boot() {
       function getRowsForView(view) {
         const model = state.resultModel;
         if (!model || !model.keysByView || !model.rowsByKey) return [];
-        if (view === "shortlist") {
-          return (model.keysByView.all || [])
-            .filter((k) => !!state.shortlist[k])
-            .map((k) => model.rowsByKey[k])
-            .filter(Boolean);
-        }
         const safeView = RESULT_VIEWS.indexOf(view) >= 0 ? view : "all";
         const keys = model.keysByView[safeView] || [];
         return keys.map((k) => model.rowsByKey[k]).filter(Boolean);
+      }
+
+      function getRowsForPinned_() {
+        const model = state.resultModel;
+        if (!model || !model.rowsByKey || !model.keysByView) return [];
+        return (model.keysByView.all || [])
+          .filter((k) => !!state.shortlist[k])
+          .map((k) => model.rowsByKey[k])
+          .filter(Boolean);
+      }
+
+      function getRowsForPrimaryMode_() {
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        if (mode === "explorer") return Array.isArray(state.explorerRows) ? state.explorerRows : [];
+        if (mode === "pinned") return getRowsForPinned_();
+        if (mode === "compare") return getCompareRows_();
+        return getRowsForView(state.view);
       }
 
       function filterRows(rows) {
@@ -3558,12 +3572,7 @@ function boot() {
       }
 
       function getPinnedRowsForComparison_() {
-        const model = state.resultModel;
-        if (!model || !model.rowsByKey || !model.keysByView) return [];
-        return (model.keysByView.all || [])
-          .filter((k) => !!state.shortlist[k])
-          .map((k) => model.rowsByKey[k])
-          .filter(Boolean);
+        return getRowsForPinned_();
       }
 
       function normalizeSnapshotResultForComparison_(row, detail, confidence) {
@@ -3713,12 +3722,13 @@ function boot() {
       }
 
       function getVisibleRowsForPacket_() {
-        if (state.primaryMode === "explorer") {
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        if (mode === "explorer") {
           const explorerRows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
           return sortRows(filterRows(explorerRows), getExplorerSortKey_());
         }
         const safeSort = state.resultFilters.sort || DEFAULT_RESULT_SORT;
-        return sortRows(filterRows(getRowsForView(state.view)), safeSort);
+        return sortRows(filterRows(getRowsForPrimaryMode_()), safeSort);
       }
 
       function getSelectedDetailRowForPacket_() {
@@ -3811,9 +3821,10 @@ function boot() {
         if (!rows.length) {
           return `<tr><td colspan="9">No rows are currently visible under this filter.</td></tr>`;
         }
+        const isExplorerMode = normalizePrimaryMode_(state.primaryMode) === "explorer";
         return rows
           .map((row, index) => {
-            const isExplorerRow = state.primaryMode === "explorer";
+            const isExplorerRow = isExplorerMode;
             const detail = isExplorerRow ? {} : getProgramDetailsForRow(row);
             const snapshot = isExplorerRow
               ? "Program Explorer"
@@ -3929,7 +3940,14 @@ function boot() {
           getResultDatasetStamp() ||
           toYmdDate_((state.boot && state.boot.dataset && state.boot.dataset.lastProgramsSyncUtc) || "") ||
           "n/a";
-        const activeView = state.primaryMode === "explorer" ? "Program Explorer" : `Eligibility Results (${viewLabel(state.view)})`;
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        const activeView = mode === "explorer"
+          ? "Program Explorer"
+          : mode === "pinned"
+          ? "Pinned"
+          : mode === "compare"
+          ? "Compare"
+          : `Eligibility Results (${viewLabel(state.view)})`;
         const selectedCount = selectedRow ? 1 : 0;
         const html = `
 <!doctype html>
@@ -4141,10 +4159,18 @@ function boot() {
 
       function exportCsv() {
         if (!state.result || !state.resultModel) return;
-        const label = viewLabel(state.view);
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        const label =
+          mode === "explorer"
+            ? "Program Explorer"
+            : mode === "pinned"
+            ? "Pinned"
+            : mode === "compare"
+            ? "Compare"
+            : viewLabel(state.view);
         const generated = formatUtcStamp(state.result.generatedAt || getResultMeta().generatedAt || "");
         const datasetStamp = getResultDatasetStamp() || "n/a";
-        const visible = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const visible = sortRows(filterRows(getRowsForPrimaryMode_()), state.resultFilters.sort || DEFAULT_RESULT_SORT);
         const rows = [
           ["Report View", label],
           ["Generated At (UTC)", generated || "n/a"],
@@ -4202,10 +4228,18 @@ function boot() {
       function exportPdf() {
         if (!state.result || !state.resultModel) return;
         const headers = state.resultModel.headers || [];
-        const rows = sortRows(filterRows(getRowsForView(state.view)), state.resultFilters.sort || DEFAULT_RESULT_SORT).map(
+        const rows = sortRows(filterRows(getRowsForPrimaryMode_()), state.resultFilters.sort || DEFAULT_RESULT_SORT).map(
           (r) => r.cells
         );
-        const label = viewLabel(state.view);
+        const mode = normalizePrimaryMode_(state.primaryMode);
+        const label =
+          mode === "explorer"
+            ? "Program Explorer"
+            : mode === "pinned"
+            ? "Pinned"
+            : mode === "compare"
+            ? "Compare"
+            : viewLabel(state.view);
         const generated = formatUtcStamp(state.result.generatedAt || getResultMeta().generatedAt || "");
         const datasetStamp = getResultDatasetStamp() || "n/a";
         const html = `
@@ -4592,7 +4626,6 @@ function boot() {
         if (view === "eligible") return "Likely eligible";
         if (view === "ineligible") return "Likely ineligible";
         if (view === "uncheckable") return "Uncheckable";
-        if (view === "shortlist") return "Shortlist";
         return "All Programs";
       }
 

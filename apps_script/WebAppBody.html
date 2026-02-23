@@ -94,12 +94,18 @@
             </button>
           </div>
 
-          <div class="mode-tabs" id="modeTabs" role="tablist" aria-label="Results mode">
+          <div class="mode-tabs" id="modeTabs" role="tablist" aria-label="Program views">
+            <button class="mode-tab" type="button" data-mode="explorer" aria-selected="false">
+              Program Explorer <span class="mode-count" id="modeCountExplorer">0</span>
+            </button>
             <button class="mode-tab active" type="button" data-mode="results" aria-selected="true">
               Eligibility Results <span class="mode-count" id="modeCountResults">0</span>
             </button>
-            <button class="mode-tab" type="button" data-mode="explorer" aria-selected="false">
-              Program Explorer <span class="mode-count" id="modeCountExplorer">0</span>
+            <button class="mode-tab" type="button" data-mode="pinned" aria-selected="false">
+              Pinned <span class="mode-count" id="modeCountPinned">0</span>
+            </button>
+            <button class="mode-tab" type="button" data-mode="compare" aria-selected="false">
+              Compare <span class="mode-count" id="modeCountCompare">0</span>
             </button>
           </div>
 
@@ -128,13 +134,6 @@
           </div>
 
           <div class="result-toolbar">
-            <div class="tab-group" id="filterGroup" role="tablist" aria-label="Result views">
-              <button class="filter-btn active" type="button" data-view="ineligible">Likely ineligible <span class="tab-count" id="tabCountIneligible">0</span></button>
-              <button class="filter-btn" type="button" data-view="eligible">Likely eligible <span class="tab-count" id="tabCountEligible">0</span></button>
-              <button class="filter-btn" type="button" data-view="uncheckable">Uncheckable <span class="tab-count" id="tabCountUncheckable">0</span></button>
-              <button class="filter-btn" type="button" data-view="shortlist">Shortlist <span class="tab-count" id="tabCountShortlist">0</span></button>
-              <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
-            </div>
             <div class="mobile-toolbar-actions">
               <button class="btn btn-subtle" id="mobileLayoutToggleBtn" type="button" aria-label="Toggle program layout">Grid</button>
               <button class="btn btn-subtle" id="mobileFiltersBtn" type="button" aria-haspopup="dialog" aria-controls="filtersDrawer">Filters</button>
@@ -167,6 +166,9 @@
               <button class="btn btn-subtle clear-control" id="clearResultFiltersBtn" type="button" aria-label="Clear filters">
                 Clear
               </button>
+              <button class="btn btn-subtle clear-control" id="showAllBtn" type="button" aria-label="Show all programs">
+                All
+              </button>
               <button class="btn btn-subtle clear-control" id="exportMeetingNotesBtn" type="button" disabled>
                 Print Packet
               </button>
@@ -179,9 +181,7 @@
             <div class="empty">Run a check to see program-by-program results.</div>
           </div>
 
-          <details class="advanced-tools" id="advancedTools">
-            <summary>Advanced Tools</summary>
-            <div class="advanced-tools-content">
+          <section class="compare-panel" id="comparePanel">
               <div class="compare-strip" id="compareStrip">
                 <div class="ghost">Compare up to 3 programs.</div>
               </div>
@@ -192,8 +192,7 @@
               <div class="compare-results is-empty" id="compareResults">
                 <div class="ghost">Select at least 2 programs to compare.</div>
               </div>
-            </div>
-          </details>
+          </section>
         </section>
 
         <section class="panel panel-details mobile-screen" id="detailsPanel" data-mobile-screen="details">

@@ -1,8 +1,8 @@
 ﻿<script>
 
-      const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all", "shortlist"];
+      const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all"];
       const DEFAULT_RESULT_SORT = "closest";
-      const PRIMARY_MODES = ["results", "explorer"];
+      const PRIMARY_MODES = ["results", "explorer", "pinned", "compare"];
       const MOBILE_BREAKPOINT = 980;
       const MOBILE_PAGE_SIZE = 40;
       const MOBILE_SCREEN_DEFAULT = "results";
@@ -76,16 +76,13 @@
         modeTabs: document.getElementById("modeTabs"),
         modeCountResults: document.getElementById("modeCountResults"),
         modeCountExplorer: document.getElementById("modeCountExplorer"),
+        modeCountPinned: document.getElementById("modeCountPinned"),
+        modeCountCompare: document.getElementById("modeCountCompare"),
         summaryFilters: document.getElementById("mobileSummaryFilters"),
         sumTotal: document.getElementById("sumTotal"),
         sumEligible: document.getElementById("sumEligible"),
         sumMissing: document.getElementById("sumMissing"),
         sumUncheckable: document.getElementById("sumUncheckable"),
-        tabCountEligible: document.getElementById("tabCountEligible"),
-        tabCountIneligible: document.getElementById("tabCountIneligible"),
-        tabCountUncheckable: document.getElementById("tabCountUncheckable"),
-        tabCountShortlist: document.getElementById("tabCountShortlist"),
-        tabCountAll: document.getElementById("tabCountAll"),
         filterGroup: document.getElementById("filterGroup"),
         resultSearch: document.getElementById("resultSearch"),
         institutionFilter: document.getElementById("institutionFilter"),
@@ -93,10 +90,11 @@
         requirementTypeFilter: document.getElementById("requirementTypeFilter"),
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        showAllBtn: document.getElementById("showAllBtn"),
         mobileLayoutToggleBtn: document.getElementById("mobileLayoutToggleBtn"),
         mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
         exportMeetingNotesBtn: document.getElementById("exportMeetingNotesBtn"),
-        advancedTools: document.getElementById("advancedTools"),
+        comparePanel: document.getElementById("comparePanel"),
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonActions: document.getElementById("pinnedComparisonActions"),
         pinnedComparisonBtn: document.getElementById("pinnedComparisonBtn"),

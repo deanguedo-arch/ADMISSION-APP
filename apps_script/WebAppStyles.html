@@ -580,6 +580,13 @@
         min-height: var(--touch-target);
       }
 
+      .clear-control.is-active {
+        border-color: #84bca9;
+        background: #eaf6f0;
+        color: var(--brand-dark);
+        font-weight: 700;
+      }
+
       .meeting-toggle {
         min-height: var(--touch-target);
       }
@@ -876,41 +883,12 @@
         margin: 0;
       }
 
-      .advanced-tools {
+      .compare-panel {
         margin-top: 8px;
         border: 1px solid #d1e1da;
         border-radius: 10px;
         background: #f9fcfa;
-      }
-
-      .advanced-tools > summary {
-        padding: 9px 12px;
-        cursor: pointer;
-        font-family: "Rubik", sans-serif;
-        font-size: 0.86rem;
-        color: #1f5945;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        list-style: none;
-      }
-
-      .advanced-tools > summary::-webkit-details-marker {
-        display: none;
-      }
-
-      .advanced-tools > summary::after {
-        content: "+";
-        font-size: 0.95rem;
-        color: #2f6653;
-      }
-
-      .advanced-tools[open] > summary::after {
-        content: "-";
-      }
-
-      .advanced-tools-content {
-        padding: 0 8px 8px;
+        padding: 8px;
         display: grid;
         gap: 8px;
       }
@@ -3806,6 +3784,13 @@
           justify-content: flex-end;
         }
 
+        .mobile-toolbar-actions .btn {
+          min-height: 40px;
+          padding: 6px 10px;
+          font-size: 0.83rem;
+          min-width: 0;
+        }
+
         body[data-screen="compare"] #resultsPanel .mobile-toolbar-actions {
           display: none;
         }
@@ -3818,25 +3803,18 @@
           display: none !important;
         }
 
-        body[data-screen="results"] #resultsPanel .advanced-tools,
-        body[data-screen="pinned"] #resultsPanel .advanced-tools {
+        body[data-screen="results"] #resultsPanel .compare-panel,
+        body[data-screen="pinned"] #resultsPanel .compare-panel {
           display: none;
         }
 
-        body[data-screen="compare"] #resultsPanel .advanced-tools {
+        body[data-screen="compare"] #resultsPanel .compare-panel {
           display: block;
           margin-top: 0;
           flex: 1 1 auto;
           min-height: 0;
           overflow: auto;
           -webkit-overflow-scrolling: touch;
-        }
-
-        body[data-screen="compare"] #resultsPanel .advanced-tools > summary {
-          display: none;
-        }
-
-        body[data-screen="compare"] #resultsPanel .advanced-tools .advanced-tools-content {
           padding-top: 0;
         }
 
