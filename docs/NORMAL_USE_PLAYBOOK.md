@@ -1,4 +1,4 @@
-﻿# Normal Use Playbook (Operator SOP)
+# Normal Use Playbook (Operator SOP)
 
 This document is the day-to-day workflow after one-time setup is complete.
 
@@ -16,8 +16,8 @@ This document is the day-to-day workflow after one-time setup is complete.
 
 | Workflow | File | Triggers |
 |---|---|---|
-| Publish Admissions Data to Sheets (Refresh + Sync + Commit) | .github/workflows/refresh_and_sync.yml | custom |
-| Sync Programs Only to Sheets (Programs Tab) | .github/workflows/sync-programs.yml | custom |
+| Publish Admissions Data to Sheets (Refresh + Sync + Commit) | .github/workflows/refresh_and_sync.yml | workflow_dispatch |
+| Sync Programs Only to Sheets (Programs Tab) | .github/workflows/sync-programs.yml | workflow_dispatch, schedule |
 | Deploy Apps Script Web App | .github/workflows/deploy-apps-script.yml | workflow_dispatch, push |
 
 ## Normal use (no engineering changes)
