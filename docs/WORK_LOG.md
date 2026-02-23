@@ -1071,3 +1071,6 @@ Keep entries short and append-only.
 ## 2026-02-23 (sync deploy reliability hardening)
 - Updated `.github/workflows/deploy-apps-script-sync.yml` to use stable run-name, required manual inputs for IDs, and push-event skip behavior when sync IDs are unavailable.
 - Added step gating (`SKIP_SYNC_DEPLOY`) so missing sync IDs on push no longer create noisy hard failures.
+## 2026-02-23 (sync workflow legacy secret compatibility)
+- Updated `.github/workflows/deploy-apps-script-sync.yml` to accept legacy secret/variable names (`APPS_SCRIPT_ID`, `APPS_SCRIPT_DEPLOYMENT_ID`) as fallback for sync deploy resolution.
+- Added yes/no diagnostics for legacy source presence to make secret-scope troubleshooting explicit in run logs.
