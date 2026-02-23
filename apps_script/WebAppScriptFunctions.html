@@ -389,11 +389,18 @@ function boot() {
       }
 
       function updateMobileActionBarState_() {
-        if (!ui.mobileActionBar) return;
         const onMobile = isMobileAppShell_();
         const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
-        const show = onMobile && (screen === "results" || screen === "pinned");
-        ui.mobileActionBar.classList.toggle("is-visible", show);
+        const showResultsTools = onMobile && (screen === "results" || screen === "pinned");
+
+        if (ui.mobileHeadPrintBtn && ui.exportMeetingNotesBtn) {
+          ui.mobileHeadPrintBtn.disabled = !!ui.exportMeetingNotesBtn.disabled;
+          ui.mobileHeadPrintBtn.textContent = String(ui.exportMeetingNotesBtn.textContent || "Print Packet");
+          ui.mobileHeadPrintBtn.style.display = showResultsTools ? "" : "none";
+        }
+
+        const showFloating = showResultsTools && !ui.mobileHeadPrintBtn;
+        if (ui.mobileActionBar) ui.mobileActionBar.classList.toggle("is-visible", showFloating);
         if (ui.mobilePrintPacketBtn && ui.exportMeetingNotesBtn) {
           ui.mobilePrintPacketBtn.disabled = !!ui.exportMeetingNotesBtn.disabled;
           ui.mobilePrintPacketBtn.textContent = String(ui.exportMeetingNotesBtn.textContent || "Print Packet");
@@ -2590,11 +2597,13 @@ function boot() {
         const pinnedScreen = primaryMode === "pinned" || (mobile && screen === "pinned");
         const summaryEl = ui.resultsPanel ? ui.resultsPanel.querySelector(".summary") : null;
         const snapshotEl = ui.snapshotBanner || null;
+        const toolbarShell = ui.resultsPanel ? ui.resultsPanel.querySelector(".result-toolbar") : null;
         const toolbarControls = ui.resultsPanel ? ui.resultsPanel.querySelector(".toolbar-controls") : null;
 
         if (ui.modeTabs) ui.modeTabs.style.display = mobile ? "none" : "";
-        if (snapshotEl) snapshotEl.style.display = compareMode || pinnedScreen ? "none" : "";
+        if (snapshotEl) snapshotEl.style.display = compareMode || pinnedScreen || mobile ? "none" : "";
         if (summaryEl) summaryEl.style.display = compareMode || explorerMode || pinnedScreen ? "none" : "";
+        if (toolbarShell) toolbarShell.style.display = compareMode ? "none" : "";
         if (toolbarControls) toolbarControls.style.display = compareMode ? "none" : "";
         if (ui.rowsStamp) ui.rowsStamp.style.display = compareMode ? "none" : "";
         if (ui.resultsWrap) ui.resultsWrap.style.display = compareMode ? "none" : "";
@@ -2828,33 +2837,46 @@ function boot() {
 
       function renderCompareStrip() {
         if (state.primaryMode === "explorer") return;
+        if (!ui.compareStrip) return;
+        const mobile = isMobileAppShell_();
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const compactCompare = mobile && screen === "compare";
+        const emptyHint = compactCompare ? "Pick up to 3 programs to compare." : "Compare up to 3 programs.";
+        ui.compareStrip.classList.toggle("is-compact", compactCompare);
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
-          ui.compareStrip.innerHTML = `<div class="ghost">Compare up to 3 programs.</div>`;
+          ui.compareStrip.innerHTML = `<div class="ghost">${escapeHtml(emptyHint)}</div>`;
           return;
         }
 
         const selected = state.compareKeys.map((k) => model.rowsByKey[k]).filter(Boolean);
         if (!selected.length) {
-          ui.compareStrip.innerHTML = `<div class="ghost">Compare up to 3 programs.</div>`;
+          ui.compareStrip.innerHTML = `<div class="ghost">${escapeHtml(emptyHint)}</div>`;
           return;
         }
 
-        const chips = selected
-          .map((row) => {
-            const label = `${row.program} (${row.institution})`;
-            return `<button class="compare-chip" type="button" data-compare-remove="${escapeAttr(
-              row.key
-            )}" title="Remove">${escapeHtml(label)}</button>`;
-          })
-          .join("");
+        const chips = compactCompare
+          ? ""
+          : selected
+            .map((row) => {
+              const label = `${row.program} (${row.institution})`;
+              return `<button class="compare-chip" type="button" data-compare-remove="${escapeAttr(
+                row.key
+              )}" title="Remove">${escapeHtml(label)}</button>`;
+            })
+            .join("");
+        const chipsHtml = chips ? `<div class="compare-chips">${chips}</div>` : "";
+        const helperHtml = compactCompare ? "" : `<div class="ghost">Selection is ready for side-by-side compare mode.</div>`;
         ui.compareStrip.innerHTML = `
-          <div class="compare-header">
-            <strong>Compare Prep (${selected.length}/3)</strong>
-            <button class="action-btn" type="button" data-compare-clear="1">Clear</button>
+          <div class="compare-header${compactCompare ? " is-compact" : ""}">
+            <div class="compare-header-main">
+              <strong>Compare Prep</strong>
+              <span class="compare-count-pill">${selected.length}/3</span>
+            </div>
+            <button class="btn btn-subtle compare-clear-btn" type="button" data-compare-clear="1">Clear</button>
           </div>
-          <div class="compare-chips">${chips}</div>
-          <div class="ghost">Selection is ready for side-by-side compare mode.</div>
+          ${chipsHtml}
+          ${helperHtml}
         `;
       }
 
@@ -4083,7 +4105,7 @@ function boot() {
     <div class="packet-shell">
       <div class="actions"><button onclick="window.print()">Print Packet</button></div>
       <header class="packet-cover">
-        <p class="packet-brand">Next Step Admissions Checker</p>
+        <p class="packet-brand">Admissions Checker</p>
         <h1>Admissions Meeting Packet</h1>
         <p class="packet-meta">Generated: ${escapeHtml(generated)} | Dataset: ${escapeHtml(datasetStamp)}</p>
         <p class="packet-meta">Active view: ${escapeHtml(activeView)}</p>
@@ -4139,7 +4161,7 @@ function boot() {
         </table>
       </section>
 
-      <p class="packet-footer">Prepared by Next Step Admissions Checker. This packet supports counselling workflow and is not a final admission decision document.</p>
+      <p class="packet-footer">Prepared by Admissions Checker. This packet supports counselling workflow and is not a final admission decision document.</p>
     </div>
   </body>
 </html>`;
@@ -4259,7 +4281,7 @@ function boot() {
     </style>
   </head>
   <body>
-    <h1>Next Step Admissions Checker</h1>
+    <h1>Admissions Checker</h1>
     <p>${escapeHtml(label)} | Generated: ${escapeHtml(generated || "n/a")} | Dataset: ${escapeHtml(datasetStamp)}</p>
     <table>
       <thead><tr>${headers.map((h) => `<th>${escapeHtml(String(h))}</th>`).join("")}</tr></thead>

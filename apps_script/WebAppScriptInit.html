@@ -37,6 +37,11 @@
       if (ui.mobileLayoutToggleBtn) ui.mobileLayoutToggleBtn.addEventListener("click", toggleMobileProgramLayout_);
       if (ui.exportMeetingNotesBtn) ui.exportMeetingNotesBtn.addEventListener("click", exportMeetingPacketPdf);
       if (ui.mobileActionBar) ui.mobileActionBar.addEventListener("click", onMobileActionBarClick_);
+      if (ui.mobileHeadPrintBtn) {
+        ui.mobileHeadPrintBtn.addEventListener("click", () => {
+          if (ui.exportMeetingNotesBtn && !ui.exportMeetingNotesBtn.disabled) exportMeetingPacketPdf();
+        });
+      }
       if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.addEventListener("click", openFiltersDrawer_);
       if (ui.filtersDrawerCloseBtn) ui.filtersDrawerCloseBtn.addEventListener("click", () => closeFiltersDrawer_({}));
       if (ui.filtersDrawerBackdrop) ui.filtersDrawerBackdrop.addEventListener("click", () => closeFiltersDrawer_({}));
