@@ -295,6 +295,7 @@
       input:focus-visible,
       select:focus-visible,
       textarea:focus-visible,
+      .summary-filter:focus-visible,
       .filter-btn:focus-visible,
       .result-control:focus-visible,
       .pin-btn:focus-visible,
@@ -451,6 +452,20 @@
         padding: var(--space-2) var(--space-3);
         border: 1px solid var(--line);
         background: #fbfdfc;
+      }
+
+      .summary-filter {
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+
+      .summary-filter.is-active {
+        border-color: #8fbfaa;
+        background: #eaf6f0;
+        box-shadow: 0 1px 0 rgba(17, 102, 76, 0.14);
       }
 
       .stat .label {
@@ -3772,22 +3787,22 @@
         }
 
         #resultsPanel .tab-group {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-          overflow: visible;
-          padding-bottom: 0;
+          display: none !important;
         }
 
-        #resultsPanel .filter-btn {
-          width: 100%;
-          min-width: 0;
-          white-space: normal;
-          justify-content: space-between;
+        #resultsPanel .summary {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        #resultsPanel .summary-filter {
+          min-height: 58px;
         }
 
         .mobile-toolbar-actions {
           display: flex;
+          gap: 8px;
           justify-content: flex-end;
         }
 
@@ -3851,6 +3866,37 @@
         .card-actions.mobile-card-actions .action-btn {
           width: 100%;
           min-height: 44px;
+        }
+
+        #resultsWrap.mobile-grid-layout .result-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        #resultsWrap.mobile-grid-layout .result-card {
+          padding: 10px;
+        }
+
+        #resultsWrap.mobile-grid-layout .card-top {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 6px;
+        }
+
+        #resultsWrap.mobile-grid-layout .card-metrics {
+          justify-content: flex-start;
+          text-align: left;
+        }
+
+        #resultsWrap.mobile-grid-layout .card-key-gap,
+        #resultsWrap.mobile-grid-layout .card-warning {
+          display: none;
+        }
+
+        body.mobile-compact-meta #appHeader .stamp,
+        body.mobile-compact-meta #appHeader .auth-strip {
+          display: none !important;
         }
 
         .mobile-action-bar {
@@ -4000,6 +4046,10 @@
           max-height: 100dvh;
           border-radius: 0;
           padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        }
+
+        #resultsWrap.mobile-grid-layout .result-list {
+          grid-template-columns: 1fr;
         }
       }
 

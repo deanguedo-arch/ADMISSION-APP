@@ -372,6 +372,20 @@
         background: var(--bg-subtle);
       }
 
+      .summary-filter {
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+
+      .summary-filter.is-active {
+        border-color: #8fbfaa;
+        background: #eaf6f0;
+        box-shadow: 0 1px 0 rgba(17, 102, 76, 0.14);
+      }
+
       .stat .label {
         font-size: 0.75rem;
         color: var(--ink-soft);
@@ -1484,22 +1498,22 @@
         }
 
         #resultsPanel .tab-group {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-          overflow: visible;
-          padding-bottom: 0;
+          display: none !important;
         }
 
-        #resultsPanel .filter-btn {
-          width: 100%;
-          min-width: 0;
-          white-space: normal;
-          justify-content: space-between;
+        #resultsPanel .summary {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        #resultsPanel .summary-filter {
+          min-height: 58px;
         }
 
         .mobile-toolbar-actions {
           display: flex;
+          gap: 8px;
           justify-content: flex-end;
           margin-bottom: 2px;
         }
@@ -1548,6 +1562,37 @@
         .card-actions.mobile-card-actions .action-btn {
           width: 100%;
           min-height: 44px;
+        }
+
+        #resultsWrap.mobile-grid-layout .result-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        #resultsWrap.mobile-grid-layout .result-card {
+          padding: 10px;
+        }
+
+        #resultsWrap.mobile-grid-layout .card-top {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 6px;
+        }
+
+        #resultsWrap.mobile-grid-layout .card-metrics {
+          justify-content: flex-start;
+          text-align: left;
+        }
+
+        #resultsWrap.mobile-grid-layout .card-key-gap,
+        #resultsWrap.mobile-grid-layout .card-warning {
+          display: none;
+        }
+
+        body.mobile-compact-meta #appHeader .stamp,
+        body.mobile-compact-meta #appHeader .auth-strip {
+          display: none !important;
         }
 
         .mobile-action-bar {
@@ -1698,6 +1743,10 @@
           border-radius: 0;
           padding-bottom: calc(12px + env(safe-area-inset-bottom));
         }
+
+        #resultsWrap.mobile-grid-layout .result-list {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
 
@@ -1823,23 +1872,23 @@
             <div class="snapshot-banner-date" id="snapshotDataDate">Data date: n/a</div>
           </div>
 
-          <div class="summary">
-            <div class="stat neutral">
+          <div class="summary" id="mobileSummaryFilters" aria-label="Mobile quick filters">
+            <button class="stat neutral summary-filter" type="button" data-view-target="all">
               <div class="label">Programs Checked</div>
               <div class="value" id="sumTotal">0</div>
-            </div>
-            <div class="stat good">
+            </button>
+            <button class="stat good summary-filter" type="button" data-view-target="eligible">
               <div class="label">Likely eligible</div>
               <div class="value" id="sumEligible">0</div>
-            </div>
-            <div class="stat warn">
+            </button>
+            <button class="stat warn summary-filter" type="button" data-view-target="ineligible">
               <div class="label">Likely ineligible</div>
               <div class="value" id="sumMissing">0</div>
-            </div>
-            <div class="stat neutral">
+            </button>
+            <button class="stat neutral summary-filter" type="button" data-view-target="uncheckable">
               <div class="label">Uncheckable</div>
               <div class="value" id="sumUncheckable">0</div>
-            </div>
+            </button>
           </div>
 
           <div class="result-toolbar">
@@ -1851,6 +1900,7 @@
               <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
             </div>
             <div class="mobile-toolbar-actions">
+              <button class="btn btn-subtle" id="mobileLayoutToggleBtn" type="button" aria-label="Toggle program layout">Grid</button>
               <button class="btn btn-subtle" id="mobileFiltersBtn" type="button" aria-haspopup="dialog" aria-controls="filtersDrawer">Filters</button>
             </div>
 
@@ -1980,6 +2030,7 @@
         lastNonDetailScreen: MOBILE_SCREEN_DEFAULT,
         mobileRenderLimit: MOBILE_PAGE_SIZE,
         mobileFilterDrawerOpen: false,
+        mobileProgramLayout: "list",
         resultFilters: {
           query: "",
           institution: "",
@@ -2020,6 +2071,7 @@
         detailsPanel: document.getElementById("detailsPanel"),
         resultsWrap: document.getElementById("resultsWrap"),
         rowsStamp: document.getElementById("rowsStamp"),
+        summaryFilters: document.getElementById("mobileSummaryFilters"),
         sumTotal: document.getElementById("sumTotal"),
         sumEligible: document.getElementById("sumEligible"),
         sumMissing: document.getElementById("sumMissing"),
@@ -2035,6 +2087,7 @@
         credentialFilter: document.getElementById("credentialFilter"),
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        mobileLayoutToggleBtn: document.getElementById("mobileLayoutToggleBtn"),
         mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonBtn: document.getElementById("pinnedComparisonBtn"),
@@ -2274,6 +2327,11 @@ function boot() {
         return MOBILE_SCREEN_DEFAULT;
       }
 
+      function normalizeMobileProgramLayout_(value) {
+        const raw = String(value || "").trim().toLowerCase();
+        return raw === "grid" ? "grid" : "list";
+      }
+
       function isCompactViewport_() {
         return window.matchMedia
           ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches
@@ -2286,6 +2344,29 @@ function boot() {
 
       function resetMobileRenderLimit_() {
         state.mobileRenderLimit = MOBILE_PAGE_SIZE;
+      }
+
+      function updateMobileLayoutToggleState_() {
+        if (!ui.mobileLayoutToggleBtn) return;
+        state.mobileProgramLayout = normalizeMobileProgramLayout_(state.mobileProgramLayout);
+        const onMobile = isMobileAppShell_();
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const show = onMobile && (screen === "results" || screen === "pinned");
+        ui.mobileLayoutToggleBtn.style.display = show ? "" : "none";
+        ui.mobileLayoutToggleBtn.setAttribute("aria-pressed", state.mobileProgramLayout === "grid" ? "true" : "false");
+        ui.mobileLayoutToggleBtn.textContent = state.mobileProgramLayout === "grid" ? "List" : "Grid";
+        ui.mobileLayoutToggleBtn.title = state.mobileProgramLayout === "grid" ? "Switch to list view" : "Switch to grid view";
+      }
+
+      function toggleMobileProgramLayout_() {
+        state.mobileProgramLayout = state.mobileProgramLayout === "grid" ? "list" : "grid";
+        updateMobileLayoutToggleState_();
+        renderResults();
+      }
+
+      function updateMobileTopMetaVisibility_() {
+        if (!document.body) return;
+        document.body.classList.toggle("mobile-compact-meta", isMobileAppShell_());
       }
 
       function getScreenFromHash_() {
@@ -2395,6 +2476,8 @@ function boot() {
         updateBottomNavState_();
         updateResultsModeByScreen_();
         updateMobileActionBarState_();
+        updateMobileLayoutToggleState_();
+        updateMobileTopMetaVisibility_();
         if (next === "details") closeFiltersDrawer_({ silent: true });
         if (onMobile && options.syncHash !== false) {
           window.history.replaceState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
@@ -3346,6 +3429,21 @@ function boot() {
         renderResults();
       }
 
+      function onSummaryFilterClick_(e) {
+        const btn = e.target && e.target.closest("button[data-view-target]");
+        if (!btn) return;
+        if (!isMobileAppShell_()) return;
+        if (normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT) !== "results") return;
+        const nextView = String(btn.getAttribute("data-view-target") || "").trim();
+        if (RESULT_VIEWS.indexOf(nextView) < 0) return;
+        if (state.view === nextView) return;
+        state.view = nextView;
+        resetMobileRenderLimit_();
+        updateFilterCounts();
+        syncFilterButtons();
+        renderResults();
+      }
+
       function onResultControlChange() {
         state.resultFilters.query = String(ui.resultSearch.value || "").trim();
         state.resultFilters.institution = String(ui.institutionFilter.value || "").trim();
@@ -3381,12 +3479,23 @@ function boot() {
       }
 
       function syncFilterButtons() {
-        const all = ui.filterGroup.querySelectorAll("button[data-view]");
-        all.forEach((btn) => {
-          const active = btn.dataset.view === state.view;
-          btn.classList.toggle("active", active);
-          btn.setAttribute("aria-selected", active ? "true" : "false");
-        });
+        if (ui.filterGroup) {
+          const all = ui.filterGroup.querySelectorAll("button[data-view]");
+          all.forEach((btn) => {
+            const active = btn.dataset.view === state.view;
+            btn.classList.toggle("active", active);
+            btn.setAttribute("aria-selected", active ? "true" : "false");
+          });
+        }
+        if (ui.summaryFilters) {
+          const summaryButtons = ui.summaryFilters.querySelectorAll("button[data-view-target]");
+          summaryButtons.forEach((btn) => {
+            const target = String(btn.getAttribute("data-view-target") || "").trim();
+            const active = target === state.view;
+            btn.classList.toggle("is-active", active);
+            btn.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+        }
       }
 
       function updateFilterCounts() {
@@ -3642,14 +3751,19 @@ function boot() {
         const mobileShell = isMobileAppShell_();
         const mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
         const compareScreen = mobileShell && mobileScreen === "compare";
+        const pinnedScreen = mobileShell && mobileScreen === "pinned";
         const toolbarControls = ui.resultsPanel ? ui.resultsPanel.querySelector(".toolbar-controls") : null;
         const summaryEl = ui.resultsPanel ? ui.resultsPanel.querySelector(".summary") : null;
+        const mobileGrid = mobileShell &&
+          (mobileScreen === "results" || mobileScreen === "pinned") &&
+          normalizeMobileProgramLayout_(state.mobileProgramLayout) === "grid";
         if (ui.resultsPanel) ui.resultsPanel.classList.toggle("is-compare-screen", compareScreen);
         if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.style.display = compareScreen ? "none" : "";
+        if (ui.resultsWrap) ui.resultsWrap.classList.toggle("mobile-grid-layout", mobileGrid);
         if (toolbarControls) toolbarControls.style.display = compareScreen ? "none" : "";
-        if (summaryEl) summaryEl.style.display = compareScreen ? "none" : "";
-        if (ui.snapshotBanner) ui.snapshotBanner.style.display = compareScreen ? "none" : "";
-        if (ui.filterGroup) ui.filterGroup.style.display = compareScreen ? "none" : "";
+        if (summaryEl) summaryEl.style.display = compareScreen || pinnedScreen ? "none" : "";
+        if (ui.snapshotBanner) ui.snapshotBanner.style.display = compareScreen || pinnedScreen ? "none" : "";
+        if (ui.filterGroup) ui.filterGroup.style.display = mobileShell || compareScreen ? "none" : "";
         if (ui.rowsStamp) ui.rowsStamp.style.display = compareScreen ? "none" : "";
         if (ui.resultsWrap) ui.resultsWrap.style.display = compareScreen ? "none" : "";
 
@@ -5164,12 +5278,14 @@ boot();
       if (ui.toggleInputsBtn) ui.toggleInputsBtn.addEventListener("click", toggleInputsPanel);
       if (ui.showInputsBtn) ui.showInputsBtn.addEventListener("click", toggleInputsPanel);
       ui.filterGroup.addEventListener("click", onFilterClick);
+      if (ui.summaryFilters) ui.summaryFilters.addEventListener("click", onSummaryFilterClick_);
       ui.resultsWrap.addEventListener("click", onResultsWrapClick);
       ui.resultSearch.addEventListener("input", onResultControlChange);
       ui.institutionFilter.addEventListener("change", onResultControlChange);
       ui.credentialFilter.addEventListener("change", onResultControlChange);
       ui.sortSelect.addEventListener("change", onResultControlChange);
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
+      if (ui.mobileLayoutToggleBtn) ui.mobileLayoutToggleBtn.addEventListener("click", toggleMobileProgramLayout_);
       if (ui.mobileActionBar) ui.mobileActionBar.addEventListener("click", (e) => {
         const btn = e.target && e.target.closest("button");
         if (!btn) return;

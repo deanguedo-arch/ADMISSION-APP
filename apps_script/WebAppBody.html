@@ -108,23 +108,23 @@
             <div class="snapshot-banner-date" id="snapshotDataDate">Data date: n/a</div>
           </div>
 
-          <div class="summary">
-            <div class="stat neutral">
+          <div class="summary" id="mobileSummaryFilters" aria-label="Mobile quick filters">
+            <button class="stat neutral summary-filter" type="button" data-view-target="all">
               <div class="label">Programs Checked</div>
               <div class="value" id="sumTotal">0</div>
-            </div>
-            <div class="stat good">
+            </button>
+            <button class="stat good summary-filter" type="button" data-view-target="eligible">
               <div class="label">Likely eligible</div>
               <div class="value" id="sumEligible">0</div>
-            </div>
-            <div class="stat warn">
+            </button>
+            <button class="stat warn summary-filter" type="button" data-view-target="ineligible">
               <div class="label">Likely ineligible</div>
               <div class="value" id="sumMissing">0</div>
-            </div>
-            <div class="stat neutral">
+            </button>
+            <button class="stat neutral summary-filter" type="button" data-view-target="uncheckable">
               <div class="label">Uncheckable</div>
               <div class="value" id="sumUncheckable">0</div>
-            </div>
+            </button>
           </div>
 
           <div class="result-toolbar">
@@ -136,6 +136,7 @@
               <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
             </div>
             <div class="mobile-toolbar-actions">
+              <button class="btn btn-subtle" id="mobileLayoutToggleBtn" type="button" aria-label="Toggle program layout">Grid</button>
               <button class="btn btn-subtle" id="mobileFiltersBtn" type="button" aria-haspopup="dialog" aria-controls="filtersDrawer">Filters</button>
             </div>
 

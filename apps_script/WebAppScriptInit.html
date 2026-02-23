@@ -24,6 +24,7 @@
       if (ui.showInputsBtn) ui.showInputsBtn.addEventListener("click", toggleInputsPanel);
       if (ui.modeTabs) ui.modeTabs.addEventListener("click", onModeTabClick);
       ui.filterGroup.addEventListener("click", onFilterClick);
+      if (ui.summaryFilters) ui.summaryFilters.addEventListener("click", onSummaryFilterClick_);
       ui.resultsWrap.addEventListener("click", onResultsWrapClick);
       ui.resultsWrap.addEventListener("keydown", onResultsWrapKeydown);
       ui.resultSearch.addEventListener("input", onResultSearchInput);
@@ -32,6 +33,7 @@
       if (ui.requirementTypeFilter) ui.requirementTypeFilter.addEventListener("change", onResultControlChange);
       ui.sortSelect.addEventListener("change", onResultControlChange);
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
+      if (ui.mobileLayoutToggleBtn) ui.mobileLayoutToggleBtn.addEventListener("click", toggleMobileProgramLayout_);
       if (ui.exportMeetingNotesBtn) ui.exportMeetingNotesBtn.addEventListener("click", exportMeetingPacketPdf);
       if (ui.mobileActionBar) ui.mobileActionBar.addEventListener("click", onMobileActionBarClick_);
       if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.addEventListener("click", openFiltersDrawer_);

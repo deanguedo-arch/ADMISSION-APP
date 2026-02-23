@@ -24,6 +24,7 @@ function boot() {
           ui.stamp.textContent = "Standalone preview (no backend)";
           ui.authLine.textContent = "Not connected to Apps Script backend.";
           updateSnapshotBannerDate_("");
+          updateMobileTopMetaVisibility_();
           return;
         }
         loadPublicBootstrap();
@@ -85,6 +86,7 @@ function boot() {
             setStatus(readError(err), true);
             ui.stamp.textContent = "Load failed";
             ui.authLine.textContent = "Sign-in check failed.";
+            updateMobileTopMetaVisibility_();
           })
           .getWebAppBootstrapData({});
       }
@@ -100,6 +102,7 @@ function boot() {
           .withFailureHandler((err) => {
             setStatus(readError(err), true);
             ui.authLine.textContent = "Sign-in failed. Try again.";
+            updateMobileTopMetaVisibility_();
           })
           .getWebAppBootstrapData({ idToken: state.auth.idToken });
       }
@@ -113,6 +116,7 @@ function boot() {
           ui.authLine.textContent = message || `Sign in with your ${auth.allowedDomainSuffix || "@eips.ca"} account.`;
           ui.stamp.textContent = "Awaiting sign-in";
           setStatus(message || "Sign in with your school account and reload the page.", true);
+          updateMobileTopMetaVisibility_();
           return;
         }
 
@@ -129,6 +133,7 @@ function boot() {
         updateModeCounts_();
         syncModeTabs_();
         setStatus("Ready.");
+        updateMobileTopMetaVisibility_();
         trackUiEvent_("bootstrap_ready", { explorerPrograms: state.explorerRows.length });
       }
 
@@ -252,12 +257,48 @@ function boot() {
         return MOBILE_SCREEN_DEFAULT;
       }
 
+      function normalizeMobileProgramLayout_(value) {
+        const raw = String(value || "").trim().toLowerCase();
+        return raw === "grid" ? "grid" : "list";
+      }
+
       function isMobileAppShell_() {
         return isCompactViewport_();
       }
 
       function resetMobileRenderLimit_() {
         state.mobileRenderLimit = MOBILE_PAGE_SIZE;
+      }
+
+      function updateMobileLayoutToggleState_() {
+        if (!ui.mobileLayoutToggleBtn) return;
+        state.mobileProgramLayout = normalizeMobileProgramLayout_(state.mobileProgramLayout);
+        const onMobile = isMobileAppShell_();
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const show = onMobile && (screen === "results" || screen === "pinned");
+        ui.mobileLayoutToggleBtn.style.display = show ? "" : "none";
+        ui.mobileLayoutToggleBtn.setAttribute("aria-pressed", state.mobileProgramLayout === "grid" ? "true" : "false");
+        ui.mobileLayoutToggleBtn.textContent = state.mobileProgramLayout === "grid" ? "List" : "Grid";
+        ui.mobileLayoutToggleBtn.title = state.mobileProgramLayout === "grid" ? "Switch to list view" : "Switch to grid view";
+      }
+
+      function toggleMobileProgramLayout_() {
+        state.mobileProgramLayout = state.mobileProgramLayout === "grid" ? "list" : "grid";
+        updateMobileLayoutToggleState_();
+        renderResults();
+      }
+
+      function shouldHideMobileTopMeta_() {
+        if (!isMobileAppShell_()) return false;
+        const authText = String((ui.authLine && ui.authLine.textContent) || "").trim().toLowerCase();
+        const signInVisible = !!(ui.googleSignIn && ui.googleSignIn.childElementCount > 0);
+        if (signInVisible || authText.indexOf("sign in") >= 0) return false;
+        return true;
+      }
+
+      function updateMobileTopMetaVisibility_() {
+        if (!document.body) return;
+        document.body.classList.toggle("mobile-compact-meta", shouldHideMobileTopMeta_());
       }
 
       function getScreenFromHash_() {
@@ -387,6 +428,8 @@ function boot() {
         updateBottomNavState_();
         updateResultsModeByScreen_();
         updateMobileActionBarState_();
+        updateMobileLayoutToggleState_();
+        updateMobileTopMetaVisibility_();
         if (next === "details") closeFiltersDrawer_({ silent: true });
         if (onMobile && options.syncHash !== false) {
           window.history.replaceState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
@@ -1613,6 +1656,7 @@ function boot() {
         ui.stamp.textContent = "Mock mode";
         ui.authLine.textContent = "Local preview mode (no real student data is sent).";
         updateSnapshotBannerDate_("2026-02-10");
+        updateMobileTopMetaVisibility_();
         updateModeCounts_();
         syncModeTabs_();
         setStatus("Mock mode enabled. UI changes can be tested locally.");
@@ -1815,6 +1859,23 @@ function boot() {
         renderResults();
       }
 
+      function onSummaryFilterClick_(e) {
+        const btn = e.target && e.target.closest("button[data-view-target]");
+        if (!btn) return;
+        if (!isMobileAppShell_()) return;
+        if (normalizePrimaryMode_(state.primaryMode) !== "results") return;
+        if (normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT) !== "results") return;
+        const nextView = String(btn.getAttribute("data-view-target") || "").trim();
+        if (RESULT_VIEWS.indexOf(nextView) < 0) return;
+        if (state.view === nextView) return;
+        state.view = nextView;
+        resetMobileRenderLimit_();
+        trackUiEvent_("view_switch", { to: nextView, source: "summary_mobile" });
+        updateFilterCounts();
+        syncFilterButtons();
+        renderResults();
+      }
+
       function getFilterSourceRows_() {
         if (state.primaryMode === "explorer") return Array.isArray(state.explorerRows) ? state.explorerRows : [];
         return state.resultModel && state.resultModel.rows ? state.resultModel.rows : [];
@@ -1881,12 +1942,23 @@ function boot() {
       }
 
       function syncFilterButtons() {
-        const all = ui.filterGroup.querySelectorAll("button[data-view]");
-        all.forEach((btn) => {
-          const active = btn.dataset.view === state.view;
-          btn.classList.toggle("active", active);
-          btn.setAttribute("aria-selected", active ? "true" : "false");
-        });
+        if (ui.filterGroup) {
+          const all = ui.filterGroup.querySelectorAll("button[data-view]");
+          all.forEach((btn) => {
+            const active = btn.dataset.view === state.view;
+            btn.classList.toggle("active", active);
+            btn.setAttribute("aria-selected", active ? "true" : "false");
+          });
+        }
+        if (ui.summaryFilters) {
+          const summaryButtons = ui.summaryFilters.querySelectorAll("button[data-view-target]");
+          summaryButtons.forEach((btn) => {
+            const target = String(btn.getAttribute("data-view-target") || "").trim();
+            const active = target === state.view;
+            btn.classList.toggle("is-active", active);
+            btn.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+        }
       }
 
       function updateFilterCounts() {
@@ -2272,6 +2344,10 @@ function boot() {
         updateMobileShellForScreen_({ syncHash: false });
         const mobileShell = isMobileAppShell_();
         const mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const mobileGrid = mobileShell &&
+          (mobileScreen === "results" || mobileScreen === "pinned") &&
+          normalizeMobileProgramLayout_(state.mobileProgramLayout) === "grid";
+        if (ui.resultsWrap) ui.resultsWrap.classList.toggle("mobile-grid-layout", mobileGrid);
 
         if (state.primaryMode === "explorer") {
           setResultsModeVisibility_(true);
@@ -2503,14 +2579,15 @@ function boot() {
         const mobile = isMobileAppShell_();
         const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
         const compareScreen = mobile && screen === "compare";
+        const pinnedScreen = mobile && screen === "pinned";
         const summaryEl = ui.resultsPanel ? ui.resultsPanel.querySelector(".summary") : null;
         const snapshotEl = ui.snapshotBanner || null;
         const toolbarControls = ui.resultsPanel ? ui.resultsPanel.querySelector(".toolbar-controls") : null;
 
         if (ui.modeTabs) ui.modeTabs.style.display = mobile ? "none" : "";
-        if (ui.filterGroup) ui.filterGroup.style.display = explorerMode || compareScreen ? "none" : "";
-        if (snapshotEl) snapshotEl.style.display = compareScreen ? "none" : "";
-        if (summaryEl) summaryEl.style.display = compareScreen ? "none" : "";
+        if (ui.filterGroup) ui.filterGroup.style.display = mobile ? "none" : explorerMode || compareScreen ? "none" : "";
+        if (snapshotEl) snapshotEl.style.display = compareScreen || pinnedScreen ? "none" : "";
+        if (summaryEl) summaryEl.style.display = compareScreen || explorerMode || pinnedScreen ? "none" : "";
         if (toolbarControls) toolbarControls.style.display = compareScreen ? "none" : "";
         if (ui.rowsStamp) ui.rowsStamp.style.display = compareScreen ? "none" : "";
         if (ui.resultsWrap) ui.resultsWrap.style.display = compareScreen ? "none" : "";

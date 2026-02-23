@@ -1008,3 +1008,22 @@ Keep entries short and append-only.
 - Validation:
   - `node --check /tmp/apps_script_combined.js`
   - `node --check /tmp/offline_snapshot_combined.js`
+## 2026-02-23 (mobile simplification pass: quick filters + cleaner chrome + layout toggle)
+- Simplified mobile Results UI on both surfaces:
+  - replaced mobile chip-strip dependence with 4 tap targets in summary (`Programs Checked`, `Likely eligible`, `Likely ineligible`, `Uncheckable`) as quick filters
+  - hid legacy mobile filter chip row (`tab-group`) to reduce clutter
+  - hid top metadata chrome on mobile (`Data updated` stamp + local/auth strip) when in compact mobile flow
+- Added mobile program layout toggle (`Grid`/`List`) in Results toolbar.
+  - default remains `List`
+  - grid mode is compact and optimized for more visible programs
+- Kept existing mobile bottom tabs and details flow intact.
+- Updated files:
+  - `apps_script/WebAppBody.html`
+  - `apps_script/WebAppStyles.html`
+  - `apps_script/WebAppScriptState.html`
+  - `apps_script/WebAppScriptFunctions.html`
+  - `apps_script/WebAppScriptInit.html`
+  - `offline_snapshot/site/index.html`
+- Validation:
+  - `node --check /tmp/apps_script_combined.js`
+  - `node --check /tmp/offline_snapshot_combined.js`
