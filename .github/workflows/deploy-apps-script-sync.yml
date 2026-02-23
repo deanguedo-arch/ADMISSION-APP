@@ -21,8 +21,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      APPS_SCRIPT_SYNC_ID: ${{ secrets.APPS_SCRIPT_SYNC_ID || vars.APPS_SCRIPT_SYNC_ID }}
-      APPS_SCRIPT_SYNC_DEPLOYMENT_ID: ${{ secrets.APPS_SCRIPT_SYNC_DEPLOYMENT_ID || vars.APPS_SCRIPT_SYNC_DEPLOYMENT_ID }}
+      APPS_SCRIPT_SYNC_ID_SECRET: ${{ secrets.APPS_SCRIPT_SYNC_ID }}
+      APPS_SCRIPT_SYNC_ID_VAR: ${{ vars.APPS_SCRIPT_SYNC_ID }}
+      APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET: ${{ secrets.APPS_SCRIPT_SYNC_DEPLOYMENT_ID }}
+      APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR: ${{ vars.APPS_SCRIPT_SYNC_DEPLOYMENT_ID }}
       CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
     steps:
       - name: Checkout
@@ -38,6 +40,9 @@ jobs:
 
       - name: Validate required secrets
         run: |
+          APPS_SCRIPT_SYNC_ID="${APPS_SCRIPT_SYNC_ID_SECRET:-$APPS_SCRIPT_SYNC_ID_VAR}"
+          APPS_SCRIPT_SYNC_DEPLOYMENT_ID="${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET:-$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR}"
+
           if [ -z "$CLASPRC_JSON" ]; then
             echo "Missing secret: CLASPRC_JSON"
             exit 1
@@ -50,6 +55,9 @@ jobs:
             echo "Missing secret/variable: APPS_SCRIPT_SYNC_DEPLOYMENT_ID"
             exit 1
           fi
+
+          echo "APPS_SCRIPT_SYNC_ID=$APPS_SCRIPT_SYNC_ID" >> "$GITHUB_ENV"
+          echo "APPS_SCRIPT_SYNC_DEPLOYMENT_ID=$APPS_SCRIPT_SYNC_DEPLOYMENT_ID" >> "$GITHUB_ENV"
 
       - name: Write clasp auth and project config
         run: |
