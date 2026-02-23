@@ -1068,3 +1068,6 @@ Keep entries short and append-only.
 ## 2026-02-23 (sync deploy secret resolution fallback)
 - Hardened `.github/workflows/deploy-apps-script-sync.yml` to resolve IDs from secret -> variable -> workflow_dispatch input.
 - Added non-sensitive source diagnostics (`yes/no`) for sync/deployment ID sources to speed up root-cause checks when GitHub scope is misconfigured.
+## 2026-02-23 (sync deploy reliability hardening)
+- Updated `.github/workflows/deploy-apps-script-sync.yml` to use stable run-name, required manual inputs for IDs, and push-event skip behavior when sync IDs are unavailable.
+- Added step gating (`SKIP_SYNC_DEPLOY`) so missing sync IDs on push no longer create noisy hard failures.

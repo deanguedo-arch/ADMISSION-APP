@@ -1,4 +1,5 @@
 name: Deploy Apps Script Sync Webhook
+run-name: Deploy Apps Script Sync Webhook
 
 on:
   push:
@@ -12,11 +13,11 @@ on:
     inputs:
       apps_script_sync_id:
         description: "Optional override for APPS_SCRIPT_SYNC_ID"
-        required: false
+        required: true
         type: string
       apps_script_sync_deployment_id:
         description: "Optional override for APPS_SCRIPT_SYNC_DEPLOYMENT_ID"
-        required: false
+        required: true
         type: string
 
 permissions:
@@ -51,8 +52,8 @@ jobs:
 
       - name: Validate required secrets
         run: |
-          APPS_SCRIPT_SYNC_ID="${APPS_SCRIPT_SYNC_ID_SECRET:-${APPS_SCRIPT_SYNC_ID_VAR:-$APPS_SCRIPT_SYNC_ID_INPUT}}"
-          APPS_SCRIPT_SYNC_DEPLOYMENT_ID="${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET:-${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR:-$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_INPUT}}"
+          APPS_SCRIPT_SYNC_ID="${APPS_SCRIPT_SYNC_ID_INPUT:-${APPS_SCRIPT_SYNC_ID_SECRET:-$APPS_SCRIPT_SYNC_ID_VAR}}"
+          APPS_SCRIPT_SYNC_DEPLOYMENT_ID="${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_INPUT:-${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET:-$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR}}"
 
           echo "Source check: sync_id_secret=$([ -n "$APPS_SCRIPT_SYNC_ID_SECRET" ] && echo yes || echo no), sync_id_var=$([ -n "$APPS_SCRIPT_SYNC_ID_VAR" ] && echo yes || echo no), sync_id_input=$([ -n "$APPS_SCRIPT_SYNC_ID_INPUT" ] && echo yes || echo no)"
           echo "Source check: deploy_id_secret=$([ -n "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET" ] && echo yes || echo no), deploy_id_var=$([ -n "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR" ] && echo yes || echo no), deploy_id_input=$([ -n "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_INPUT" ] && echo yes || echo no)"
@@ -62,11 +63,21 @@ jobs:
             exit 1
           fi
           if [ -z "$APPS_SCRIPT_SYNC_ID" ]; then
-            echo "Missing secret/variable: APPS_SCRIPT_SYNC_ID"
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "Missing APPS_SCRIPT_SYNC_ID on push event; skipping sync deploy."
+              echo "SKIP_SYNC_DEPLOY=true" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "Missing APPS_SCRIPT_SYNC_ID. Provide workflow_dispatch input or set secret/variable."
             exit 1
           fi
           if [ -z "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID" ]; then
-            echo "Missing secret/variable: APPS_SCRIPT_SYNC_DEPLOYMENT_ID"
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "Missing APPS_SCRIPT_SYNC_DEPLOYMENT_ID on push event; skipping sync deploy."
+              echo "SKIP_SYNC_DEPLOY=true" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "Missing APPS_SCRIPT_SYNC_DEPLOYMENT_ID. Provide workflow_dispatch input or set secret/variable."
             exit 1
           fi
 
@@ -74,6 +85,7 @@ jobs:
           echo "APPS_SCRIPT_SYNC_DEPLOYMENT_ID=$APPS_SCRIPT_SYNC_DEPLOYMENT_ID" >> "$GITHUB_ENV"
 
       - name: Write clasp auth and project config
+        if: env.SKIP_SYNC_DEPLOY != 'true'
         run: |
           printf "%s" "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           cat > .clasp.json <<EOF
@@ -84,10 +96,13 @@ jobs:
           EOF
 
       - name: Validate sync surface
+        if: env.SKIP_SYNC_DEPLOY != 'true'
         run: pwsh -File ./tools/validate-sync-surface.ps1
 
       - name: Push sync Apps Script files
+        if: env.SKIP_SYNC_DEPLOY != 'true'
         run: clasp push --force
 
       - name: Update sync deployment
+        if: env.SKIP_SYNC_DEPLOY != 'true'
         run: clasp deploy --deploymentId "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID" --description "CI ${GITHUB_SHA}"
