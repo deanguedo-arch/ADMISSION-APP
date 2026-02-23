@@ -1086,3 +1086,7 @@ Keep entries short and append-only.
   - retained updated logo/header branding state
 - Rebuilt offline snapshot: python offline_snapshot/build_snapshot.py
 - Guardrails: 	ools/validate-webapp-surface.ps1 PASS; 	ools/validate-apps-script-structure.ps1 PASS.
+## 2026-02-23 (workspace guardrail + protected-main workflow)
+- Added 	ools/check-workspace.ps1 to hard-fail on wrong repo root/origin and warn when working on main.
+- Updated 	ools/generate-normal-use-playbook.ps1 dev-flow section to reflect protected main workflow (feature branch -> PR -> quality-gates -> merge).
+- Regenerated docs/NORMAL_USE_PLAYBOOK.md from generator.
