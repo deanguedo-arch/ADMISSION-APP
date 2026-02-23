@@ -2438,8 +2438,9 @@ function boot() {
                 )}</span>`
               : "";
             const cardActionsHtml = mobileListMode
-              ? `<div class="card-actions mobile-single-action">
+              ? `<div class="card-actions mobile-card-actions">
                   <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
+                  <button class="${compareClass}" type="button" data-compare-key="${escapeAttr(row.key)}">${compareLabel}</button>
                 </div>`
               : `<div class="card-actions">
                   ${sourceLinkHtml}

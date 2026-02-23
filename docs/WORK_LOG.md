@@ -997,3 +997,14 @@ Keep entries short and append-only.
 - Re-ran JS syntax checks successfully:
   - combined Apps Script fragments (`node --check /tmp/apps_script_combined.js`)
   - combined inline scripts from `offline_snapshot/site/index.html` (`node --check /tmp/offline_snapshot_combined.js`).
+## 2026-02-23 (mobile usability hotfix: filters + compare selection)
+- Fixed mobile result filters usability on both surfaces by replacing horizontal chip scrolling with a visible 2-column filter grid in Results/Pinned screens.
+- Restored direct mobile compare selection by adding `Compare` toggle beside `Pin` on mobile result cards.
+- Kept card tap -> Details behavior unchanged.
+- Updated files:
+  - `apps_script/WebAppStyles.html`
+  - `apps_script/WebAppScriptFunctions.html`
+  - `offline_snapshot/site/index.html`
+- Validation:
+  - `node --check /tmp/apps_script_combined.js`
+  - `node --check /tmp/offline_snapshot_combined.js`

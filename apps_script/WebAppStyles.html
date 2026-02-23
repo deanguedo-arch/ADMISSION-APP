@@ -3771,6 +3771,21 @@
           display: none !important;
         }
 
+        #resultsPanel .tab-group {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          overflow: visible;
+          padding-bottom: 0;
+        }
+
+        #resultsPanel .filter-btn {
+          width: 100%;
+          min-width: 0;
+          white-space: normal;
+          justify-content: space-between;
+        }
+
         .mobile-toolbar-actions {
           display: flex;
           justify-content: flex-end;
@@ -3826,9 +3841,16 @@
           -webkit-overflow-scrolling: touch;
         }
 
-        .card-actions.mobile-single-action {
-          display: flex;
-          justify-content: flex-end;
+        .card-actions.mobile-card-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .card-actions.mobile-card-actions .pin-btn,
+        .card-actions.mobile-card-actions .action-btn {
+          width: 100%;
+          min-height: 44px;
         }
 
         .mobile-action-bar {
