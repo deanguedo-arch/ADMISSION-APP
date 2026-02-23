@@ -4779,6 +4779,41 @@
         }
       }
 
+      @media (min-width: 981px) {
+        @container results-panel (max-width: 980px) {
+          #resultsPanel .toolbar-controls {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 8px;
+            align-items: stretch;
+          }
+
+          #resultsPanel #resultSearch {
+            grid-column: span 5;
+            min-width: 0;
+          }
+
+          #resultsPanel #institutionFilter,
+          #resultsPanel #credentialFilter,
+          #resultsPanel #requirementTypeFilter {
+            grid-column: span 2;
+            min-width: 0;
+          }
+
+          #resultsPanel #sortSelect {
+            grid-column: span 6;
+            min-width: 0;
+          }
+
+          #resultsPanel .clear-control,
+          #resultsPanel .meeting-toggle {
+            grid-column: span 2;
+            min-width: 0;
+            width: 100%;
+          }
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .hero-main,
         .auth-strip,

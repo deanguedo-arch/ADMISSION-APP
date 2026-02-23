@@ -1101,3 +1101,7 @@ Keep entries short and append-only.
   - STEP 3 - Publish Offline Snapshot (GitHub Pages)
   - STEP 4 (Optional) - Deploy Apps Script Sync Webhook
 - Added quick operator guide: docs/ACTIONS_QUICK_START.md.
+## 2026-02-23 (desktop results toolbar containment fix)
+- Fixed non-mobile overflow in Program Results toolbar by adding a results-panel container query for desktop (@media (min-width: 981px) + @container results-panel (max-width: 980px)).
+- Toolbar controls now switch to a 12-column grid when the results panel is narrow, keeping Clear, All, and Print Packet contained within panel bounds.
+- Rebuilt offline snapshot and re-ran guardrails (alidate-webapp-surface, alidate-apps-script-structure) PASS.
