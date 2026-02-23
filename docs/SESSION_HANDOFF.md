@@ -1,42 +1,54 @@
 # Session Handoff (2026-02-23)
 
 ## Status
-Mobile app-shell conversion (Option B) was implemented across both UI surfaces.
+4-mode IA migration and mobile simplification are implemented and pushed.
 
-## Completed in this session
-- Mobile shell architecture active at `<=980px`:
-  - `body[data-screen]` routing with screens: `inputs`, `results`, `pinned`, `compare`, `details`
-  - fixed bottom tabs + contextual mobile action bar
-  - filters drawer (single entry button)
-  - details as dedicated mobile screen with Back restore
-- Mobile list/card behavior:
-  - card tap opens details
-  - mobile inline card action reduced to Pin only
-  - details action row now includes Program Link + Pin + Compare
-- Performance hardening:
-  - chunked mobile list rendering (`Load more`, 40 rows per increment)
-- Router hardening:
-  - mobile hash/history sync is now scoped to mobile shell only
-  - desktop flow no longer writes/depends on `#screen` state
-- Surfaces updated:
-  - `apps_script/WebAppBody.html`
-  - `apps_script/WebAppStyles.html`
-  - `apps_script/WebAppScriptState.html`
-  - `apps_script/WebAppScriptFunctions.html`
-  - `apps_script/WebAppScriptInit.html`
-  - `offline_snapshot/site/index.html`
-- QA docs/log updates:
-  - `docs/WEBAPP_QA_CHECKLIST.md`
-  - `docs/WORK_LOG.md`
+## Git
+- Commit: `25e872c`
+- Branch: `main`
+- Remote: `origin/main` updated
 
-## Validation run
-- JS syntax checks passed:
-  - combined Apps Script web fragments (`node --check`)
-  - combined `offline_snapshot/site/index.html` scripts (`node --check`)
+## Implemented
+- Top mode tabs (desktop):
+  - `Program Explorer`, `Eligibility Results`, `Pinned`, `Compare`
+- Removed shortlist as a result-view mode:
+  - pin state remains and is surfaced via `Pinned` mode.
+- Compare flow moved to dedicated `compare-panel` presentation:
+  - visible in Compare mode
+  - hidden in Results/Pinned.
+- Added `All` quick action (`showAllBtn`) and mode-aware routing.
+- Mobile simplification retained:
+  - 4 quick summary filters only (`Programs Checked`, `Likely eligible`, `Likely ineligible`, `Uncheckable`)
+  - compact mobile hides top metadata strips (`Data updated`, local preview/auth strip)
+  - reduced footprint for `Grid`/`Filters` buttons.
+- Mobile app-shell behavior active:
+  - bottom tabs + details screen push/back
+  - contextual mobile action bar
+  - filters drawer
+  - chunked `Load more` rendering.
 
-## Still required before release
-- Run required guardrails in PowerShell-capable environment:
+## Surfaces Updated
+- `apps_script/WebAppBody.html`
+- `apps_script/WebAppStyles.html`
+- `apps_script/WebAppScriptState.html`
+- `apps_script/WebAppScriptFunctions.html`
+- `apps_script/WebAppScriptInit.html`
+- `offline_snapshot/site/index.html`
+- `docs/WORK_LOG.md`
+
+## Validation
+- Passed:
+  - `node --check /tmp/apps_script_combined.js`
+  - `node --check /tmp/offline_snapshot_combined.js`
+- Pending in PowerShell-capable environment:
   - `tools/validate-webapp-surface.ps1`
   - `tools/validate-apps-script-structure.ps1`
-- Perform manual iPhone QA pass from checklist:
-  - one-scroll behavior, bottom tabs visibility, details back-nav, filter drawer behavior, `Clear`/`Print Packet` visibility, load-more performance.
+
+## Next QA Focus
+- Mobile results usability on iPhone width:
+  - quick filters tappability
+  - `Grid`/`Filters` compact spacing
+  - compare select/toggle from cards + details
+  - bottom action bar visibility (`Clear`, `Print Packet`).
+- Desktop top-mode tab behavior:
+  - counts update correctly for Results / Explorer / Pinned / Compare.

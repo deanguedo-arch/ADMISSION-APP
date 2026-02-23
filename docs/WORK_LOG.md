@@ -1045,3 +1045,16 @@ Keep entries short and append-only.
   - `node --check /tmp/apps_script_combined.js`
   - `node --check /tmp/offline_snapshot_combined.js`
   - PowerShell guardrails not run in this environment (`pwsh` unavailable).
+## 2026-02-23 (log completion + remote publish record)
+- Finalized logging for the 4-mode navigation/mobile simplification pass.
+- Git record:
+  - commit: `25e872c`
+  - branch: `main`
+  - push: `origin/main` (`a4320c0 -> 25e872c`)
+- Scope logged as complete across both surfaces:
+  - `apps_script/*WebApp*.html` fragments updated for mode routing and mobile simplification.
+  - `offline_snapshot/site/index.html` aligned to the same 4-mode IA and mobile behavior.
+- Validation record retained:
+  - `node --check /tmp/apps_script_combined.js`
+  - `node --check /tmp/offline_snapshot_combined.js`
+  - PowerShell guardrails pending environment with `pwsh`.
