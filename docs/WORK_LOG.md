@@ -1090,3 +1090,14 @@ Keep entries short and append-only.
 - Added 	ools/check-workspace.ps1 to hard-fail on wrong repo root/origin and warn when working on main.
 - Updated 	ools/generate-normal-use-playbook.ps1 dev-flow section to reflect protected main workflow (feature branch -> PR -> quality-gates -> merge).
 - Regenerated docs/NORMAL_USE_PLAYBOOK.md from generator.
+## 2026-02-23 (workflow simplification + step labels)
+- Simplified GitHub Actions surface by removing non-essential workflows:
+  - removed .github/workflows/pr-quality-gates.yml
+  - removed .github/workflows/sync-programs.yml
+  - removed .github/workflows/update-normal-use-playbook.yml
+- Renamed remaining workflows to ordered step labels for operator clarity:
+  - STEP 1 - Deploy Apps Script Web App
+  - STEP 2 - Publish Admissions Data to Sheets
+  - STEP 3 - Publish Offline Snapshot (GitHub Pages)
+  - STEP 4 (Optional) - Deploy Apps Script Sync Webhook
+- Added quick operator guide: docs/ACTIONS_QUICK_START.md.

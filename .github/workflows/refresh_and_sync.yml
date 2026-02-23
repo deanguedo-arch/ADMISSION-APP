@@ -1,4 +1,4 @@
-name: Publish Admissions Data to Sheets (Refresh + Sync + Commit)
+name: STEP 2 - Publish Admissions Data to Sheets
 
 on:
   workflow_dispatch:

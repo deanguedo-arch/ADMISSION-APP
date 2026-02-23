@@ -1,4 +1,4 @@
-name: Update + Build + Deploy Offline Snapshot (GitHub Pages)
+name: STEP 3 - Publish Offline Snapshot (GitHub Pages)
 
 on:
   schedule:
