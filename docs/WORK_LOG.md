@@ -1074,3 +1074,5 @@ Keep entries short and append-only.
 ## 2026-02-23 (sync workflow legacy secret compatibility)
 - Updated `.github/workflows/deploy-apps-script-sync.yml` to accept legacy secret/variable names (`APPS_SCRIPT_ID`, `APPS_SCRIPT_DEPLOYMENT_ID`) as fallback for sync deploy resolution.
 - Added yes/no diagnostics for legacy source presence to make secret-scope troubleshooting explicit in run logs.
+## 2026-02-23 (quality-gates branch protection indexing assist)
+- Added `push` trigger on `main` to `.github/workflows/pr-quality-gates.yml` so `quality-gates` check context is consistently indexed for branch-protection required-check selection.
