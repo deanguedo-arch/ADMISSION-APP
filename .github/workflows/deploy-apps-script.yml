@@ -1,4 +1,4 @@
-name: Deploy Apps Script Web App
+name: STEP 1 - Deploy Apps Script Web App
 
 on:
   push:

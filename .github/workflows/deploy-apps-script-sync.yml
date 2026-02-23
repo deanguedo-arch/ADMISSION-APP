@@ -1,5 +1,5 @@
-name: Deploy Apps Script Sync Webhook
-run-name: Deploy Apps Script Sync Webhook
+name: STEP 4 (Optional) - Deploy Apps Script Sync Webhook
+run-name: STEP 4 (Optional) - Deploy Apps Script Sync Webhook
 
 on:
   push:
