@@ -8,3 +8,7 @@ __pycache__/
 .clasp.json
 .clasprc.json
 node_modules
+mobile/ios-wrapper/node_modules/
+mobile/ios-wrapper/ios/
+mobile/ios-wrapper/android/
+mobile/ios-wrapper/.env

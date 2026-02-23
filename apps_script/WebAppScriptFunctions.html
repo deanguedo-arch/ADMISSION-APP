@@ -2,11 +2,13 @@
 function boot() {
         resetForm();
         setInputsCollapsed(state.inputsCollapsed);
-        state.meetingMode = loadMeetingModePreference_();
-        setMeetingMode_(state.meetingMode, { persist: false });
+        state.meetingMode = false;
+        setMeetingMode_(false, { persist: false });
         state.meetingNotesByKey = loadMeetingNotes_();
+        initTelemetry_();
         updateMeetingNotesControls_();
         state.mockMode = isMockMode();
+        trackUiEvent_("session_boot", { mockMode: state.mockMode ? 1 : 0 });
         if (state.mockMode) {
           bootMockMode();
           return;
@@ -27,6 +29,9 @@ function boot() {
       let panelHeightSyncRaf = 0;
       const MEETING_MODE_KEY = "admissions_meeting_mode";
       const MEETING_NOTES_KEY = "admissions_meeting_notes_v1";
+      const TELEMETRY_KEY = "admissions_ui_telemetry_v1";
+      const TELEMETRY_MAX_EVENTS = 250;
+      const MEETING_NOTE_DEBOUNCE_MS = 140;
       const DEFAULT_NAMED_ROW_COUNT = 5;
       const DEFAULT_ELECTIVE_ROW_COUNT = 1;
       const RESULT_SORT_OPTIONS = [
@@ -42,6 +47,7 @@ function boot() {
         { value: "min_avg_asc", label: "Sort: Min Avg low-high" },
         { value: "min_avg_desc", label: "Sort: Min Avg high-low" },
       ];
+      const meetingNoteTimersByKey_ = {};
 
       function schedulePanelHeightSync() {
         if (panelHeightSyncRaf) {
@@ -119,6 +125,7 @@ function boot() {
         updateModeCounts_();
         syncModeTabs_();
         setStatus("Ready.");
+        trackUiEvent_("bootstrap_ready", { explorerPrograms: state.explorerRows.length });
       }
 
       function initializeGoogleSignIn(clientId) {
@@ -189,8 +196,8 @@ function boot() {
         state.resultFilters.requirementType = "";
         state.resultFilters.sort = DEFAULT_RESULT_SORT;
         state.electiveRulesCollapsed = false;
-        ui.csvBtn.disabled = true;
-        ui.pdfBtn.disabled = true;
+        if (ui.csvBtn) ui.csvBtn.disabled = true;
+        if (ui.pdfBtn) ui.pdfBtn.disabled = true;
         syncResultControlContext_();
         syncResultControls();
         populateResultFilterOptions();
@@ -210,6 +217,7 @@ function boot() {
       }
 
       function toggleInputsPanel() {
+        trackUiEvent_("inputs_panel_toggle", { collapsed: state.inputsCollapsed ? 0 : 1 });
         setInputsCollapsed(!state.inputsCollapsed);
       }
 
@@ -391,8 +399,171 @@ function boot() {
         const visibleRows = getVisibleRowsForPacket_();
         const hasPacketContext = !!visibleRows.length || !!getSelectedDetailRowForPacket_();
         ui.exportMeetingNotesBtn.disabled = count <= 0 && !hasPacketContext;
-        ui.exportMeetingNotesBtn.textContent = count > 0 ? `Export Packet (${count})` : "Export Packet";
+        ui.exportMeetingNotesBtn.textContent = count > 0 ? `Print Packet (${count})` : "Print Packet";
         ui.exportMeetingNotesBtn.title = meetingNotesStorageLabel_();
+      }
+
+      function telemetrySessionId_() {
+        return `session_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      function defaultTelemetryCounters_() {
+        return {
+          checkStarts: 0,
+          checkSuccess: 0,
+          checkErrors: 0,
+          modeSwitches: 0,
+          detailsViewed: 0,
+          decisionsSet: 0,
+          packetsExported: 0,
+        };
+      }
+
+      function defaultTelemetryModel_() {
+        const now = new Date().toISOString();
+        return {
+          version: 1,
+          sessionId: telemetrySessionId_(),
+          createdAt: now,
+          updatedAt: now,
+          counters: defaultTelemetryCounters_(),
+          events: [],
+        };
+      }
+
+      function getTelemetryStorage_() {
+        const local = getUsableStorage_("localStorage");
+        if (local) return local;
+        return getUsableStorage_("sessionStorage");
+      }
+
+      function parseTelemetryPayload_(raw) {
+        if (!raw) return null;
+        try {
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+          const counters = parsed.counters && typeof parsed.counters === "object" ? parsed.counters : {};
+          const model = defaultTelemetryModel_();
+          model.createdAt = String(parsed.createdAt || model.createdAt);
+          model.updatedAt = String(parsed.updatedAt || model.updatedAt);
+          model.events = Array.isArray(parsed.events) ? parsed.events.slice(-TELEMETRY_MAX_EVENTS) : [];
+          model.counters = {
+            checkStarts: Number(counters.checkStarts) || 0,
+            checkSuccess: Number(counters.checkSuccess) || 0,
+            checkErrors: Number(counters.checkErrors) || 0,
+            modeSwitches: Number(counters.modeSwitches) || 0,
+            detailsViewed: Number(counters.detailsViewed) || 0,
+            decisionsSet: Number(counters.decisionsSet) || 0,
+            packetsExported: Number(counters.packetsExported) || 0,
+          };
+          return model;
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function initTelemetry_() {
+        const storage = getTelemetryStorage_();
+        const parsed = storage ? parseTelemetryPayload_(storage.getItem(TELEMETRY_KEY)) : null;
+        state.telemetry = parsed || defaultTelemetryModel_();
+        state.telemetry.sessionId = telemetrySessionId_();
+        state.telemetry.updatedAt = new Date().toISOString();
+        saveTelemetry_();
+      }
+
+      function saveTelemetry_() {
+        if (!state.telemetry || typeof state.telemetry !== "object") return;
+        state.telemetry.updatedAt = new Date().toISOString();
+        const storage = getTelemetryStorage_();
+        if (!storage) return;
+        try {
+          storage.setItem(TELEMETRY_KEY, JSON.stringify(state.telemetry));
+        } catch (err) {
+          // Non-fatal in storage-restricted contexts.
+        }
+      }
+
+      function sanitizeTelemetryPayload_(payload) {
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};
+        const out = {};
+        Object.keys(payload)
+          .slice(0, 12)
+          .forEach((key) => {
+            const raw = payload[key];
+            if (raw === null || raw === undefined) return;
+            if (typeof raw === "string") {
+              const value = raw.trim();
+              if (value) out[key] = value.slice(0, 160);
+              return;
+            }
+            if (typeof raw === "number" && Number.isFinite(raw)) {
+              out[key] = Number(raw.toFixed(3));
+              return;
+            }
+            if (typeof raw === "boolean") {
+              out[key] = raw ? 1 : 0;
+            }
+          });
+        return out;
+      }
+
+      function applyTelemetryCounter_(eventName) {
+        if (!state.telemetry || !state.telemetry.counters) return;
+        const counters = state.telemetry.counters;
+        if (eventName === "check_start") counters.checkStarts += 1;
+        if (eventName === "check_success") counters.checkSuccess += 1;
+        if (eventName === "check_error") counters.checkErrors += 1;
+        if (eventName === "mode_switch") counters.modeSwitches += 1;
+        if (eventName === "detail_view") counters.detailsViewed += 1;
+        if (eventName === "meeting_decision_set") counters.decisionsSet += 1;
+        if (eventName === "packet_export") counters.packetsExported += 1;
+      }
+
+      function trackUiEvent_(eventName, payload) {
+        if (!state.telemetry || typeof state.telemetry !== "object") return;
+        const name = String(eventName || "").trim().toLowerCase();
+        if (!name) return;
+        const model = state.telemetry;
+        const record = {
+          at: new Date().toISOString(),
+          sessionId: String(model.sessionId || ""),
+          event: name,
+          mode: normalizePrimaryMode_(state.primaryMode),
+          view: String(state.view || "ineligible"),
+          payload: sanitizeTelemetryPayload_(payload),
+        };
+        model.events.push(record);
+        if (model.events.length > TELEMETRY_MAX_EVENTS) {
+          model.events.splice(0, model.events.length - TELEMETRY_MAX_EVENTS);
+        }
+        applyTelemetryCounter_(name);
+        saveTelemetry_();
+      }
+
+      function exportTelemetryReport_() {
+        if (!state.telemetry) initTelemetry_();
+        const model = state.telemetry || defaultTelemetryModel_();
+        const report = {
+          exportedAt: new Date().toISOString(),
+          sessionId: String(model.sessionId || ""),
+          counters: model.counters || defaultTelemetryCounters_(),
+          events: Array.isArray(model.events) ? model.events : [],
+          context: {
+            mockMode: state.mockMode ? 1 : 0,
+            signedInAs: String(state.auth && state.auth.email ? state.auth.email : ""),
+            primaryMode: normalizePrimaryMode_(state.primaryMode),
+            currentView: String(state.view || "ineligible"),
+            datasetStamp: getResultDatasetStamp() || "",
+            datasetDate: getResultDatasetDate() || "",
+          },
+        };
+        downloadBlob(
+          JSON.stringify(report, null, 2),
+          "application/json;charset=utf-8",
+          fileStamp("admissions_ui_telemetry", "json")
+        );
+        setStatus("Exported UX telemetry report.");
+        trackUiEvent_("telemetry_export", { events: Array.isArray(model.events) ? model.events.length : 0 });
       }
 
       function getMeetingRecordForKey_(key) {
@@ -412,12 +583,19 @@ function boot() {
         const map = state.meetingNotesByKey && typeof state.meetingNotesByKey === "object" ? state.meetingNotesByKey : {};
         state.meetingNotesByKey = map;
         const current = normalizeMeetingRecord_(map[safeKey]);
+        const beforeDecision = normalizeMeetingDecision_(current.decision);
         if (field === "note") current.note = String(value || "").replace(/\r\n/g, "\n").trim();
         if (field === "decision") current.decision = normalizeMeetingDecision_(value);
         if (meetingRecordHasContent_(current)) map[safeKey] = current;
         else delete map[safeKey];
         saveMeetingNotes_();
         updateMeetingNotesControls_();
+        if (field === "decision") {
+          const afterDecision = normalizeMeetingDecision_(current.decision);
+          if (afterDecision && afterDecision !== beforeDecision) {
+            trackUiEvent_("meeting_decision_set", { decision: afterDecision });
+          }
+        }
       }
 
       function clearMeetingRecordForKey_(key) {
@@ -465,18 +643,22 @@ function boot() {
       function syncMeetingModeButton_() {
         if (!ui.meetingToggleBtn) return;
         const on = !!state.meetingMode;
-        ui.meetingToggleBtn.textContent = on ? "Meeting Mode On" : "Meeting Mode";
+        ui.meetingToggleBtn.textContent = on ? "Focus Meeting Layout On" : "Focus Meeting Layout";
         ui.meetingToggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
       }
 
       function setMeetingMode_(enabled, opts) {
         const on = !!enabled;
+        const changed = !!state.meetingMode !== on;
         state.meetingMode = on;
         document.body.classList.toggle("is-meeting", on);
         syncMeetingModeButton_();
         if (on) setInputsCollapsed(true);
         if (!(opts && opts.persist === false)) saveMeetingModePreference_(on);
         schedulePanelHeightSync();
+        if (changed && !(opts && opts.persist === false)) {
+          trackUiEvent_("meeting_layout_toggle", { enabled: on ? 1 : 0 });
+        }
       }
 
       function toggleMeetingMode() {
@@ -852,28 +1034,54 @@ function boot() {
           return;
         }
 
+        state.runStartedAtMs = Date.now();
+        trackUiEvent_("check_start", {
+          named: requestPayload.namedCourses.length,
+          electives: requestPayload.manualElectives.length,
+        });
         setBusy(true);
+        showLoadingResultsState_();
         setStatus("Checking admissions rules...");
         google.script.run
           .withSuccessHandler((data) => {
             applyResultPayload(data || null);
-            setStatus("Check complete.");
+            const elapsedMs = state.runStartedAtMs > 0 ? Date.now() - state.runStartedAtMs : 0;
+            state.runStartedAtMs = 0;
+            trackUiEvent_("check_success", {
+              ms: elapsedMs,
+              total: Number((data && data.summary && data.summary.totalPrograms) || 0),
+            });
+            setStatus(elapsedMs > 0 ? `Check complete in ${(elapsedMs / 1000).toFixed(1)}s.` : "Check complete.");
             setBusy(false);
           })
           .withFailureHandler((err) => {
+            const elapsedMs = state.runStartedAtMs > 0 ? Date.now() - state.runStartedAtMs : 0;
+            state.runStartedAtMs = 0;
+            trackUiEvent_("check_error", { ms: elapsedMs });
             setStatus(readError(err), true);
+            renderResults();
             setBusy(false);
           })
           .runWebEligibility(requestPayload);
       }
 
       function runMockCheck(payload) {
+        state.runStartedAtMs = Date.now();
+        trackUiEvent_("check_start", {
+          named: Array.isArray(payload && payload.namedCourses) ? payload.namedCourses.length : 0,
+          electives: Array.isArray(payload && payload.manualElectives) ? payload.manualElectives.length : 0,
+          mock: 1,
+        });
         setBusy(true);
+        showLoadingResultsState_();
         setStatus("Running local mock check...");
         setTimeout(() => {
           applyResultPayload(buildMockResult(payload));
+          const elapsedMs = state.runStartedAtMs > 0 ? Date.now() - state.runStartedAtMs : 0;
+          state.runStartedAtMs = 0;
+          trackUiEvent_("check_success", { ms: elapsedMs, total: 3, mock: 1 });
           setBusy(false);
-          setStatus("Mock check complete.");
+          setStatus(elapsedMs > 0 ? `Mock check complete in ${(elapsedMs / 1000).toFixed(1)}s.` : "Mock check complete.");
         }, 250);
       }
 
@@ -891,8 +1099,8 @@ function boot() {
         if (state.view === "shortlist" && countShortlistRows() === 0) {
           state.view = "ineligible";
         }
-        ui.csvBtn.disabled = !state.result;
-        ui.pdfBtn.disabled = !state.result;
+        if (ui.csvBtn) ui.csvBtn.disabled = !state.result;
+        if (ui.pdfBtn) ui.pdfBtn.disabled = !state.result;
         updateSummary((state.result && state.result.summary) || {});
         updateHeaderStampFromResult();
         updateSnapshotBannerFromResult_();
@@ -902,6 +1110,10 @@ function boot() {
         renderCompareStrip();
         renderCompareResults();
         renderDetailsDrawer();
+        if (isCompactViewport_() && !state.inputsCollapsed) {
+          setInputsCollapsed(true);
+          trackUiEvent_("inputs_auto_collapsed", { reason: "run_complete" });
+        }
       }
 
       function buildMockResult(payload) {
@@ -1168,6 +1380,7 @@ function boot() {
         updateModeCounts_();
         syncModeTabs_();
         setStatus("Mock mode enabled. UI changes can be tested locally.");
+        trackUiEvent_("mock_mode_ready", { explorerPrograms: state.explorerRows.length });
       }
 
       function updateSummary(summary) {
@@ -1320,12 +1533,14 @@ function boot() {
       }
 
       function setPrimaryMode_(mode) {
+        const previous = normalizePrimaryMode_(state.primaryMode);
         const next = normalizePrimaryMode_(mode);
         if (next === "explorer" && (!state.explorerRows || !state.explorerRows.length)) {
           setStatus("Program Explorer data is not available right now.", true);
           return;
         }
         state.primaryMode = next;
+        if (next !== previous) trackUiEvent_("mode_switch", { to: next });
         syncModeTabs_();
         syncResultControlContext_();
         populateResultFilterOptions();
@@ -1357,6 +1572,7 @@ function boot() {
           return;
         }
         state.view = nextView;
+        trackUiEvent_("view_switch", { to: nextView });
         updateFilterCounts();
         syncFilterButtons();
         renderResults();
@@ -1401,6 +1617,7 @@ function boot() {
         syncResultControlContext_();
         syncResultControls();
         renderResults();
+        trackUiEvent_("filters_cleared", { mode: normalizePrimaryMode_(state.primaryMode) });
       }
 
       function syncResultControls() {
@@ -1514,7 +1731,11 @@ function boot() {
           const detailBtn = e.target && e.target.closest("button[data-explorer-detail-key]");
           if (detailBtn) {
             const key = String(detailBtn.getAttribute("data-explorer-detail-key") || "").trim();
-            if (key) state.selectedExplorerKey = key;
+            if (key) {
+              const changed = state.selectedExplorerKey !== key;
+              state.selectedExplorerKey = key;
+              if (changed) trackUiEvent_("detail_view", { key, mode: "explorer" });
+            }
             renderResults();
             renderDetailsDrawer();
             return;
@@ -1525,7 +1746,11 @@ function boot() {
 
           const rowEl = e.target && e.target.closest(".result-card[data-explorer-key]");
           if (!rowEl) return;
-          state.selectedExplorerKey = String(rowEl.getAttribute("data-explorer-key") || "").trim();
+          const key = String(rowEl.getAttribute("data-explorer-key") || "").trim();
+          if (!key) return;
+          const changed = state.selectedExplorerKey !== key;
+          state.selectedExplorerKey = key;
+          if (changed) trackUiEvent_("detail_view", { key, mode: "explorer" });
           renderResults();
           renderDetailsDrawer();
           return;
@@ -1614,7 +1839,9 @@ function boot() {
           return;
         }
         if (!(state.resultModel && state.resultModel.rowsByKey && state.resultModel.rowsByKey[k])) return;
+        const changed = state.selectedProgramKey !== k;
         state.selectedProgramKey = k;
+        if (changed) trackUiEvent_("detail_view", { key: k });
       }
 
       function toggleCompareKey(key) {
@@ -1626,7 +1853,7 @@ function boot() {
           return;
         }
         if (state.compareKeys.length >= 3) {
-          setStatus("Compare prep supports up to 3 programs. Remove one to add another.", true);
+          setStatus("Compare supports up to 3 programs. Remove one to add another.", true);
           return;
         }
         state.compareKeys.push(k);
@@ -1678,7 +1905,22 @@ function boot() {
         if (!noteInput) return;
         const noteKey = String(noteInput.getAttribute("data-meeting-note-key") || "").trim();
         if (!noteKey) return;
-        setMeetingRecordField_(noteKey, "note", noteInput.value);
+        const eventType = String((e && e.type) || "input").toLowerCase();
+        if (meetingNoteTimersByKey_[noteKey]) {
+          clearTimeout(meetingNoteTimersByKey_[noteKey]);
+          delete meetingNoteTimersByKey_[noteKey];
+        }
+        const commit = () => {
+          setMeetingRecordField_(noteKey, "note", noteInput.value);
+        };
+        if (eventType === "change") {
+          commit();
+          return;
+        }
+        meetingNoteTimersByKey_[noteKey] = setTimeout(() => {
+          delete meetingNoteTimersByKey_[noteKey];
+          commit();
+        }, MEETING_NOTE_DEBOUNCE_MS);
       }
 
       function onDetailsDrawerClick(e) {
@@ -1697,6 +1939,10 @@ function boot() {
         if (!clearBtn) return;
         const key = String(clearBtn.getAttribute("data-meeting-note-clear") || "").trim();
         if (!key) return;
+        if (meetingNoteTimersByKey_[key]) {
+          clearTimeout(meetingNoteTimersByKey_[key]);
+          delete meetingNoteTimersByKey_[key];
+        }
         clearMeetingRecordForKey_(key);
         renderResults();
         renderDetailsDrawer();
@@ -1707,6 +1953,21 @@ function boot() {
         if (!(target instanceof HTMLDetailsElement)) return;
         if (!target.hasAttribute("data-elective-rules")) return;
         state.electiveRulesCollapsed = !target.open;
+      }
+
+      function isCompactViewport_() {
+        return window.matchMedia ? window.matchMedia("(max-width: 980px)").matches : window.innerWidth <= 980;
+      }
+
+      function renderEmptyStateHtml_(title, detail) {
+        const safeTitle = String(title || "").trim() || "No results";
+        const safeDetail = String(detail || "").trim();
+        return `
+          <div class="empty-state">
+            <h3>${escapeHtml(safeTitle)}</h3>
+            <p>${escapeHtml(safeDetail || "Adjust filters or run a new check.")}</p>
+          </div>
+        `;
       }
 
       function renderResults() {
@@ -1727,7 +1988,7 @@ function boot() {
               viewCount === 0
                 ? "Program Explorer is empty."
                 : "No programs match the current filters. Clear filters to widen results.";
-            ui.resultsWrap.innerHTML = `<div class="empty">${escapeHtml(emptyMsg)}</div>`;
+            ui.resultsWrap.innerHTML = renderEmptyStateHtml_("No Explorer Matches", emptyMsg);
             syncResultControls();
             renderDetailsDrawer();
             return;
@@ -1795,7 +2056,10 @@ function boot() {
 
         setResultsModeVisibility_(false);
         if (!state.result || !state.resultModel) {
-          ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
+          ui.resultsWrap.innerHTML = renderEmptyStateHtml_(
+            "Run Eligibility Check",
+            "Add courses and marks, then run check to see ranked program recommendations."
+          );
           ui.rowsStamp.textContent = "No results yet";
           syncResultControls();
           updateFilterCounts();
@@ -1817,7 +2081,7 @@ function boot() {
             viewCount === 0
               ? "No programs in this category."
               : "No programs match the current filters. Clear filters to widen results.";
-          ui.resultsWrap.innerHTML = `<div class="empty">${escapeHtml(emptyMsg)}</div>`;
+          ui.resultsWrap.innerHTML = renderEmptyStateHtml_("No Matching Programs", emptyMsg);
           syncResultControls();
           renderCompareStrip();
           renderCompareResults();
@@ -1839,6 +2103,7 @@ function boot() {
             const keyGap = buildCardKeyGapSummary_(row, detail, status);
             const warning = buildWarningDisplay_(detail, confidence);
             const warningHtml = renderWarningHtml_(warning, "card-warning");
+            const showReason = status.css === "eligible" || !warningHtml;
             const sourceLinkHtml = renderSourceLinkInline_(detail, confidence);
             const pinClass = isPinned ? "pin-btn active" : "pin-btn";
             const compareClass = isCompared ? "action-btn active" : "action-btn";
@@ -1901,7 +2166,7 @@ function boot() {
                   <span class="card-key-gap-label">${escapeHtml(keyGap.label)}</span>
                   <span class="card-key-gap-value">${escapeHtml(keyGap.value)}</span>
                 </div>
-                <div class="card-reason">${escapeHtml(reason)}</div>
+                ${showReason ? `<div class="card-reason">${escapeHtml(reason)}</div>` : ""}
                 ${warningHtml}
                 <div class="card-actions">
                   ${sourceLinkHtml}
@@ -2105,7 +2370,7 @@ function boot() {
           return {
             level: "low",
             text: "Low confidence - verify on program website",
-            reasons: why.slice(0, 3),
+            reasons: why.slice(0, 2),
             reason: "",
             nextStep: "",
           };
@@ -2154,13 +2419,13 @@ function boot() {
         if (state.primaryMode === "explorer") return;
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
-          ui.compareStrip.innerHTML = `<div class="ghost">Compare prep: add up to 3 programs while triaging.</div>`;
+          ui.compareStrip.innerHTML = `<div class="ghost">Compare up to 3 programs.</div>`;
           return;
         }
 
         const selected = state.compareKeys.map((k) => model.rowsByKey[k]).filter(Boolean);
         if (!selected.length) {
-          ui.compareStrip.innerHTML = `<div class="ghost">Compare prep: add up to 3 programs while triaging.</div>`;
+          ui.compareStrip.innerHTML = `<div class="ghost">Compare up to 3 programs.</div>`;
           return;
         }
 
@@ -2190,7 +2455,10 @@ function boot() {
         }
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
-          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program card to inspect requirements and next steps.</div>`;
+          ui.detailsDrawer.innerHTML = renderEmptyStateHtml_(
+            "Program Detail",
+            "Select a program card to inspect requirements, gaps, and next steps."
+          );
           schedulePanelHeightSync();
           return;
         }
@@ -2204,7 +2472,10 @@ function boot() {
         }
 
         if (!row) {
-          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program card to inspect requirements and next steps.</div>`;
+          ui.detailsDrawer.innerHTML = renderEmptyStateHtml_(
+            "Program Detail",
+            "Select a program card to inspect requirements, gaps, and next steps."
+          );
           schedulePanelHeightSync();
           return;
         }
@@ -2507,6 +2778,7 @@ function boot() {
             ? "N/A"
             : escapeHtml(formatCell(avg.totalCourses));
         const avgUsedText = escapeHtml(formatCell(avg.usedCourses || 0));
+        const avgNeedsAttention = avg.complete === false || avg.meetsMinimum === false;
         const allowedGroups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups : [];
         const selectedElectives = Array.isArray(electives.selected) ? electives.selected : [];
 
@@ -2530,10 +2802,30 @@ function boot() {
               )}</p></div>`
             : why.length
             ? `<div class="detail-block"><h4>Why</h4><ul class="detail-list">${why
-                .slice(0, 3)
+                .slice(0, 2)
                 .map((x) => `<li>${escapeHtml(x)}</li>`)
                 .join("")}</ul></div>`
             : "";
+        const averageOpenAttr = avgNeedsAttention ? " open" : "";
+        const averageSectionHtml = `
+          <details class="collapsible"${averageOpenAttr}>
+            <summary>Average Snapshot</summary>
+            <ul class="detail-list">
+              <li>Min Avg: ${avgMinText}</li>
+              <li>Student Avg: ${avgStudentText}</li>
+              <li>Courses used: ${avgUsedText}/${avgTotalText}</li>
+              <li>Complete: ${avg.complete ? "Yes" : "No"}</li>
+              <li>Meets minimum: ${avg.meetsMinimum === null ? "N/A" : avg.meetsMinimum ? "Yes" : "No"}</li>
+              <li>Electives needed for avg: ${escapeHtml(formatCell(avg.neededElectivesForAverage || 0))}</li>
+            </ul>
+          </details>
+        `;
+        const advisoriesSectionHtml = `
+          <details class="collapsible"${advisories.length ? " open" : ""}>
+            <summary>Advisories</summary>
+            ${advisoryHtml}
+          </details>
+        `;
         const electiveOpenAttr = state.electiveRulesCollapsed ? "" : " open";
         const electiveSectionHtml = `<details class="collapsible" data-elective-rules="1"${electiveOpenAttr}><summary>ELECTIVE RULES</summary>
             <ul class="detail-list">
@@ -2565,23 +2857,10 @@ function boot() {
               <h4>Missing / Next Steps</h4>
               ${missingHtml}
             </div>
-            <div class="detail-block">
-              <h4>Average Snapshot</h4>
-              <ul class="detail-list">
-                <li>Min Avg: ${avgMinText}</li>
-                <li>Student Avg: ${avgStudentText}</li>
-                <li>Courses used: ${avgUsedText}/${avgTotalText}</li>
-                <li>Complete: ${avg.complete ? "Yes" : "No"}</li>
-                <li>Meets minimum: ${avg.meetsMinimum === null ? "N/A" : avg.meetsMinimum ? "Yes" : "No"}</li>
-                <li>Electives needed for avg: ${escapeHtml(formatCell(avg.neededElectivesForAverage || 0))}</li>
-              </ul>
-            </div>
-            <div class="detail-block">
-              <h4>Advisories</h4>
-              ${advisoryHtml}
-            </div>
             ${explainabilityHtml}
           </div>
+          ${averageSectionHtml}
+          ${advisoriesSectionHtml}
           ${meetingNoteHtml}
           ${requirementsSectionHtml}
           ${electiveSectionHtml}
@@ -3003,6 +3282,7 @@ function boot() {
         win.document.write(html);
         win.document.close();
         setStatus(`Generated Program Comparison Sheet for ${pinnedRows.length} pinned program(s).`);
+        trackUiEvent_("compare_sheet_export", { programs: pinnedRows.length });
       }
 
       function getVisibleRowsForPacket_() {
@@ -3425,6 +3705,11 @@ function boot() {
             meetingRows.length === 1 ? "y" : "ies"
           }.`
         );
+        trackUiEvent_("packet_export", {
+          visible: visibleRows.length,
+          meeting: meetingRows.length,
+          selected: selectedRow ? 1 : 0,
+        });
       }
 
       function exportCsv() {
@@ -3442,6 +3727,7 @@ function boot() {
         ].concat(visible.map((r) => r.cells));
         const csv = rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
         downloadBlob(csv, "text/csv;charset=utf-8", fileStamp(`admissions_${viewSlug(state.view)}`, "csv"));
+        trackUiEvent_("csv_export", { rows: visible.length, view: viewSlug(state.view) });
       }
 
       function printHtmlDocument_(html, errorMessage) {
@@ -3523,6 +3809,7 @@ function boot() {
   </body>
 </html>`;
         printHtmlDocument_(html, "PDF export failed in this browser.");
+        trackUiEvent_("pdf_export", { rows: rows.length, view: viewSlug(state.view) });
       }
 
       function buildResultModel(result) {
@@ -3815,9 +4102,21 @@ function boot() {
           .join("");
       }
 
+      function showLoadingResultsState_() {
+        if (!ui.resultsWrap) return;
+        ui.resultsWrap.innerHTML = `
+          <div class="loading-state" aria-hidden="true">
+            <span class="loading-bar"></span>
+            <span class="loading-bar medium"></span>
+            <span class="loading-bar short"></span>
+          </div>
+        `;
+      }
+
       function setBusy(isBusy) {
         ui.runBtn.disabled = !!isBusy;
         ui.runBtn.textContent = isBusy ? "Checking..." : "Check Eligibility";
+        if (ui.resultsWrap) ui.resultsWrap.setAttribute("aria-busy", isBusy ? "true" : "false");
       }
 
       function setStatus(message, isError) {

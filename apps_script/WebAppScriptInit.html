@@ -1,11 +1,11 @@
 ﻿<script>
-boot();
+      boot();
 
       document.getElementById("addNamedBtn").addEventListener("click", () => addNamedRow());
       document.getElementById("addElectiveBtn").addEventListener("click", () => addElectiveRow());
       document.getElementById("runBtn").addEventListener("click", runCheck);
-      document.getElementById("csvBtn").addEventListener("click", exportCsv);
-      document.getElementById("pdfBtn").addEventListener("click", exportPdf);
+      if (ui.csvBtn) ui.csvBtn.addEventListener("click", exportCsv);
+      if (ui.pdfBtn) ui.pdfBtn.addEventListener("click", exportPdf);
       document.getElementById("resetBtn").addEventListener("click", resetForm);
       if (ui.toggleInputsBtn) ui.toggleInputsBtn.addEventListener("click", toggleInputsPanel);
       if (ui.showInputsBtn) ui.showInputsBtn.addEventListener("click", toggleInputsPanel);
@@ -20,7 +20,6 @@ boot();
       ui.sortSelect.addEventListener("change", onResultControlChange);
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
       if (ui.exportMeetingNotesBtn) ui.exportMeetingNotesBtn.addEventListener("click", exportMeetingPacketPdf);
-      if (ui.meetingToggleBtn) ui.meetingToggleBtn.addEventListener("click", toggleMeetingMode);
       ui.compareStrip.addEventListener("click", onCompareStripClick);
       if (ui.compareResults) ui.compareResults.addEventListener("click", onCompareResultsClick);
       if (ui.pinnedComparisonBtn) ui.pinnedComparisonBtn.addEventListener("click", generatePinnedComparisonSheet);

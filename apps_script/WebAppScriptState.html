@@ -21,6 +21,8 @@
         meetingMode: false,
         meetingNotesByKey: {},
         meetingNotesStorageMode: "memory",
+        telemetry: null,
+        runStartedAtMs: 0,
         resultSearchDebounceTimer: 0,
         resultFilters: {
           query: "",
@@ -78,7 +80,6 @@
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
         exportMeetingNotesBtn: document.getElementById("exportMeetingNotesBtn"),
-        meetingToggleBtn: document.getElementById("meetingToggleBtn"),
         advancedTools: document.getElementById("advancedTools"),
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonActions: document.getElementById("pinnedComparisonActions"),

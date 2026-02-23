@@ -34,6 +34,7 @@ Run this before each production push affecting `apps_script/`.
 
 ## 4) UX
 - [ ] Student Inputs does not show Paste Transcript controls.
+- [ ] Student Inputs actions are simplified to `Check Eligibility` + `Reset Form` (no in-panel CSV/PDF buttons).
 - [ ] Search works across institution/program/credential.
 - [ ] Filter tabs work (`Likely ineligible`, `Likely eligible`, `Uncheckable`, `Shortlist`, `All`).
 - [ ] Sort options work (including closest-to-eligible where computable).
@@ -43,27 +44,27 @@ Run this before each production push affecting `apps_script/`.
 - [ ] Meeting Workflow block renders fully (not clipped) at desktop widths.
 - [ ] Decision tags (`Apply`, `Hold`, `Not now`) save per program and show a decision pill on result cards.
 - [ ] Meeting workflow shows decision chips + note only (no owner/follow-up fields).
-- [ ] Meeting notes can be edited/cleared and `Export Packet` count updates correctly.
+- [ ] Meeting notes can be edited/cleared and `Print Packet` count updates correctly.
 - [ ] Details drawer in Eligibility Results does not include a `Notes` section.
 - [ ] Compare tools are available under `Advanced Tools` and the section is collapsed by default.
+- [ ] `Advanced Tools` contains comparison tools only (no extra workflow toggles in normal UI).
 - [ ] Student Mode UI remnants are absent.
 - [ ] Defaults load as 5 named rows and 1 elective override row.
 
 ## 5) Export
-- [ ] CSV export works for current view.
-- [ ] CSV export works for all rows.
-- [ ] PDF export works via iframe print (no popup dependency).
-- [ ] Export includes dataset stamp + generation time.
-- [ ] `Export Packet` opens a styled PDF packet (no CSV fallback) and includes:
+- [ ] `Print Packet` opens a styled PDF packet (no CSV fallback) and includes:
   - [ ] filtered visible list
   - [ ] selected detail summary
   - [ ] meeting decision/note summary
+- [ ] Packet header includes generation timestamp + dataset context.
 
 ## 6) Performance + Ops
 - [ ] Repeated runs are faster due to cache hits.
 - [ ] Cache invalidation works after dataset refresh.
 - [ ] Audit entry writes timestamp + identity key + summary counts.
 - [ ] Audit does not persist raw student marks.
+- [ ] Run action shows loading skeleton and completes with runtime status text.
+- [ ] Optional debug telemetry (if enabled) remains hidden from default counselor workflow.
 
 ## 7) Release
 - [ ] Commit message clearly identifies slice.
@@ -78,3 +79,12 @@ Run this before each production push affecting `apps_script/`.
 - [ ] At ~1280-1536 desktop widths, details panel content does not collapse into clipped/overlapped blocks.
 - [ ] At `<=980px`, toolbar controls stack cleanly and details sections remain readable.
 - [ ] At `<=980px`, run actions remain reachable with sticky behavior and 44px targets.
+- [ ] No horizontal overflow at `320px` width.
+
+## 9) iOS Wrapper Readiness
+- [ ] `WebApp.html` includes `viewport-fit=cover` and mobile web app meta tags.
+- [ ] Safe-area insets are respected (top + bottom) for header and sticky actions.
+- [ ] iOS Safari does not auto-zoom on inputs (effective 16px+ input text).
+- [ ] Sticky toolbar + action bar remain usable with keyboard open on iPhone viewport.
+- [ ] `mobile/ios-wrapper` preflight + sync/open commands run successfully.
+- [ ] `docs/IOS_RELEASE_GATE.md` non-skippable gates are completed on physical iPhone device(s).

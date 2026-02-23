@@ -34,11 +34,7 @@
             >Hide <<</button>
           </div>
           <p class="hint" id="inputsHint">Add final marks only. Duplicate courses are deduped automatically (latest entry wins).</p>
-          <div class="input-flow" aria-label="Input steps">
-            <span class="flow-chip"><strong>1</strong> Add core courses</span>
-            <span class="flow-chip"><strong>2</strong> Add elective override only if needed</span>
-            <span class="flow-chip"><strong>3</strong> Run check and triage</span>
-          </div>
+          <p class="hint core-flow-note">Core workflow: add courses, run check, review top recommendations, capture decision note.</p>
 
           <h3>Named Courses</h3>
           <table id="namedTable">
@@ -76,8 +72,6 @@
 
           <div class="actions run-actions">
             <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
-            <button class="btn btn-subtle" id="csvBtn" type="button" disabled>Export CSV</button>
-            <button class="btn btn-subtle" id="pdfBtn" type="button" disabled>Export PDF</button>
             <button class="btn btn-danger-lite" id="resetBtn" type="button">Reset Form</button>
           </div>
           <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -107,7 +101,7 @@
           </div>
 
           <div class="snapshot-banner" id="snapshotBanner">
-            <div class="snapshot-banner-title" id="snapshotBannerTitle">Snapshot (advisory) - verify on institution site for final decisions</div>
+            <div class="snapshot-banner-title" id="snapshotBannerTitle">Snapshot advisory: verify final decisions on institution sites.</div>
             <div class="snapshot-banner-date" id="snapshotDataDate">Data date: n/a</div>
           </div>
 
@@ -167,10 +161,7 @@
                 Clear
               </button>
               <button class="btn btn-subtle clear-control" id="exportMeetingNotesBtn" type="button" disabled>
-                Export Packet
-              </button>
-              <button class="btn btn-subtle meeting-toggle" id="meetingToggleBtn" type="button" aria-pressed="false">
-                Meeting Mode
+                Print Packet
               </button>
             </div>
 
@@ -185,7 +176,7 @@
             <summary>Advanced Tools</summary>
             <div class="advanced-tools-content">
               <div class="compare-strip" id="compareStrip">
-                <div class="ghost">Compare prep: add up to 3 programs while triaging.</div>
+                <div class="ghost">Compare up to 3 programs.</div>
               </div>
               <div class="actions" id="pinnedComparisonActions">
                 <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>

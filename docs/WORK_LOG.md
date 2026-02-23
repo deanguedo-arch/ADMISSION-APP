@@ -896,3 +896,70 @@ Keep entries short and append-only.
 - Validation:
   - JS syntax checks passed for web app script fragments via extracted `<script>` + `node --check`
   - PowerShell guardrails remain blocked in this environment (`pwsh`/`powershell` unavailable).
+## 2026-02-22 (10/10 pass: premium hardening + iOS wrapper readiness scaffold)
+- Applied full premium UX hardening layer across web app UI:
+  - simplified core flow copy and removed Student Inputs CSV/PDF action clutter
+  - moved meeting layout toggle into collapsed `Advanced Tools`
+  - added `Export UX Telemetry` control for release funnel validation
+  - updated compare helper copy to remove triage-centric language
+- Added lightweight front-end telemetry instrumentation (no backend contract changes):
+  - persisted counters/events in browser storage (`check_start/success/error`, mode/view switches, detail views, decision sets, packet export)
+  - added JSON export via `Export UX Telemetry`
+- Added interaction/performance quality improvements:
+  - loading skeleton during eligibility checks
+  - runtime completion status (`Check complete in Xs`)
+  - debounced meeting note persistence to reduce storage churn
+  - `aria-busy` signaling on results container while running checks
+- Added iOS shell readiness metadata + safe-area responsive polish:
+  - `viewport-fit=cover`, mobile web app meta tags, theme color
+  - strengthened safe-area/sticky behavior for mobile toolbar + run actions
+  - normalized touch targets and overflow handling for narrow viewports
+- Documentation updates:
+  - refreshed `docs/WEBAPP_QA_CHECKLIST.md` with telemetry + iOS readiness checks
+  - added `docs/IOS_WRAPPER_READINESS.md`
+  - refreshed `docs/SESSION_HANDOFF.md`
+- Validation:
+  - JS syntax checks passed (`node --check` on extracted web app script fragments)
+  - PowerShell guardrails still blocked in this environment (`pwsh`/`powershell` unavailable)
+## 2026-02-22 (hotfix: toolbar action visibility)
+- Fixed results toolbar action squeeze where `Clear` and packet action could collapse/disappear at medium/condensed widths.
+- Replaced premium override toolbar grid with wrap-safe flex layout and explicit flex-basis/min-width rules for controls.
+- Renamed `Export Packet` action label to `Print Packet` (including count state) for clarity.
+- Updated related styles to keep action buttons visible at desktop/tablet/mobile breakpoints.
+## 2026-02-22 (final polish pass toward 10/10)
+- Compacted hero/header while preserving large brand presence:
+  - shifted lockup to desktop row layout (logo + title/subtitle) to remove dead header space
+  - reduced hero stamp/header bulk and tightened typography scale
+- Improved mobile review flow after run:
+  - auto-collapses Student Inputs on compact viewports once results load
+  - keeps `Show Inputs` control available for edits
+- Reduced result-card noise:
+  - suppresses duplicate reason line when warning panel already carries the key message
+  - reduced low-confidence warning reason count and added text clamping for card summaries
+- Upgraded empty/detail states with premium structured empty cards for results and details drawers.
+- Strengthened toolbar action hierarchy:
+  - `Print Packet` is now visually promoted and remains readable across breakpoints.
+## 2026-02-22 (final 10/10 touch pass: cleanup + clarity)
+- Removed low-value controls from visible UI:
+  - removed `Focus Meeting Layout` button
+  - removed `Export UX Telemetry` button from active interface (telemetry internals remain available for debug/internal use)
+- Final readability/contrast refinements:
+  - darkened helper/subtitle text tones and strengthened card hover/section borders
+  - improved card subtitle/detail subtitle legibility
+- Simplified details density:
+  - moved `Average Snapshot` and `Advisories` into collapsible sections (auto-open only when attention is needed)
+  - reduced `Why` list depth in details for faster scanning
+- Added extra-small viewport polish (`<=430px`) for iPhone-scale layouts:
+  - tighter shell spacing, reduced title size, 2-column stats, simplified card action stacking.
+## 2026-02-22 (non-skippable iOS track scaffolded)
+- Added in-repo Capacitor iOS wrapper scaffold at `mobile/ios-wrapper`:
+  - `package.json` with Capacitor core/ios/app/keyboard/status-bar/share/haptics
+  - `capacitor.config.ts` using env-driven `NEXTSTEP_WEBAPP_URL` + iOS plugin defaults
+  - `.env.example`, `tsconfig.json`, and wrapper README
+  - `scripts/preflight.sh` for non-skippable local checks (toolchain + URL probe)
+- Added hard release gate checklist for physical device validation:
+  - `docs/IOS_RELEASE_GATE.md`
+- Updated readiness/checklist docs to align with current UI:
+  - removed requirement for visible `Focus Meeting Layout` / `Export UX Telemetry` controls
+  - updated export language to `Print Packet`.
+- Added `.gitignore` entries for wrapper generated artifacts (`mobile/ios-wrapper/node_modules`, `ios`, `android`, `.env`).

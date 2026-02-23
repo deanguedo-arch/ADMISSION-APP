@@ -174,7 +174,12 @@ Student/public users should use the static snapshot site (GitHub Pages), not the
 - Pre-release go/no-go gate: `docs/RELEASE_GATE_IPHONE.md`
 - App Store-later readiness notes: `docs/IOS_APPSTORE_READINESS.md`
 
-### E) Student template (compact input layout)
+### E) iOS wrapper track (non-skippable for App Store)
+- Capacitor scaffold: `mobile/ios-wrapper/`
+- Wrapper setup/runbook: `mobile/ios-wrapper/README.md`
+- iOS release gate checklist: `docs/IOS_RELEASE_GATE.md`
+
+### F) Student template (compact input layout)
 If you want a compact `Student` tab with 5 manual elective slots, copy/paste:
 - `examples/student_template.tsv`
 
@@ -297,5 +302,3 @@ In the `Results` tab:
   - Note-derived group rules are applied when present (example: `max 1 Group B`).
   - If `Elective_Qty` is blank but the program has a minimum average, the checker uses `Avg_Total` (if present) or `AvgRules` (if present); otherwise it falls back to a **5-course average** (and notes that itâ€™s a default, except for NAIT where 5 is treated as the standard default).
 - Rows like â€œSee Degree / Refer to Degreeâ€ are treated as **not checkable** until you decide how to model inheritance.
-
-

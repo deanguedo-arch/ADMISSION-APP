@@ -1,49 +1,60 @@
 # Session Handoff (2026-02-22)
 
 ## Status
-UI simplification pass is implemented across web app fragments and docs.
+Web UI is now in near-final premium state and a concrete iOS wrapper track is scaffolded in-repo with non-skippable release gates documented.
 
-## Completed in this session
-- Removed Student Mode (UI/state/storage/styles/event wiring).
-- Kept Meeting Mode and simplified workflow to decision chips + note only.
-- Removed meeting owner/follow-up fields and handlers.
-- Reworked `Export Packet` to styled PDF packet output (no packet CSV).
-- Packet now includes filtered visible list, selected detail summary, and meeting decision/note summary.
-- Removed details drawer `Notes` section from Eligibility Results.
-- Reduced defaults to 5 named rows and 1 elective override row.
-- Removed Paste Transcript UI and active paste transcript bindings/handlers.
-- Kept Program Explorer.
-- Kept compare functionality under collapsed `Advanced Tools` (closed by default).
-- Preserved backend contract (`runWebEligibility` payload unchanged).
-- Updated `docs/WEBAPP_QA_CHECKLIST.md` for this scope.
+## Completed
+- Final UX polish and workflow simplification:
+  - removed low-value visible controls (`Focus Meeting Layout`, `Export UX Telemetry`)
+  - kept counselor flow focused on run -> review -> decision note -> packet
+  - compacted hero/header and improved readability/contrast in cards/details
+  - tightened mobile behavior for narrow iPhone-scale viewports
+- Interaction hardening:
+  - loading skeleton during checks
+  - runtime status timing
+  - compact-viewport auto-collapse of inputs after check
+  - debounced meeting-note persistence
+- iOS shell baseline in web app:
+  - `viewport-fit=cover` + Apple mobile web app meta tags
+  - safe-area aware spacing and sticky regions
+- iOS wrapper scaffold (Capacitor):
+  - `mobile/ios-wrapper/package.json`
+  - `mobile/ios-wrapper/capacitor.config.ts` (env-driven Apps Script URL)
+  - `mobile/ios-wrapper/scripts/preflight.sh`
+  - `mobile/ios-wrapper/README.md`
+  - `docs/IOS_RELEASE_GATE.md`
 
-## Files changed
-- apps_script/WebAppBody.html
-- apps_script/WebAppScriptState.html
-- apps_script/WebAppScriptInit.html
-- apps_script/WebAppScriptFunctions.html
-- apps_script/WebAppStyles.html
-- docs/WEBAPP_QA_CHECKLIST.md
-- docs/WORK_LOG.md
-- docs/SESSION_HANDOFF.md
+## Key files changed
+- `apps_script/WebApp.html`
+- `apps_script/WebAppBody.html`
+- `apps_script/WebAppScriptState.html`
+- `apps_script/WebAppScriptInit.html`
+- `apps_script/WebAppScriptFunctions.html`
+- `apps_script/WebAppStyles.html`
+- `.gitignore`
+- `mobile/ios-wrapper/package.json`
+- `mobile/ios-wrapper/capacitor.config.ts`
+- `mobile/ios-wrapper/README.md`
+- `mobile/ios-wrapper/scripts/preflight.sh`
+- `mobile/ios-wrapper/.env.example`
+- `mobile/ios-wrapper/tsconfig.json`
+- `docs/WEBAPP_QA_CHECKLIST.md`
+- `docs/IOS_WRAPPER_READINESS.md`
+- `docs/IOS_RELEASE_GATE.md`
+- `docs/WORK_LOG.md`
 
-## Validation status
-- Could not run required PowerShell checks in this environment:
+## Validation run
+- Local JS syntax checks passed on extracted script bodies:
+  - `apps_script/WebAppScriptState.html`
+  - `apps_script/WebAppScriptFunctions.html`
+  - `apps_script/WebAppScriptInit.html`
+- Local preview responds:
+  - `http://localhost:5173/WebApp.html?mock=1`
+- iOS wrapper preflight script verified runnable:
+  - `cd mobile/ios-wrapper && NEXTSTEP_WEBAPP_URL=... bash scripts/preflight.sh`
+
+## Still required to claim full 10/10 production
+- Run guardrails in PowerShell-capable environment:
   - `tools/validate-webapp-surface.ps1`
   - `tools/validate-apps-script-structure.ps1`
-  - reason: `pwsh`/`powershell` command not installed.
-- Local script syntax checks passed:
-  - `node --check` on `WebAppScriptFunctions.html` script body
-  - `node --check` on `WebAppScriptState.html` script body
-  - `node --check` on `WebAppScriptInit.html` script body
-
-## Next checks (execute in PowerShell-capable environment)
-- Run `tools/validate-webapp-surface.ps1`
-- Run `tools/validate-apps-script-structure.ps1`
-- Run focused QA from `docs/WEBAPP_QA_CHECKLIST.md`:
-  - packet PDF styling/content
-  - no Student Mode remnants
-  - meeting decision/note persistence
-  - defaults (5 named / 1 elective)
-  - no paste transcript controls
-  - mobile readability/overflow
+- Run `docs/IOS_RELEASE_GATE.md` on physical iPhone device(s), including keyboard/safe-area/print-share behavior and pilot-week stability checks.
