@@ -47,7 +47,7 @@ $hasRefreshScript = Get-Detected "scripts/REFRESH_ALL.cmd"
 $hasSyncScript = Get-Detected "scripts/SYNC_ALL.cmd"
 $hasRunScript = Get-Detected "scripts/RUN_ALL.cmd"
 $hasCatalogFn = Get-Detected "apps_script/WorkbookAdmin.gs"
-$hasSyncFn = Get-Detected "apps_script/SyncPrograms.gs"
+$hasSyncFn = Get-Detected "apps_script_sync/SyncPrograms.gs"
 
 $refreshName = if ($refreshWorkflow) { $refreshWorkflow.Name } else { "Refresh + Sync workflow (missing)" }
 $syncName = if ($syncWorkflow) { $syncWorkflow.Name } else { "Programs-only sync workflow (missing)" }
@@ -70,7 +70,7 @@ $lines = @(
   "| scripts/SYNC_ALL.cmd | $hasSyncScript |",
   "| scripts/RUN_ALL.cmd | $hasRunScript |",
   "| apps_script/WorkbookAdmin.gs | $hasCatalogFn |",
-  "| apps_script/SyncPrograms.gs | $hasSyncFn |",
+  "| apps_script_sync/SyncPrograms.gs | $hasSyncFn |",
   "",
   "## Active workflows (detected)",
   "",

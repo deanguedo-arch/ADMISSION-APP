@@ -26,10 +26,11 @@ This file is the stable decision source for future sessions. Update it only when
 
 ## ADR-003: Security Boundary for Sync
 - Date: 2026-02-10
-- Status: Target
+- Status: Active
 - Decisions:
-  - Preferred target is separating sync webhook logic into a dedicated Apps Script project.
-  - Admissions web app project should avoid exposing webhook/admin surfaces.
+  - Sync webhook logic is now deployed from a dedicated Apps Script project rooted at `apps_script_sync/`.
+  - Admissions web app deployment must not expose `doPost` and should avoid webhook/admin surfaces.
+  - Sync deployment keeps token-gated CSV overwrite behavior for `Programs`/admin sync paths.
 
 ## ADR-004: Delivery Workflow
 - Date: 2026-02-10
@@ -56,5 +57,5 @@ This file is the stable decision source for future sessions. Update it only when
     - `apps_script/WebApp.html`
     - `apps_script/WebAppRender.gs`
     - `apps_script/WebAppStyles.html`, `apps_script/WebAppBody.html`, `apps_script/WebAppScriptState.html`, `apps_script/WebAppScriptFunctions.html`, `apps_script/WebAppScriptInit.html`
-  - Keep sync webhook logic isolated in `apps_script/SyncPrograms.gs`.
+  - Keep sync webhook logic isolated in `apps_script_sync/SyncPrograms.gs` (separate project/deployment).
   - Enforce structure drift checks with `tools/validate-apps-script-structure.ps1`.

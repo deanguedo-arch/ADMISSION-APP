@@ -1058,3 +1058,10 @@ Keep entries short and append-only.
   - `node --check /tmp/apps_script_combined.js`
   - `node --check /tmp/offline_snapshot_combined.js`
   - PowerShell guardrails pending environment with `pwsh`.
+
+## 2026-02-23 (slice 1: sync boundary split + PR quality gates)
+- Moved webhook surface out of admissions app by splitting `apps_script/SyncPrograms.gs` into dedicated `apps_script_sync/SyncPrograms.gs` and `apps_script_sync/appsscript.json`.
+- Removed `doPost` from admissions web-app callable allowlist in `tools/validate-webapp-surface.ps1`.
+- Added sync validator `tools/validate-sync-surface.ps1` and sync deploy workflow `.github/workflows/deploy-apps-script-sync.yml`.
+- Added PR gate workflow `.github/workflows/pr-quality-gates.yml` for web/sync validators, pipeline fixtures, and canonical validation.
+- Updated architecture/deployment/sync docs for dedicated sync project boundary (`docs/DECISIONS.md`, `docs/APPS_SCRIPT_AUTODEPLOY.md`, `docs/APPS_SCRIPT_GITHUB_SYNC.md`, `docs/APPS_SCRIPT_ARCHITECTURE.md`, `docs/RELEASE_QUESTIONS.md`, `docs/SHEETS_SYNC.md`, `docs/MANUAL_SCRIPT_EXPORT.md`, `README.md`).

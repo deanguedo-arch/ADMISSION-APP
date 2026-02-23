@@ -2,6 +2,7 @@ param(
   [ValidateSet("all", "full", "sheet-only", "sync-only")]
   [string]$Profile = "all",
   [string]$AppsScriptDir = "apps_script",
+  [string]$SyncAppsScriptDir = "apps_script_sync",
   [string]$OutDir = "out/exports",
   [switch]$CopyToClipboard
 )
@@ -192,7 +193,7 @@ if ($Profile -eq "all" -or $Profile -eq "sheet-only") {
 }
 
 if ($Profile -eq "all" -or $Profile -eq "sync-only") {
-  $syncFiles = Get-SyncFiles -dir $AppsScriptDir
+  $syncFiles = Get-SyncFiles -dir $SyncAppsScriptDir
   $syncCode = Join-GsFiles -files $syncFiles
   $syncBundle = Build-Bundle -profileName "sync-only" -files $syncFiles -code $syncCode -generatedAtUtc $generatedAtUtc
   $syncPath = Write-Bundle -fileName "Code.bundle.sync-only.gs" -content $syncBundle -outDir $OutDir

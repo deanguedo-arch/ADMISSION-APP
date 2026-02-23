@@ -1,69 +1,64 @@
-# Apps Script ↔ GitHub Sync (clasp)
+# Apps Script <-> GitHub Sync (clasp)
 
-This repo keeps Apps Script source in `apps_script/` (`.gs` + `.html`). The recommended workflow is:
+This repo uses separate Apps Script projects for admissions UI and sync webhook.
 
-- Edit locally (Cursor/Codex/VS Code)
-- Push to GitHub
-- CI pushes to Apps Script via `clasp`
+- Admissions project source: `apps_script/`
+- Sync webhook project source: `apps_script_sync/`
 
-## One-time setup (local)
+## One-time local setup
 
-1) Enable **Apps Script API** for the Google account that owns the script project.
-2) Install clasp:
+1. Enable Apps Script API for the Google account that owns each script project.
+2. Install clasp:
 
 ```bash
 npm i -g @google/clasp
 ```
 
-3) Login:
+3. Login:
 
 ```bash
 clasp login
 ```
 
-4) From repo root, create `.clasp.json` (this file is gitignored):
+## Local push examples
+
+Admissions app:
 
 ```json
 {
-  "scriptId": "YOUR_SCRIPT_ID",
+  "scriptId": "YOUR_ADMISSIONS_SCRIPT_ID",
   "rootDir": "apps_script"
 }
 ```
 
-5) Push:
+Sync app:
 
-```bash
-clasp push
+```json
+{
+  "scriptId": "YOUR_SYNC_SCRIPT_ID",
+  "rootDir": "apps_script_sync"
+}
 ```
 
-6) Deploy (optional):
+Then run `clasp push` for each project context.
 
-```bash
-clasp deployments
-clasp deploy --deploymentId "YOUR_DEPLOYMENT_ID" --description "manual deploy"
-```
+## CI workflows
 
-## CI (GitHub Actions)
+- Admissions deploy: `.github/workflows/deploy-apps-script.yml`
+- Sync deploy: `.github/workflows/deploy-apps-script-sync.yml`
 
-This repo already includes a clasp deploy workflow: `.github/workflows/deploy-apps-script.yml`.
+Required GitHub secrets/variables:
 
-Set GitHub secrets/variables:
+- `CLASPRC_JSON` (secret)
+- `APPS_SCRIPT_ID` and `APPS_SCRIPT_DEPLOYMENT_ID` (admissions)
+- `APPS_SCRIPT_SYNC_ID` and `APPS_SCRIPT_SYNC_DEPLOYMENT_ID` (sync)
 
-- `CLASPRC_JSON` (secret): contents of your `~/.clasprc.json`
-- `APPS_SCRIPT_ID` (secret or repo variable): Script ID
-- `APPS_SCRIPT_DEPLOYMENT_ID` (secret or repo variable): Deployment ID to update
+## Publishing Programs data
 
-The workflow runs on pushes to `main` that touch `apps_script/**` (and also supports manual runs).
+`pipeline/push_to_sheets.py` should target the sync deployment webhook URL (not the admissions web app URL).
 
-## Publishing Programs data (optional)
+Sync project Script Properties:
+- `SYNC_TOKEN`
+- `SPREADSHEET_ID`
 
-If you want the Sheet/App to pull `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv` from GitHub on demand/nightly, set Apps Script **Script Properties**:
-
-- `DATASET_RAW_URL`: GitHub raw URL to the canonical CSV (for example a `raw.githubusercontent.com/.../main/data/...` URL)
-- `GITHUB_TOKEN` (optional): token only needed for private repos
-
-Then use the sheet menu:
-
-- `Admissions Admin -> Sync Programs from GitHub`
-- `Admissions Admin -> Install Nightly Programs Sync`
-
+Admissions project Script Properties for sheet-admin pull remain unchanged (`DATASET_RAW_URL`, optional `GITHUB_TOKEN`).

@@ -1,15 +1,10 @@
-param(
-  [string]$ManifestPath = "apps_script/appsscript.json",
-  [string]$AppsScriptDir = "apps_script",
+﻿param(
+  [string]$ManifestPath = "apps_script_sync/appsscript.json",
+  [string]$AppsScriptDir = "apps_script_sync",
   [string]$RequiredAccess = "ANYONE",
   [string]$RequiredTimeZone = "America/Edmonton",
-  [string]$RequiredDomainSuffix = "@eips.ca",
   [string[]]$AllowedPublicFunctions = @(
-    "doGet",
-    "getWebAppBootstrapData",
-    "runWebEligibility",
-    "onOpen",
-    "onEdit"
+    "doPost"
   ),
   [switch]$WarnOnly
 )
@@ -44,8 +39,8 @@ if (-not (Test-Path -LiteralPath $AppsScriptDir)) {
   throw "Apps Script directory not found: $AppsScriptDir"
 }
 
-$gsFiles = Get-ChildItem -LiteralPath $AppsScriptDir -Filter *.gs -File
-if (-not $gsFiles -or $gsFiles.Count -eq 0) {
+$gsFiles = @(Get-ChildItem -LiteralPath $AppsScriptDir -Filter *.gs | Where-Object { -not $_.PSIsContainer })
+if ($gsFiles.Count -eq 0) {
   throw "No .gs files found in $AppsScriptDir"
 }
 
@@ -62,32 +57,35 @@ foreach ($file in $gsFiles) {
   }
 }
 
-$publicFns = $allFns |
+$publicFns = @($allFns |
   Where-Object { -not $_.EndsWith("_") } |
-  Sort-Object -Unique
+  Sort-Object -Unique)
 
-$unexpected = $publicFns |
+$unexpected = @($publicFns |
   Where-Object { $AllowedPublicFunctions -notcontains $_ } |
-  Sort-Object -Unique
+  Sort-Object -Unique)
 
-if ($unexpected -and $unexpected.Count -gt 0) {
+if ($unexpected.Count -gt 0) {
   Add-Issue("Unexpected public top-level functions: $($unexpected -join ', ')")
 }
 
-$requiredFnSet = @("doGet", "getWebAppBootstrapData", "runWebEligibility")
-$missingRequired = $requiredFnSet | Where-Object { $publicFns -notcontains $_ }
-if ($missingRequired -and $missingRequired.Count -gt 0) {
-  Add-Issue("Missing required public web functions: $($missingRequired -join ', ')")
+$requiredFnSet = @("doPost")
+$missingRequired = @($requiredFnSet | Where-Object { $publicFns -notcontains $_ })
+if ($missingRequired.Count -gt 0) {
+  Add-Issue("Missing required public sync functions: $($missingRequired -join ', ')")
 }
 
-$domainPattern = [regex]::Escape($RequiredDomainSuffix)
-if ($combinedCode -notmatch $domainPattern) {
-  Add-Issue("Domain suffix '$RequiredDomainSuffix' not found in Apps Script code (expected in domain gate).")
+if ($combinedCode -notmatch [regex]::Escape("SYNC_TOKEN")) {
+  Add-Issue("SYNC_TOKEN usage was not found in sync Apps Script code.")
+}
+
+if ($combinedCode -notmatch [regex]::Escape("SPREADSHEET_ID")) {
+  Add-Issue("SPREADSHEET_ID usage was not found in sync Apps Script code.")
 }
 
 if ($issues.Count -gt 0) {
   Write-Host ""
-  Write-Host "validate-webapp-surface: FAIL" -ForegroundColor Red
+  Write-Host "validate-sync-surface: FAIL" -ForegroundColor Red
   foreach ($issue in $issues) {
     Write-Host (" - " + $issue) -ForegroundColor Red
   }
@@ -100,7 +98,7 @@ if ($issues.Count -gt 0) {
 }
 
 Write-Host ""
-Write-Host "validate-webapp-surface: PASS" -ForegroundColor Green
+Write-Host "validate-sync-surface: PASS" -ForegroundColor Green
 Write-Host (" - Manifest: " + $ManifestPath)
 Write-Host (" - Apps Script files scanned: " + $gsFiles.Count)
 Write-Host (" - Public functions: " + ($publicFns -join ", "))

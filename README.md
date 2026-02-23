@@ -1,4 +1,4 @@
-﻿# Alberta Admissions Checker (Edmonton-area) - MVP
+# Alberta Admissions Checker (Edmonton-area) - MVP
 
 This folder contains your consolidated admissions dataset (NAIT + MacEwan + NorQuest) and a clean path to:
 
@@ -193,7 +193,7 @@ Notes:
 If you want local scraping to automatically overwrite the Sheetâ€™s `Programs` tab, set up the webhook:
 
 - Instructions: `docs/SHEETS_SYNC.md`
-- Apps Script webhook: `apps_script/SyncPrograms.gs`
+- Apps Script webhook: `apps_script_sync/SyncPrograms.gs`
 - Local uploader: `pipeline/push_to_sheets.py`
 
 One-click local sync (Windows):

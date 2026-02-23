@@ -5,7 +5,7 @@ This lets you run scraping locally and have it overwrite your Sheet’s `Program
 ## One-time setup (Google)
 1. Open your target Google Sheet.
 2. Extensions -> Apps Script.
-3. Add a new file `SyncPrograms.gs` and paste `apps_script/SyncPrograms.gs`.
+3. Add a new file `SyncPrograms.gs` and paste `apps_script_sync/SyncPrograms.gs`.
 4. Project Settings -> Script properties:
    - `SYNC_TOKEN`: make a long random string
    - `SPREADSHEET_ID`: the sheet ID (from the URL)

@@ -1,47 +1,40 @@
-# Apps Script Auto-Deploy (GitHub -> Web App)
+# Apps Script Auto-Deploy (GitHub -> Apps Script)
 
-This keeps your existing Apps Script web app URL up to date whenever `apps_script/*` changes are pushed to `main`.
+This repo now deploys two Apps Script surfaces:
 
-## What is now in repo
-- Workflow: `.github/workflows/deploy-apps-script.yml`
-- Bootstrap helper: `tools/setup-appsscript-deploy.ps1`
+- Admissions web app (`apps_script/`) via `.github/workflows/deploy-apps-script.yml`
+- Sync webhook app (`apps_script_sync/`) via `.github/workflows/deploy-apps-script-sync.yml`
 
-## Required GitHub secrets
+## Required GitHub secrets/variables
+
+Shared:
 - `CLASPRC_JSON` (from local `~/.clasprc.json`)
-- `APPS_SCRIPT_ID` (Apps Script project ID)
-- `APPS_SCRIPT_DEPLOYMENT_ID` (existing web app deployment ID)
 
-## One-time setup (local)
-Run this once from repo root:
+Admissions app:
+- `APPS_SCRIPT_ID`
+- `APPS_SCRIPT_DEPLOYMENT_ID`
 
-```powershell
-.\tools\setup-appsscript-deploy.ps1 `
-  -ScriptId "YOUR_SCRIPT_ID" `
-  -DeploymentId "YOUR_DEPLOYMENT_ID"
-```
-
-The script will:
-1. install missing tools (`node`, `npm`, `gh`, `clasp`) unless `-SkipInstall` is used
-2. run `clasp login` if needed
-3. set `CLASPRC_JSON` in GitHub Secrets
-4. set `APPS_SCRIPT_ID` and `APPS_SCRIPT_DEPLOYMENT_ID` in GitHub Secrets (if provided)
-
-## Current project values (provided)
-- Script ID: `1qDNsy2Agk3SwnuzAcjpUos69wfYfQJvfp_7SfqTDiG2X-5tKW93mTSlM`
-- Deployment ID: `AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ`
-- Web app URL: `https://script.google.com/macros/s/AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ/exec`
+Sync app:
+- `APPS_SCRIPT_SYNC_ID`
+- `APPS_SCRIPT_SYNC_DEPLOYMENT_ID`
 
 ## Trigger behavior
-Deploy runs on:
-- push to `main` affecting `apps_script/**`
-- manual `workflow_dispatch`
 
-## CI guardrails in deploy workflow
-Before `clasp push`, CI runs:
+- Admissions deploy runs on pushes to `main` affecting `apps_script/**`.
+- Sync deploy runs on pushes to `main` affecting `apps_script_sync/**`.
+- Both workflows support manual `workflow_dispatch`.
+
+## CI guardrails
+
+Admissions deploy:
 - `tools/validate-webapp-surface.ps1`
 - `tools/validate-apps-script-structure.ps1`
 
+Sync deploy:
+- `tools/validate-sync-surface.ps1`
+
 ## Notes
-- Deployment URL stays the same (workflow updates existing deployment ID).
-- Data refresh is still separate (`REFRESH_ALL.cmd` / `SYNC_ALL.cmd`).
-- If deployment fails, check Actions logs first, then verify secrets are present and valid.
+
+- Admissions web app must not expose `doPost`.
+- Sync webhook deployment handles token-gated CSV updates.
+- If deployment fails, check Actions logs first, then verify secrets/variables are present and valid.

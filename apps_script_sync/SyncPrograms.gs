@@ -1,5 +1,5 @@
 /**
- * Programs Sync Webhook (optional automation)
+ * Programs Sync Webhook (dedicated deployment)
  *
  * Purpose:
  * - Accept a CSV payload from your local pipeline and overwrite the `Programs` sheet tab.

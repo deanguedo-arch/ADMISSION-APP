@@ -30,30 +30,32 @@ This project uses layered Apps Script modules so edits stay localized and contex
 - `apps_script/WebAppScriptFunctions.html`
 - `apps_script/WebAppScriptInit.html`
   - Split web fragments consumed by `WebAppRender.gs`.
-- `apps_script/SyncPrograms.gs`
-  - Standalone sync webhook surface.
+- `apps_script_sync/SyncPrograms.gs`
+  - Dedicated sync webhook surface (`doPost`) deployed separately from admissions web app.
 
 ## Dependency direction
 
-- `Code.gs` may call every module.
+- `Code.gs` may call every admissions module.
 - `WebAuth.gs` and `WorkbookAdmin.gs` may call domain helpers.
 - `EligibilityEngine.gs` may call `EligibilityProgramsData.gs`, `EligibilitySubjects.gs`, `EligibilityElectives.gs`, `EligibilityShared.gs`.
 - `EligibilityProgramsData.gs`, `EligibilitySubjects.gs`, and `EligibilityElectives.gs` must not depend on web UI rendering files.
 - Web fragments (`WebApp*.html`) are static assets and should not define server-side behavior.
-- `SyncPrograms.gs` remains isolated from admissions web/sheet logic.
+- `apps_script_sync/SyncPrograms.gs` remains isolated from admissions web/sheet logic and deployment surface.
 
 ## Guardrails
 
 - Web callable surface validation:
-  - `.\tools\validate-webapp-surface.ps1`
+  - `./tools/validate-webapp-surface.ps1`
+- Sync callable surface validation:
+  - `./tools/validate-sync-surface.ps1`
 - Module/file ownership validation:
-  - `.\tools\validate-apps-script-structure.ps1`
+  - `./tools/validate-apps-script-structure.ps1`
 - Manual single-file export bundles:
-  - `.\tools\export-appsscript-bundles.ps1 -Profile full|sheet-only|sync-only`
+  - `./tools/export-appsscript-bundles.ps1 -Profile full|sheet-only|sync-only`
 
 ## Refactor rules
 
 - Move structure first, behavior second.
 - Keep function signatures stable while moving seams.
-- Run both validators after each seam.
+- Run all validators after each seam.
 - Avoid mixing behavioral changes into structural commits.

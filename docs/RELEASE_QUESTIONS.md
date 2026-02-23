@@ -20,9 +20,11 @@ Use this as a short go/no-go checklist before you treat the current deployment a
   - `/exec` URL
 
 ## Callable Surface
-- Are only the intended endpoints callable from the web UI?
+- Are only the intended endpoints callable from the admissions web UI deployment?
   - Target: `doGet`, `getWebAppBootstrapData`, `runWebEligibility`
-- Are any admin/sync endpoints exposed to the web app deployment (should be no)?
+- Confirm admissions deployment does **not** expose `doPost`.
+- Confirm sync webhook `doPost` exists only in the dedicated sync deployment (`apps_script_sync`).
+- Are any admin/sync endpoints exposed to the admissions web app deployment (should be no)?
 
 ## Data Integrity
 - Is the backing spreadsheet the correct one for release (not a test sheet)?

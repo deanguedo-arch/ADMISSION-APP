@@ -12,7 +12,7 @@ Outputs are written to `out/exports/`:
 
 - `Code.bundle.full.gs` (Admissions checker code, including web app backend functions)
 - `Code.bundle.sheet-only.gs` (Admissions checker code without web app endpoint/auth functions)
-- `Code.bundle.sync-only.gs` (Sync webhook code from `SyncPrograms.gs`)
+- `Code.bundle.sync-only.gs` (Sync webhook code from `apps_script_sync/SyncPrograms.gs`)
 
 ## Common usage
 
@@ -36,6 +36,8 @@ Sync webhook only:
 
 ## Notes
 
+
+- `sync-only` now reads from `apps_script_sync/` by default.
 - The tool is safe to run repeatedly; outputs are overwritten.
 - Generated files include a header with profile + timestamp + source file list.
 - `sheet-only` is intended for projects that do not use the web app endpoint/auth surface.
