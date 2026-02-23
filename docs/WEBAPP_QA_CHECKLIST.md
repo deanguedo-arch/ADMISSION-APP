@@ -77,8 +77,15 @@ Run this before each production push affecting `apps_script/`.
 - [ ] Focus indicator is visible on buttons, fields, links, and result cards.
 - [ ] Live status regions announce updates (`status`, `rows stamp`).
 - [ ] At ~1280-1536 desktop widths, details panel content does not collapse into clipped/overlapped blocks.
-- [ ] At `<=980px`, toolbar controls stack cleanly and details sections remain readable.
-- [ ] At `<=980px`, run actions remain reachable with sticky behavior and 44px targets.
+- [ ] At `<=980px`, mobile app-shell behavior is active (`body[data-screen]` + bottom nav tabs).
+- [ ] At `<=980px`, only one region scrolls per screen (no page-level double-scroll jitter).
+- [ ] Header does not "stick/release" jitter on iPhone Safari while list scrolls.
+- [ ] Bottom tabs stay visible on Inputs/Results/Pinned/Compare; details screen intentionally hides tabs.
+- [ ] Mobile Results/Pinned use contextual bottom action bar (`Clear`, `Print Packet`) and actions are not clipped.
+- [ ] Mobile filters open via single `Filters` button and apply from drawer (no stacked inline filter controls).
+- [ ] Mobile result cards do not show 4 stacked actions; tap card opens Details, inline action is Pin only.
+- [ ] Mobile Details has Back behavior that returns to prior tab context.
+- [ ] Mobile list paging works (`Load more` chunking) and remains responsive with large result sets.
 - [ ] No horizontal overflow at `320px` width.
 
 ## 9) iOS Wrapper Readiness

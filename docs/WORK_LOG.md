@@ -963,3 +963,37 @@ Keep entries short and append-only.
   - removed requirement for visible `Focus Meeting Layout` / `Export UX Telemetry` controls
   - updated export language to `Print Packet`.
 - Added `.gitignore` entries for wrapper generated artifacts (`mobile/ios-wrapper/node_modules`, `ios`, `android`, `.env`).
+## 2026-02-23 (mobile app-shell conversion: Option B across web surfaces)
+- Implemented mobile app-shell architecture in both surfaces:
+  - `apps_script/WebAppBody.html`, `apps_script/WebAppStyles.html`, `apps_script/WebAppScriptState.html`, `apps_script/WebAppScriptFunctions.html`, `apps_script/WebAppScriptInit.html`
+  - `offline_snapshot/site/index.html`
+- Added mobile shell/router model:
+  - `body[data-screen]` screens: `inputs`, `results`, `pinned`, `compare`, `details`
+  - bottom nav tabs + hash/back navigation syncing
+  - details opens as dedicated mobile screen with Back return to prior tab context
+- Added mobile interaction simplification:
+  - card tap -> details on mobile
+  - mobile cards keep Pin inline action only; compare/view moved into details actions
+  - details actions now include Program Link + Pin + Compare
+- Added mobile results/filter controls:
+  - single `Filters` button with bottom-sheet drawer
+  - contextual mobile action bar (`Clear`, `Print Packet`) above bottom nav
+  - compare flow isolated under compare screen presentation on mobile
+- Added iPhone performance hardening:
+  - chunked list rendering (`MOBILE_PAGE_SIZE = 40`) with explicit `Load more` button
+  - render-limit reset on filter/screen/view transitions
+- Validation:
+  - JS syntax checks passed:
+    - `node --check /tmp/apps_script_combined.js` (combined `WebAppScriptState/Functions/Init`)
+    - `node --check /tmp/offline_snapshot_combined.js` (combined scripts from `offline_snapshot/site/index.html`)
+  - PowerShell guardrails still not executed in this environment (`pwsh`/`powershell` unavailable).
+## 2026-02-23 (mobile router hardening follow-up)
+- Hardened mobile app-shell routing so hash/history writes are mobile-only (`<=980px`) and desktop URL/flow remains unchanged.
+- Updated both surfaces (`apps_script` + `offline_snapshot`) for:
+  - guarded `setScreen` history updates
+  - guarded `syncScreenFromHash_` / `onPopState_`
+  - mobile-only hash sync in `updateMobileShellForScreen_`
+  - mobile/desktop split at init bootstrap.
+- Re-ran JS syntax checks successfully:
+  - combined Apps Script fragments (`node --check /tmp/apps_script_combined.js`)
+  - combined inline scripts from `offline_snapshot/site/index.html` (`node --check /tmp/offline_snapshot_combined.js`).

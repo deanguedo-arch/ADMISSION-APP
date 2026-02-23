@@ -3,6 +3,10 @@
       const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all", "shortlist"];
       const DEFAULT_RESULT_SORT = "closest";
       const PRIMARY_MODES = ["results", "explorer"];
+      const MOBILE_BREAKPOINT = 980;
+      const MOBILE_PAGE_SIZE = 40;
+      const MOBILE_SCREEN_DEFAULT = "results";
+      const MOBILE_SCREENS = ["inputs", "results", "pinned", "compare", "details"];
 
       const state = {
         boot: null,
@@ -24,6 +28,10 @@
         telemetry: null,
         runStartedAtMs: 0,
         resultSearchDebounceTimer: 0,
+        mobileScreen: MOBILE_SCREEN_DEFAULT,
+        lastNonDetailScreen: MOBILE_SCREEN_DEFAULT,
+        mobileRenderLimit: MOBILE_PAGE_SIZE,
+        mobileFilterDrawerOpen: false,
         resultFilters: {
           query: "",
           institution: "",
@@ -39,7 +47,11 @@
       };
 
       const ui = {
+        appShell: document.getElementById("appShell"),
+        appHeader: document.getElementById("appHeader"),
+        appMain: document.getElementById("appMain"),
         workflowMain: document.getElementById("workflowMain"),
+        studentInputsPanel: document.getElementById("studentInputsPanel"),
         toggleInputsBtn: document.getElementById("toggleInputsBtn"),
         showInputsBtn: document.getElementById("showInputsBtn"),
         inputsHint: document.getElementById("inputsHint"),
@@ -79,12 +91,27 @@
         requirementTypeFilter: document.getElementById("requirementTypeFilter"),
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
         exportMeetingNotesBtn: document.getElementById("exportMeetingNotesBtn"),
         advancedTools: document.getElementById("advancedTools"),
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonActions: document.getElementById("pinnedComparisonActions"),
         pinnedComparisonBtn: document.getElementById("pinnedComparisonBtn"),
         compareResults: document.getElementById("compareResults"),
+        bottomNav: document.getElementById("bottomNav"),
+        mobileActionBar: document.getElementById("mobileActionBar"),
+        mobileClearFiltersBtn: document.getElementById("mobileClearFiltersBtn"),
+        mobilePrintPacketBtn: document.getElementById("mobilePrintPacketBtn"),
+        mobileDetailsBackBtn: document.getElementById("mobileDetailsBackBtn"),
+        filtersDrawer: document.getElementById("filtersDrawer"),
+        filtersDrawerBackdrop: document.getElementById("filtersDrawerBackdrop"),
+        filtersDrawerCloseBtn: document.getElementById("filtersDrawerCloseBtn"),
+        mobileResultSearch: document.getElementById("mobileResultSearch"),
+        mobileInstitutionFilter: document.getElementById("mobileInstitutionFilter"),
+        mobileCredentialFilter: document.getElementById("mobileCredentialFilter"),
+        mobileSortSelect: document.getElementById("mobileSortSelect"),
+        mobileClearDrawerBtn: document.getElementById("mobileClearDrawerBtn"),
+        mobileApplyDrawerBtn: document.getElementById("mobileApplyDrawerBtn"),
         detailsDrawer: document.getElementById("detailsDrawer"),
       };
 </script>

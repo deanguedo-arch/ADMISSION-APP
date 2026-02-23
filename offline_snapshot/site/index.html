@@ -1343,6 +1343,340 @@
           grid-template-columns: 1fr;
         }
       }
+
+      .mobile-toolbar-actions,
+      .mobile-action-bar,
+      .bottom-nav,
+      .mobile-details-head,
+      .filters-drawer {
+        display: none;
+      }
+
+      .detail-actions-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .detail-actions-row .btn.active {
+        border-color: #8bbfaa;
+        background: #edf7f2;
+        color: var(--brand-dark);
+        font-weight: 700;
+      }
+
+      .btn.is-disabled {
+        opacity: 0.55;
+        pointer-events: none;
+      }
+
+      .results-load-more {
+        display: flex;
+        justify-content: center;
+        padding: 10px 4px 2px;
+      }
+
+      .results-load-more .btn {
+        min-width: 170px;
+      }
+
+      @media (max-width: 980px) {
+        html,
+        body {
+          height: 100%;
+          overflow: hidden;
+        }
+
+        #appShell {
+          height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          padding: 0;
+          max-width: none;
+        }
+
+        #appHeader {
+          flex: 0 0 auto;
+          padding-top: env(safe-area-inset-top);
+          padding-left: calc(12px + env(safe-area-inset-left));
+          padding-right: calc(12px + env(safe-area-inset-right));
+        }
+
+        #appMain {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          padding-left: calc(12px + env(safe-area-inset-left));
+          padding-right: calc(12px + env(safe-area-inset-right));
+        }
+
+        #workflowMain {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow: hidden;
+          display: block;
+        }
+
+        .mobile-screen {
+          display: none;
+          min-height: 0;
+          margin: 0;
+        }
+
+        body[data-screen="inputs"] #studentInputsPanel {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: calc(88px + env(safe-area-inset-bottom));
+        }
+
+        body[data-screen="results"] #resultsPanel,
+        body[data-screen="pinned"] #resultsPanel,
+        body[data-screen="compare"] #resultsPanel {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        body[data-screen="results"] #resultsPanel,
+        body[data-screen="pinned"] #resultsPanel {
+          padding-bottom: calc(132px + env(safe-area-inset-bottom));
+        }
+
+        body[data-screen="compare"] #resultsPanel {
+          padding-bottom: calc(88px + env(safe-area-inset-bottom));
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        body[data-screen="details"] #detailsPanel {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          overflow: hidden;
+          padding-bottom: 8px;
+        }
+
+        body[data-screen="details"] #detailsPanel .desktop-details-title {
+          display: none;
+        }
+
+        .mobile-details-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        .mobile-details-head h2 {
+          margin: 0;
+        }
+
+        #resultsPanel .toolbar-controls {
+          display: none !important;
+        }
+
+        .mobile-toolbar-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-bottom: 2px;
+        }
+
+        body[data-screen="compare"] #resultsPanel .mobile-toolbar-actions,
+        body[data-screen="compare"] #resultsPanel .snapshot-banner,
+        body[data-screen="compare"] #resultsPanel .summary,
+        body[data-screen="compare"] #resultsPanel #rowsStamp,
+        body[data-screen="compare"] #resultsPanel .tab-group,
+        body[data-screen="compare"] #resultsPanel #resultsWrap {
+          display: none !important;
+        }
+
+        body[data-screen="results"] #resultsPanel #compareStrip,
+        body[data-screen="results"] #resultsPanel #compareResults,
+        body[data-screen="results"] #resultsPanel #pinnedComparisonBtn,
+        body[data-screen="pinned"] #resultsPanel #compareStrip,
+        body[data-screen="pinned"] #resultsPanel #compareResults,
+        body[data-screen="pinned"] #resultsPanel #pinnedComparisonBtn {
+          display: none;
+        }
+
+        #resultsWrap {
+          flex: 1 1 auto;
+          min-height: 0;
+          max-height: none;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        #detailsDrawer {
+          flex: 1 1 auto;
+          min-height: 0;
+          max-height: none;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .card-actions.mobile-single-action {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .mobile-action-bar {
+          display: none;
+          position: fixed;
+          left: calc(12px + env(safe-area-inset-left));
+          right: calc(12px + env(safe-area-inset-right));
+          bottom: calc(64px + env(safe-area-inset-bottom));
+          z-index: 31;
+          padding: 8px;
+          border: 1px solid #d3e1da;
+          border-radius: 12px;
+          background: rgba(249, 253, 251, 0.98);
+          box-shadow: 0 8px 22px rgba(11, 43, 33, 0.14);
+          gap: 8px;
+        }
+
+        .mobile-action-bar .btn {
+          flex: 1 1 0;
+          min-height: 44px;
+        }
+
+        .mobile-action-bar.is-visible {
+          display: flex;
+        }
+
+        .bottom-nav {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 8px;
+          position: fixed;
+          left: calc(12px + env(safe-area-inset-left));
+          right: calc(12px + env(safe-area-inset-right));
+          bottom: 0;
+          z-index: 32;
+          padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+          border: 1px solid #d3e1da;
+          border-radius: 12px 12px 0 0;
+          background: rgba(248, 252, 250, 0.99);
+          box-shadow: 0 -8px 22px rgba(11, 43, 33, 0.12);
+        }
+
+        .bottom-nav-btn {
+          min-height: 44px;
+          border: 1px solid #d1dfd8;
+          border-radius: 10px;
+          background: #fff;
+          color: #1f4f3f;
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .bottom-nav-btn.active {
+          border-color: #84bca9;
+          background: #eaf6f0;
+          color: var(--brand-dark);
+        }
+
+        body[data-screen="details"] .bottom-nav,
+        body[data-screen="details"] .mobile-action-bar {
+          display: none !important;
+        }
+
+        .filters-drawer {
+          display: block;
+          position: fixed;
+          inset: 0;
+          z-index: 40;
+          pointer-events: none;
+        }
+
+        .filters-drawer-backdrop {
+          position: absolute;
+          inset: 0;
+          background: rgba(10, 27, 21, 0.38);
+          opacity: 0;
+          transition: opacity 160ms ease;
+        }
+
+        .filters-drawer-sheet {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          transform: translateY(104%);
+          transition: transform 190ms ease;
+          border-radius: 14px 14px 0 0;
+          border: 1px solid #d3e1da;
+          background: #fff;
+          padding: 12px;
+          display: grid;
+          gap: 10px;
+          max-height: min(82dvh, 620px);
+        }
+
+        .filters-drawer-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .filters-drawer-head h3 {
+          margin: 0;
+          font-family: "Rubik", sans-serif;
+          color: var(--brand-dark);
+        }
+
+        .filters-drawer-body {
+          display: grid;
+          gap: 8px;
+          overflow: auto;
+        }
+
+        .filters-drawer-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .filters-drawer.is-open {
+          pointer-events: auto;
+        }
+
+        .filters-drawer.is-open .filters-drawer-backdrop {
+          opacity: 1;
+        }
+
+        .filters-drawer.is-open .filters-drawer-sheet {
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 430px) {
+        .bottom-nav {
+          gap: 6px;
+          padding-left: 6px;
+          padding-right: 6px;
+        }
+
+        .bottom-nav-btn {
+          font-size: 0.82rem;
+        }
+
+        .filters-drawer-sheet {
+          max-height: 100dvh;
+          border-radius: 0;
+          padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        }
+      }
     </style>
 
         <link rel="manifest" href="./manifest.webmanifest" />
@@ -1354,8 +1688,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Next Step" />
 </head>
-  <body>
-    <div class="shell">
+  <body data-screen="results">
+    <div class="shell" id="appShell">
+      <div id="appHeader">
       <header class="hero">
         <div class="hero-main">
           <div class="brand-lockup">
@@ -1375,9 +1710,11 @@
           <div id="googleSignIn"></div>
         </div>
       </section>
+      </div>
 
+      <div id="appMain">
       <main class="workflow" id="workflowMain">
-        <section class="panel panel-inputs" id="studentInputsPanel">
+        <section class="panel panel-inputs mobile-screen" id="studentInputsPanel" data-mobile-screen="inputs">
           <div class="panel-head">
             <h2>Student Inputs</h2>
             <button
@@ -1445,7 +1782,7 @@
           <p class="status" id="status"></p>
         </section>
 
-        <section class="panel panel-results" id="resultsPanel">
+        <section class="panel panel-results mobile-screen" id="resultsPanel" data-mobile-screen="results">
           <div class="panel-head">
             <h2>Program Results</h2>
             <button
@@ -1491,6 +1828,9 @@
               <button class="filter-btn" type="button" data-view="shortlist">Shortlist <span class="tab-count" id="tabCountShortlist">0</span></button>
               <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
             </div>
+            <div class="mobile-toolbar-actions">
+              <button class="btn btn-subtle" id="mobileFiltersBtn" type="button" aria-haspopup="dialog" aria-controls="filtersDrawer">Filters</button>
+            </div>
 
             <div class="toolbar-controls">
               <input
@@ -1534,13 +1874,60 @@
           </div>
         </section>
 
-        <section class="panel panel-details" id="detailsPanel">
-          <h2>Program Details</h2>
+        <section class="panel panel-details mobile-screen" id="detailsPanel" data-mobile-screen="details">
+          <div class="mobile-details-head">
+            <button class="btn btn-subtle" id="mobileDetailsBackBtn" type="button" aria-label="Back to results">Back</button>
+            <h2>Program Details</h2>
+          </div>
+          <h2 class="desktop-details-title">Program Details</h2>
           <div class="details-drawer" id="detailsDrawer">
             <div class="ghost">Select a program card to inspect requirements and next steps.</div>
           </div>
         </section>
       </main>
+
+      <div class="mobile-action-bar" id="mobileActionBar">
+        <button class="btn btn-subtle" id="mobileClearFiltersBtn" type="button">Clear</button>
+        <button class="btn btn-main" id="mobilePrintPacketBtn" type="button" disabled>Print Packet</button>
+      </div>
+
+      <nav class="bottom-nav" id="bottomNav" aria-label="Mobile navigation">
+        <button class="bottom-nav-btn active" type="button" data-screen-target="inputs">Inputs</button>
+        <button class="bottom-nav-btn" type="button" data-screen-target="results">Results</button>
+        <button class="bottom-nav-btn" type="button" data-screen-target="pinned">Pinned</button>
+        <button class="bottom-nav-btn" type="button" data-screen-target="compare">Compare</button>
+      </nav>
+
+      <div class="filters-drawer" id="filtersDrawer" aria-hidden="true">
+        <div class="filters-drawer-backdrop" id="filtersDrawerBackdrop"></div>
+        <section class="filters-drawer-sheet" role="dialog" aria-modal="true" aria-labelledby="filtersDrawerTitle">
+          <header class="filters-drawer-head">
+            <h3 id="filtersDrawerTitle">Filters</h3>
+            <button class="btn btn-subtle" id="filtersDrawerCloseBtn" type="button" aria-label="Close filters">Close</button>
+          </header>
+          <div class="filters-drawer-body">
+            <input class="result-control" id="mobileResultSearch" type="text" placeholder="Search institution, program, credential..." />
+            <select class="result-control" id="mobileInstitutionFilter">
+              <option value="">All Institutions</option>
+            </select>
+            <select class="result-control" id="mobileCredentialFilter">
+              <option value="">All Credentials</option>
+            </select>
+            <select class="result-control" id="mobileSortSelect">
+              <option value="closest">Sort: Closest to eligible</option>
+              <option value="institution_program">Sort: Institution + Program</option>
+              <option value="program_az">Sort: Program A-Z</option>
+              <option value="min_avg_asc">Sort: Min Avg low-high</option>
+              <option value="min_avg_desc">Sort: Min Avg high-low</option>
+            </select>
+          </div>
+          <div class="filters-drawer-actions">
+            <button class="btn btn-subtle" id="mobileClearDrawerBtn" type="button">Clear</button>
+            <button class="btn btn-main" id="mobileApplyDrawerBtn" type="button">Apply</button>
+          </div>
+        </section>
+      </div>
+      </div>
     </div>
 
     <datalist id="namedCourses"></datalist>
@@ -1550,6 +1937,11 @@
 
       const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all", "shortlist"];
       const DEFAULT_RESULT_SORT = "closest";
+      const MOBILE_BREAKPOINT = 980;
+      const MOBILE_PAGE_SIZE = 40;
+      const MOBILE_SCREEN_DEFAULT = "results";
+      const MOBILE_SCREENS = ["inputs", "results", "pinned", "compare", "details"];
+      const MOBILE_HASH_PREFIX = "#";
 
       const state = {
         boot: null,
@@ -1562,6 +1954,10 @@
         compareViewMode: "side",
         electiveRulesCollapsed: false,
         inputsCollapsed: false,
+        mobileScreen: MOBILE_SCREEN_DEFAULT,
+        lastNonDetailScreen: MOBILE_SCREEN_DEFAULT,
+        mobileRenderLimit: MOBILE_PAGE_SIZE,
+        mobileFilterDrawerOpen: false,
         resultFilters: {
           query: "",
           institution: "",
@@ -1576,7 +1972,11 @@
       };
 
       const ui = {
+        appShell: document.getElementById("appShell"),
+        appHeader: document.getElementById("appHeader"),
+        appMain: document.getElementById("appMain"),
         workflowMain: document.getElementById("workflowMain"),
+        studentInputsPanel: document.getElementById("studentInputsPanel"),
         toggleInputsBtn: document.getElementById("toggleInputsBtn"),
         showInputsBtn: document.getElementById("showInputsBtn"),
         stamp: document.getElementById("stamp"),
@@ -1613,9 +2013,24 @@
         credentialFilter: document.getElementById("credentialFilter"),
         sortSelect: document.getElementById("sortSelect"),
         clearResultFiltersBtn: document.getElementById("clearResultFiltersBtn"),
+        mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonBtn: document.getElementById("pinnedComparisonBtn"),
         compareResults: document.getElementById("compareResults"),
+        bottomNav: document.getElementById("bottomNav"),
+        mobileActionBar: document.getElementById("mobileActionBar"),
+        mobileClearFiltersBtn: document.getElementById("mobileClearFiltersBtn"),
+        mobilePrintPacketBtn: document.getElementById("mobilePrintPacketBtn"),
+        mobileDetailsBackBtn: document.getElementById("mobileDetailsBackBtn"),
+        filtersDrawer: document.getElementById("filtersDrawer"),
+        filtersDrawerBackdrop: document.getElementById("filtersDrawerBackdrop"),
+        filtersDrawerCloseBtn: document.getElementById("filtersDrawerCloseBtn"),
+        mobileResultSearch: document.getElementById("mobileResultSearch"),
+        mobileInstitutionFilter: document.getElementById("mobileInstitutionFilter"),
+        mobileCredentialFilter: document.getElementById("mobileCredentialFilter"),
+        mobileSortSelect: document.getElementById("mobileSortSelect"),
+        mobileClearDrawerBtn: document.getElementById("mobileClearDrawerBtn"),
+        mobileApplyDrawerBtn: document.getElementById("mobileApplyDrawerBtn"),
         detailsDrawer: document.getElementById("detailsDrawer"),
       };
 </script>
@@ -1625,6 +2040,9 @@
 function boot() {
         resetForm();
         setInputsCollapsed(state.inputsCollapsed);
+        state.mobileScreen = getScreenFromHash_();
+        state.lastNonDetailScreen = state.mobileScreen === "details" ? MOBILE_SCREEN_DEFAULT : state.mobileScreen;
+        updateMobileShellForScreen_({ syncHash: false });
         state.mockMode = isMockMode();
         if (state.mockMode) {
           bootMockMode();
@@ -1786,6 +2204,10 @@ function boot() {
         state.resultFilters.credential = "";
         state.resultFilters.sort = DEFAULT_RESULT_SORT;
         state.electiveRulesCollapsed = false;
+        state.mobileRenderLimit = MOBILE_PAGE_SIZE;
+        state.mobileFilterDrawerOpen = false;
+        state.mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        state.lastNonDetailScreen = state.mobileScreen === "details" ? MOBILE_SCREEN_DEFAULT : state.mobileScreen;
         ui.csvBtn.disabled = true;
         ui.pdfBtn.disabled = true;
         syncResultControls();
@@ -1801,6 +2223,8 @@ function boot() {
         if (ui.pasteInput) ui.pasteInput.value = "";
         updateFilterCounts();
         syncFilterButtons();
+        closeFiltersDrawer_({ silent: true });
+        updateMobileShellForScreen_({ syncHash: false });
       }
 
       function toggleInputsPanel() {
@@ -1820,6 +2244,198 @@ function boot() {
           ui.showInputsBtn.setAttribute("aria-expanded", next ? "false" : "true");
         }
         schedulePanelHeightSync();
+      }
+
+      function normalizeMobileScreenName_(value) {
+        const raw = String(value || "").trim().toLowerCase();
+        if (MOBILE_SCREENS.indexOf(raw) >= 0) return raw;
+        return MOBILE_SCREEN_DEFAULT;
+      }
+
+      function isCompactViewport_() {
+        return window.matchMedia
+          ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches
+          : window.innerWidth <= MOBILE_BREAKPOINT;
+      }
+
+      function isMobileAppShell_() {
+        return isCompactViewport_();
+      }
+
+      function resetMobileRenderLimit_() {
+        state.mobileRenderLimit = MOBILE_PAGE_SIZE;
+      }
+
+      function getScreenFromHash_() {
+        const hashRaw = String(window.location.hash || "").trim();
+        const hash = hashRaw.indexOf(MOBILE_HASH_PREFIX) === 0 ? hashRaw.slice(1) : hashRaw;
+        return normalizeMobileScreenName_(hash || MOBILE_SCREEN_DEFAULT);
+      }
+
+      function setScreen(name, opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const next = normalizeMobileScreenName_(name);
+        const previous = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const onMobile = isMobileAppShell_();
+        state.mobileScreen = next;
+        if (next !== "details") state.lastNonDetailScreen = next;
+        if (next !== previous) resetMobileRenderLimit_();
+
+        if (onMobile) {
+          if (next === "pinned") {
+            state.view = "shortlist";
+            syncFilterButtons();
+          } else if (next === "results" || next === "compare") {
+            if (state.view === "shortlist") state.view = "ineligible";
+            syncFilterButtons();
+          }
+
+          if (next !== "results") closeFiltersDrawer_({ silent: true });
+        }
+
+        if (onMobile) {
+          if (options.pushHistory) {
+            window.history.pushState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
+          } else if (options.replaceHash !== false) {
+            window.history.replaceState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
+          }
+        }
+
+        if (!options.skipRender) {
+          updateMobileShellForScreen_({ syncHash: false });
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+        } else {
+          updateMobileShellForScreen_({ syncHash: false });
+        }
+      }
+
+      function syncScreenFromHash_(opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        if (!isMobileAppShell_()) {
+          state.mobileScreen = MOBILE_SCREEN_DEFAULT;
+          state.lastNonDetailScreen = MOBILE_SCREEN_DEFAULT;
+          updateMobileShellForScreen_({ syncHash: false });
+          return;
+        }
+        const fromHash = getScreenFromHash_();
+        setScreen(fromHash, {
+          skipRender: !!options.skipRender,
+          replaceHash: options.replaceHash !== false,
+          pushHistory: false,
+        });
+      }
+
+      function onPopState_() {
+        if (!isMobileAppShell_()) return;
+        syncScreenFromHash_({ skipRender: false, replaceHash: false });
+      }
+
+      function updateBottomNavState_() {
+        if (!ui.bottomNav) return;
+        const active = state.mobileScreen === "details"
+          ? normalizeMobileScreenName_(state.lastNonDetailScreen || MOBILE_SCREEN_DEFAULT)
+          : normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const buttons = ui.bottomNav.querySelectorAll("button[data-screen-target]");
+        buttons.forEach((btn) => {
+          const target = String(btn.getAttribute("data-screen-target") || "").trim();
+          const on = target === active;
+          btn.classList.toggle("active", on);
+          btn.setAttribute("aria-current", on ? "page" : "false");
+        });
+      }
+
+      function updateResultsModeByScreen_() {
+        if (!ui.resultsPanel) return;
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const onMobile = isMobileAppShell_();
+        const compareScreen = onMobile && screen === "compare";
+        ui.resultsPanel.classList.toggle("is-compare-screen", compareScreen);
+      }
+
+      function updateMobileActionBarState_() {
+        if (!ui.mobileActionBar) return;
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const show = isMobileAppShell_() && (screen === "results" || screen === "pinned");
+        ui.mobileActionBar.classList.toggle("is-visible", show);
+        if (ui.mobilePrintPacketBtn) ui.mobilePrintPacketBtn.disabled = !state.result;
+      }
+
+      function updateMobileShellForScreen_(opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const next = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const onMobile = isMobileAppShell_();
+        state.mobileScreen = next;
+        if (next !== "details") state.lastNonDetailScreen = next;
+        if (document.body) document.body.setAttribute("data-screen", next);
+        updateBottomNavState_();
+        updateResultsModeByScreen_();
+        updateMobileActionBarState_();
+        if (next === "details") closeFiltersDrawer_({ silent: true });
+        if (onMobile && options.syncHash !== false) {
+          window.history.replaceState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
+        }
+      }
+
+      function onBottomNavClick_(e) {
+        const btn = e.target && e.target.closest("button[data-screen-target]");
+        if (!btn) return;
+        const target = String(btn.getAttribute("data-screen-target") || "").trim();
+        setScreen(target, { skipRender: false, replaceHash: true });
+      }
+
+      function openDetailsScreen_(programKey, opts) {
+        if (!isMobileAppShell_()) return;
+        const options = opts && typeof opts === "object" ? opts : {};
+        const origin = normalizeMobileScreenName_(options.origin || state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        state.lastNonDetailScreen = origin === "details" ? MOBILE_SCREEN_DEFAULT : origin;
+        if (programKey) selectProgramKey(programKey);
+        setScreen("details", { pushHistory: true, replaceHash: false, skipRender: false });
+      }
+
+      function closeDetailsScreen_() {
+        if (!isMobileAppShell_()) return;
+        const target = normalizeMobileScreenName_(state.lastNonDetailScreen || MOBILE_SCREEN_DEFAULT);
+        setScreen(target, { replaceHash: true, skipRender: false });
+      }
+
+      function openFiltersDrawer_() {
+        if (!ui.filtersDrawer) return;
+        syncFiltersDrawerControls_();
+        state.mobileFilterDrawerOpen = true;
+        ui.filtersDrawer.classList.add("is-open");
+        ui.filtersDrawer.setAttribute("aria-hidden", "false");
+      }
+
+      function closeFiltersDrawer_(opts) {
+        if (!ui.filtersDrawer) return;
+        const options = opts && typeof opts === "object" ? opts : {};
+        state.mobileFilterDrawerOpen = false;
+        ui.filtersDrawer.classList.remove("is-open");
+        ui.filtersDrawer.setAttribute("aria-hidden", "true");
+        if (!options.silent) syncFiltersDrawerControls_();
+      }
+
+      function syncFiltersDrawerControls_() {
+        if (!ui.mobileResultSearch || !ui.mobileInstitutionFilter || !ui.mobileCredentialFilter || !ui.mobileSortSelect) return;
+        ui.mobileResultSearch.value = state.resultFilters.query || "";
+        ui.mobileInstitutionFilter.value = state.resultFilters.institution || "";
+        ui.mobileCredentialFilter.value = state.resultFilters.credential || "";
+        ui.mobileSortSelect.value = state.resultFilters.sort || DEFAULT_RESULT_SORT;
+      }
+
+      function applyFiltersDrawer_() {
+        if (!ui.mobileResultSearch || !ui.mobileInstitutionFilter || !ui.mobileCredentialFilter || !ui.mobileSortSelect) return;
+        state.resultFilters.query = String(ui.mobileResultSearch.value || "").trim();
+        state.resultFilters.institution = String(ui.mobileInstitutionFilter.value || "").trim();
+        state.resultFilters.credential = String(ui.mobileCredentialFilter.value || "").trim();
+        state.resultFilters.sort = String(ui.mobileSortSelect.value || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        syncResultControls();
+        resetMobileRenderLimit_();
+        closeFiltersDrawer_({ silent: true });
+        renderResults();
       }
 
       function addNamedRow(seed) {
@@ -2357,6 +2973,13 @@ function boot() {
         updateSnapshotBannerFromResult_();
         updateFilterCounts();
         syncFilterButtons();
+        resetMobileRenderLimit_();
+        if (isMobileAppShell_()) {
+          state.mobileScreen = "results";
+          state.lastNonDetailScreen = "results";
+          closeFiltersDrawer_({ silent: true });
+          updateMobileShellForScreen_({ syncHash: true });
+        }
         renderResults();
         renderCompareStrip();
         renderCompareResults();
@@ -2695,6 +3318,7 @@ function boot() {
           return;
         }
         state.view = nextView;
+        resetMobileRenderLimit_();
         updateFilterCounts();
         syncFilterButtons();
         renderResults();
@@ -2705,6 +3329,8 @@ function boot() {
         state.resultFilters.institution = String(ui.institutionFilter.value || "").trim();
         state.resultFilters.credential = String(ui.credentialFilter.value || "").trim();
         state.resultFilters.sort = String(ui.sortSelect.value || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        resetMobileRenderLimit_();
+        syncFiltersDrawerControls_();
         renderResults();
       }
 
@@ -2713,7 +3339,9 @@ function boot() {
         state.resultFilters.institution = "";
         state.resultFilters.credential = "";
         state.resultFilters.sort = DEFAULT_RESULT_SORT;
+        resetMobileRenderLimit_();
         syncResultControls();
+        syncFiltersDrawerControls_();
         renderResults();
       }
 
@@ -2727,6 +3355,7 @@ function boot() {
           !state.resultFilters.institution &&
           !state.resultFilters.credential &&
           (state.resultFilters.sort || DEFAULT_RESULT_SORT) === DEFAULT_RESULT_SORT;
+        syncFiltersDrawerControls_();
       }
 
       function syncFilterButtons() {
@@ -2770,7 +3399,14 @@ function boot() {
         if (state.resultFilters.credential && credentials.indexOf(state.resultFilters.credential) < 0) {
           state.resultFilters.credential = "";
         }
+        if (ui.mobileInstitutionFilter) {
+          renderSelectOptions(ui.mobileInstitutionFilter, "All Institutions", institutions, state.resultFilters.institution);
+        }
+        if (ui.mobileCredentialFilter) {
+          renderSelectOptions(ui.mobileCredentialFilter, "All Credentials", credentials, state.resultFilters.credential);
+        }
         syncResultControls();
+        syncFiltersDrawerControls_();
       }
 
       function renderSelectOptions(select, emptyLabel, options, selectedValue) {
@@ -2788,6 +3424,13 @@ function boot() {
       }
 
       function onResultsWrapClick(e) {
+        const loadMoreBtn = e.target && e.target.closest("button[data-load-more-results]");
+        if (loadMoreBtn) {
+          state.mobileRenderLimit = Math.max(MOBILE_PAGE_SIZE, Number(state.mobileRenderLimit || MOBILE_PAGE_SIZE)) + MOBILE_PAGE_SIZE;
+          renderResults();
+          return;
+        }
+
         const pinBtn = e.target && e.target.closest("button[data-pin-key]");
         if (pinBtn) {
           const key = String(pinBtn.getAttribute("data-pin-key") || "").trim();
@@ -2822,6 +3465,10 @@ function boot() {
         if (detailBtn) {
           const key = String(detailBtn.getAttribute("data-detail-key") || "").trim();
           selectProgramKey(key);
+          if (isMobileAppShell_()) {
+            openDetailsScreen_(key, { origin: state.mobileScreen });
+            return;
+          }
           renderResults();
           renderDetailsDrawer();
           return;
@@ -2832,7 +3479,12 @@ function boot() {
 
         const rowEl = e.target && e.target.closest(".result-card[data-row-key]");
         if (!rowEl) return;
-        selectProgramKey(String(rowEl.getAttribute("data-row-key") || "").trim());
+        const rowKey = String(rowEl.getAttribute("data-row-key") || "").trim();
+        selectProgramKey(rowKey);
+        if (isMobileAppShell_()) {
+          openDetailsScreen_(rowKey, { origin: state.mobileScreen });
+          return;
+        }
         renderResults();
         renderDetailsDrawer();
       }
@@ -2930,6 +3582,32 @@ function boot() {
         renderCompareResults();
       }
 
+      function onDetailsDrawerClick(e) {
+        const detailPinBtn = e.target && e.target.closest("button[data-detail-pin-key]");
+        if (detailPinBtn) {
+          const key = String(detailPinBtn.getAttribute("data-detail-pin-key") || "").trim();
+          if (!key) return;
+          toggleShortlistKey(key);
+          updateFilterCounts();
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const detailCompareBtn = e.target && e.target.closest("button[data-detail-compare-key]");
+        if (detailCompareBtn) {
+          const key = String(detailCompareBtn.getAttribute("data-detail-compare-key") || "").trim();
+          if (!key) return;
+          toggleCompareKey(key);
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+        }
+      }
+
       function onDetailsDrawerToggle(e) {
         const target = e && e.target;
         if (!(target instanceof HTMLDetailsElement)) return;
@@ -2938,6 +3616,21 @@ function boot() {
       }
 
       function renderResults() {
+        updateMobileShellForScreen_({ syncHash: false });
+        const mobileShell = isMobileAppShell_();
+        const mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const compareScreen = mobileShell && mobileScreen === "compare";
+        const toolbarControls = ui.resultsPanel ? ui.resultsPanel.querySelector(".toolbar-controls") : null;
+        const summaryEl = ui.resultsPanel ? ui.resultsPanel.querySelector(".summary") : null;
+        if (ui.resultsPanel) ui.resultsPanel.classList.toggle("is-compare-screen", compareScreen);
+        if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.style.display = compareScreen ? "none" : "";
+        if (toolbarControls) toolbarControls.style.display = compareScreen ? "none" : "";
+        if (summaryEl) summaryEl.style.display = compareScreen ? "none" : "";
+        if (ui.snapshotBanner) ui.snapshotBanner.style.display = compareScreen ? "none" : "";
+        if (ui.filterGroup) ui.filterGroup.style.display = compareScreen ? "none" : "";
+        if (ui.rowsStamp) ui.rowsStamp.style.display = compareScreen ? "none" : "";
+        if (ui.resultsWrap) ui.resultsWrap.style.display = compareScreen ? "none" : "";
+
         if (!state.result || !state.resultModel) {
           ui.resultsWrap.innerHTML = `<div class="empty">Run a check to see program-by-program results.</div>`;
           ui.rowsStamp.textContent = "No results yet";
@@ -2951,8 +3644,14 @@ function boot() {
 
         const viewRows = getRowsForView(state.view);
         const filteredRows = sortRows(filterRows(viewRows), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const mobileListMode = mobileShell && (mobileScreen === "results" || mobileScreen === "pinned");
+        const renderLimit = mobileListMode
+          ? Math.max(MOBILE_PAGE_SIZE, Number(state.mobileRenderLimit || MOBILE_PAGE_SIZE))
+          : filteredRows.length;
+        const renderedRows = mobileListMode ? filteredRows.slice(0, renderLimit) : filteredRows;
+        const hasMoreRows = mobileListMode && renderedRows.length < filteredRows.length;
         const viewCount = viewRows.length;
-        const shownCount = filteredRows.length;
+        const shownCount = renderedRows.length;
         ui.rowsStamp.textContent = shownCount === viewCount ? `${shownCount} programs` : `${shownCount} of ${viewCount} programs`;
         updateFilterCounts();
 
@@ -2969,7 +3668,7 @@ function boot() {
           return;
         }
 
-        const bodyHtml = filteredRows
+        const bodyHtml = renderedRows
           .map((row) => {
             const isPinned = !!state.shortlist[row.key];
             const isSelected = row.key === state.selectedProgramKey;
@@ -2997,6 +3696,16 @@ function boot() {
               status.css === "eligible" || status.css === "missing" || status.css === "uncheckable"
                 ? status.css
                 : "neutral";
+            const cardActionsHtml = mobileListMode
+              ? `<div class="card-actions mobile-single-action">
+                  <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
+                </div>`
+              : `<div class="card-actions">
+                  ${sourceLinkHtml}
+                  <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
+                  <button class="${compareClass}" type="button" data-compare-key="${escapeAttr(row.key)}">${compareLabel}</button>
+                  <button class="${viewClass}" type="button" data-detail-key="${escapeAttr(row.key)}">${viewLabel}</button>
+                </div>`;
             return `
               <article class="result-card${cardClass}" data-row-key="${escapeAttr(row.key)}">
                 <div class="card-top">
@@ -3018,17 +3727,15 @@ function boot() {
                 </div>
                 <div class="card-reason">${escapeHtml(reason)}</div>
                 ${warningHtml}
-                <div class="card-actions">
-                  ${sourceLinkHtml}
-                  <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
-                  <button class="${compareClass}" type="button" data-compare-key="${escapeAttr(row.key)}">${compareLabel}</button>
-                  <button class="${viewClass}" type="button" data-detail-key="${escapeAttr(row.key)}">${viewLabel}</button>
-                </div>
+                ${cardActionsHtml}
               </article>
             `;
           })
           .join("");
-        ui.resultsWrap.innerHTML = `<div class="result-list">${bodyHtml}</div>`;
+        const loadMoreHtml = hasMoreRows
+          ? `<div class="results-load-more"><button class="btn btn-subtle" type="button" data-load-more-results="1">Load more (${renderedRows.length}/${filteredRows.length})</button></div>`
+          : "";
+        ui.resultsWrap.innerHTML = `<div class="result-list">${bodyHtml}</div>${loadMoreHtml}`;
         syncResultControls();
         renderCompareStrip();
         renderCompareResults();
@@ -3508,11 +4215,29 @@ function boot() {
           ? selectedElectives.map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${formatCell(e.mark)}`).join(", ")
           : "None";
         const prominentSourceClass = confidence === "High" ? "" : " prominent";
+        const isPinned = !!state.shortlist[row.key];
+        const isCompared = state.compareKeys.indexOf(row.key) >= 0;
+        const pinLabel = isPinned ? "Pinned" : "Pin";
+        const compareLabel = isCompared ? "Compared" : "Compare";
         const programLinkHtml = programUrl
           ? `<div class="detail-link-row"><a class="detail-link${prominentSourceClass}" href="${escapeAttr(
               programUrl
             )}" target="_blank" rel="noopener noreferrer">Program Website</a></div>`
           : `<div class="detail-link-row"><span class="source-link-missing">Source link missing</span></div>`;
+        const detailActionLinkHtml = programUrl
+          ? `<a class="btn btn-subtle" href="${escapeAttr(programUrl)}" target="_blank" rel="noopener noreferrer">Program Link</a>`
+          : `<span class="btn btn-subtle is-disabled" aria-disabled="true">Program Link</span>`;
+        const detailActionsHtml = `
+          <div class="detail-actions-row">
+            ${detailActionLinkHtml}
+            <button class="btn btn-subtle ${isPinned ? "active" : ""}" type="button" data-detail-pin-key="${escapeAttr(
+              row.key
+            )}">${escapeHtml(pinLabel)}</button>
+            <button class="btn btn-subtle ${isCompared ? "active" : ""}" type="button" data-detail-compare-key="${escapeAttr(
+              row.key
+            )}">${escapeHtml(compareLabel)}</button>
+          </div>
+        `;
         const explainabilityHtml =
           confidence === "Uncheckable"
             ? `<div class="detail-block"><h4>Reason</h4><p>${escapeHtml(detail.uncheckableReason || "Manual review required.")}</p><h4>Next Step</h4><p>${escapeHtml(
@@ -3544,6 +4269,7 @@ function boot() {
             )}</p>
             ${programLinkHtml}
           </div>
+          ${detailActionsHtml}
           ${warningHtml}
           <div class="meaning-panel">
             <h4>What this means</h4>
@@ -4391,6 +5117,19 @@ function boot() {
 <script>
 boot();
 
+      if (isMobileAppShell_()) {
+        syncScreenFromHash_({ skipRender: true, replaceHash: true });
+        updateMobileShellForScreen_({ syncHash: true });
+      } else {
+        state.mobileScreen = MOBILE_SCREEN_DEFAULT;
+        state.lastNonDetailScreen = MOBILE_SCREEN_DEFAULT;
+        updateMobileShellForScreen_({ syncHash: false });
+      }
+      renderResults();
+      renderCompareStrip();
+      renderCompareResults();
+      renderDetailsDrawer();
+
       document.getElementById("addNamedBtn").addEventListener("click", () => addNamedRow());
       document.getElementById("addElectiveBtn").addEventListener("click", () => addElectiveRow());
       document.getElementById("runBtn").addEventListener("click", runCheck);
@@ -4408,14 +5147,37 @@ boot();
       ui.credentialFilter.addEventListener("change", onResultControlChange);
       ui.sortSelect.addEventListener("change", onResultControlChange);
       ui.clearResultFiltersBtn.addEventListener("click", clearResultFilters);
+      if (ui.mobileActionBar) ui.mobileActionBar.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest("button");
+        if (!btn) return;
+        if (btn === ui.mobileClearFiltersBtn) {
+          clearResultFilters();
+          return;
+        }
+        if (btn === ui.mobilePrintPacketBtn && state.result) exportPdf();
+      });
+      if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.addEventListener("click", openFiltersDrawer_);
+      if (ui.filtersDrawerCloseBtn) ui.filtersDrawerCloseBtn.addEventListener("click", () => closeFiltersDrawer_({}));
+      if (ui.filtersDrawerBackdrop) ui.filtersDrawerBackdrop.addEventListener("click", () => closeFiltersDrawer_({}));
+      if (ui.mobileApplyDrawerBtn) ui.mobileApplyDrawerBtn.addEventListener("click", applyFiltersDrawer_);
+      if (ui.mobileClearDrawerBtn) ui.mobileClearDrawerBtn.addEventListener("click", clearResultFilters);
+      if (ui.mobileDetailsBackBtn) ui.mobileDetailsBackBtn.addEventListener("click", closeDetailsScreen_);
+      if (ui.bottomNav) ui.bottomNav.addEventListener("click", onBottomNavClick_);
       ui.compareStrip.addEventListener("click", onCompareStripClick);
       if (ui.compareResults) ui.compareResults.addEventListener("click", onCompareResultsClick);
       if (ui.pinnedComparisonBtn) ui.pinnedComparisonBtn.addEventListener("click", generatePinnedComparisonSheet);
+      if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("click", onDetailsDrawerClick);
       if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("toggle", onDetailsDrawerToggle, true);
-      window.addEventListener("resize", schedulePanelHeightSync);
+      window.addEventListener("resize", () => {
+        schedulePanelHeightSync();
+        updateMobileShellForScreen_({ syncHash: false });
+        renderResults();
+        renderCompareStrip();
+        renderCompareResults();
+      });
+      window.addEventListener("popstate", onPopState_);
 </script>
 
 
 </body>
 </html>
-

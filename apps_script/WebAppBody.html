@@ -1,6 +1,7 @@
 </head>
-  <body>
-    <div class="shell">
+  <body data-screen="results">
+    <div class="shell" id="appShell">
+      <div id="appHeader">
       <header class="hero">
         <div class="hero-main">
           <div class="brand-lockup">
@@ -20,9 +21,11 @@
           <div id="googleSignIn"></div>
         </div>
       </section>
+      </div>
 
+      <div id="appMain">
       <main class="workflow" id="workflowMain">
-        <section class="panel panel-inputs" id="studentInputsPanel">
+        <section class="panel panel-inputs mobile-screen" id="studentInputsPanel" data-mobile-screen="inputs">
           <div class="panel-head">
             <h2>Student Inputs</h2>
             <button
@@ -77,7 +80,7 @@
           <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></p>
         </section>
 
-        <section class="panel panel-results" id="resultsPanel">
+        <section class="panel panel-results mobile-screen" id="resultsPanel" data-mobile-screen="results">
           <div class="panel-head">
             <h2>Program Results</h2>
             <button
@@ -131,6 +134,9 @@
               <button class="filter-btn" type="button" data-view="uncheckable">Uncheckable <span class="tab-count" id="tabCountUncheckable">0</span></button>
               <button class="filter-btn" type="button" data-view="shortlist">Shortlist <span class="tab-count" id="tabCountShortlist">0</span></button>
               <button class="filter-btn" type="button" data-view="all">All <span class="tab-count" id="tabCountAll">0</span></button>
+            </div>
+            <div class="mobile-toolbar-actions">
+              <button class="btn btn-subtle" id="mobileFiltersBtn" type="button" aria-haspopup="dialog" aria-controls="filtersDrawer">Filters</button>
             </div>
 
             <div class="toolbar-controls">
@@ -189,13 +195,60 @@
           </details>
         </section>
 
-        <section class="panel panel-details" id="detailsPanel">
-          <h2>Program Details</h2>
+        <section class="panel panel-details mobile-screen" id="detailsPanel" data-mobile-screen="details">
+          <div class="mobile-details-head">
+            <button class="btn btn-subtle" id="mobileDetailsBackBtn" type="button" aria-label="Back to results">Back</button>
+            <h2>Program Details</h2>
+          </div>
+          <h2 class="desktop-details-title">Program Details</h2>
           <div class="details-drawer" id="detailsDrawer">
             <div class="ghost">Select a program card to inspect requirements and next steps.</div>
           </div>
         </section>
       </main>
+
+      <div class="mobile-action-bar" id="mobileActionBar">
+        <button class="btn btn-subtle" id="mobileClearFiltersBtn" type="button">Clear</button>
+        <button class="btn btn-main" id="mobilePrintPacketBtn" type="button" disabled>Print Packet</button>
+      </div>
+
+      <nav class="bottom-nav" id="bottomNav" aria-label="Mobile navigation">
+        <button class="bottom-nav-btn active" type="button" data-screen-target="inputs">Inputs</button>
+        <button class="bottom-nav-btn" type="button" data-screen-target="results">Results</button>
+        <button class="bottom-nav-btn" type="button" data-screen-target="pinned">Pinned</button>
+        <button class="bottom-nav-btn" type="button" data-screen-target="compare">Compare</button>
+      </nav>
+
+      <div class="filters-drawer" id="filtersDrawer" aria-hidden="true">
+        <div class="filters-drawer-backdrop" id="filtersDrawerBackdrop"></div>
+        <section class="filters-drawer-sheet" role="dialog" aria-modal="true" aria-labelledby="filtersDrawerTitle">
+          <header class="filters-drawer-head">
+            <h3 id="filtersDrawerTitle">Filters</h3>
+            <button class="btn btn-subtle" id="filtersDrawerCloseBtn" type="button" aria-label="Close filters">Close</button>
+          </header>
+          <div class="filters-drawer-body">
+            <input class="result-control" id="mobileResultSearch" type="text" placeholder="Search institution, program, credential..." />
+            <select class="result-control" id="mobileInstitutionFilter">
+              <option value="">All Institutions</option>
+            </select>
+            <select class="result-control" id="mobileCredentialFilter">
+              <option value="">All Credentials</option>
+            </select>
+            <select class="result-control" id="mobileSortSelect">
+              <option value="closest">Sort: Closest to eligible</option>
+              <option value="institution_program">Sort: Institution + Program</option>
+              <option value="program_az">Sort: Program A-Z</option>
+              <option value="min_avg_asc">Sort: Min Avg low-high</option>
+              <option value="min_avg_desc">Sort: Min Avg high-low</option>
+            </select>
+          </div>
+          <div class="filters-drawer-actions">
+            <button class="btn btn-subtle" id="mobileClearDrawerBtn" type="button">Clear</button>
+            <button class="btn btn-main" id="mobileApplyDrawerBtn" type="button">Apply</button>
+          </div>
+        </section>
+      </div>
+      </div>
     </div>
 
     <datalist id="namedCourses"></datalist>

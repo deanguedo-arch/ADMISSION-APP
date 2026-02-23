@@ -9,6 +9,9 @@ function boot() {
         updateMeetingNotesControls_();
         state.mockMode = isMockMode();
         trackUiEvent_("session_boot", { mockMode: state.mockMode ? 1 : 0 });
+        state.mobileScreen = getScreenFromHash_();
+        state.lastNonDetailScreen = state.mobileScreen === "details" ? MOBILE_SCREEN_DEFAULT : state.mobileScreen;
+        updateMobileShellForScreen_({ syncHash: false });
         if (state.mockMode) {
           bootMockMode();
           return;
@@ -47,6 +50,7 @@ function boot() {
         { value: "min_avg_asc", label: "Sort: Min Avg low-high" },
         { value: "min_avg_desc", label: "Sort: Min Avg high-low" },
       ];
+      const MOBILE_HASH_PREFIX = "#";
       const meetingNoteTimersByKey_ = {};
 
       function schedulePanelHeightSync() {
@@ -196,6 +200,10 @@ function boot() {
         state.resultFilters.requirementType = "";
         state.resultFilters.sort = DEFAULT_RESULT_SORT;
         state.electiveRulesCollapsed = false;
+        state.mobileRenderLimit = MOBILE_PAGE_SIZE;
+        state.mobileFilterDrawerOpen = false;
+        state.mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        state.lastNonDetailScreen = state.mobileScreen === "details" ? MOBILE_SCREEN_DEFAULT : state.mobileScreen;
         if (ui.csvBtn) ui.csvBtn.disabled = true;
         if (ui.pdfBtn) ui.pdfBtn.disabled = true;
         syncResultControlContext_();
@@ -214,6 +222,8 @@ function boot() {
         syncFilterButtons();
         updateMeetingNotesControls_();
         setMeetingMode_(state.meetingMode, { persist: false });
+        closeFiltersDrawer_({ silent: true });
+        updateMobileShellForScreen_({ syncHash: false });
       }
 
       function toggleInputsPanel() {
@@ -234,6 +244,224 @@ function boot() {
           ui.showInputsBtn.setAttribute("aria-expanded", next ? "false" : "true");
         }
         schedulePanelHeightSync();
+      }
+
+      function normalizeMobileScreenName_(value) {
+        const raw = String(value || "").trim().toLowerCase();
+        if (MOBILE_SCREENS.indexOf(raw) >= 0) return raw;
+        return MOBILE_SCREEN_DEFAULT;
+      }
+
+      function isMobileAppShell_() {
+        return isCompactViewport_();
+      }
+
+      function resetMobileRenderLimit_() {
+        state.mobileRenderLimit = MOBILE_PAGE_SIZE;
+      }
+
+      function getScreenFromHash_() {
+        const hashRaw = String(window.location.hash || "").trim();
+        const hash = hashRaw.indexOf(MOBILE_HASH_PREFIX) === 0 ? hashRaw.slice(1) : hashRaw;
+        return normalizeMobileScreenName_(hash || MOBILE_SCREEN_DEFAULT);
+      }
+
+      function getDesiredScreenForNav_(targetScreen) {
+        const next = normalizeMobileScreenName_(targetScreen);
+        if (next === "inputs") return "inputs";
+        if (next === "compare") return "compare";
+        if (next === "pinned") return "pinned";
+        if (next === "details") return "details";
+        return "results";
+      }
+
+      function setScreen(name, opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const next = getDesiredScreenForNav_(name);
+        const previous = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const onMobile = isMobileAppShell_();
+        state.mobileScreen = next;
+        if (next !== "details") state.lastNonDetailScreen = next;
+        if (next !== previous) resetMobileRenderLimit_();
+
+        if (onMobile) {
+          if (next === "pinned") {
+            state.primaryMode = "results";
+            state.view = "shortlist";
+            syncFilterButtons();
+          } else if (next === "compare") {
+            state.primaryMode = "results";
+            if (state.view === "shortlist" && countShortlistRows() === 0) state.view = "ineligible";
+            syncFilterButtons();
+          } else if (next === "results") {
+            state.primaryMode = "results";
+            if (state.view === "shortlist") state.view = "ineligible";
+            syncFilterButtons();
+          }
+          if (next !== "results") closeFiltersDrawer_({ silent: true });
+        }
+
+        if (onMobile) {
+          if (options.pushHistory) {
+            window.history.pushState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
+          } else if (options.replaceHash !== false) {
+            window.history.replaceState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
+          }
+        }
+
+        if (!options.skipRender) {
+          updateMobileShellForScreen_({ syncHash: false });
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+        } else {
+          updateMobileShellForScreen_({ syncHash: false });
+        }
+      }
+
+      function syncScreenFromHash_(opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        if (!isMobileAppShell_()) {
+          state.mobileScreen = MOBILE_SCREEN_DEFAULT;
+          state.lastNonDetailScreen = MOBILE_SCREEN_DEFAULT;
+          updateMobileShellForScreen_({ syncHash: false });
+          return;
+        }
+        const fromHash = getScreenFromHash_();
+        if (options.preserveDetails && state.mobileScreen === "details" && fromHash !== "details") return;
+        setScreen(fromHash, {
+          skipRender: !!options.skipRender,
+          replaceHash: options.replaceHash !== false,
+          pushHistory: false,
+        });
+      }
+
+      function onPopState_() {
+        if (!isMobileAppShell_()) return;
+        syncScreenFromHash_({ skipRender: false, replaceHash: false });
+      }
+
+      function updateBottomNavState_() {
+        if (!ui.bottomNav) return;
+        const active = state.mobileScreen === "details"
+          ? normalizeMobileScreenName_(state.lastNonDetailScreen || MOBILE_SCREEN_DEFAULT)
+          : normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const buttons = ui.bottomNav.querySelectorAll("button[data-screen-target]");
+        buttons.forEach((btn) => {
+          const target = String(btn.getAttribute("data-screen-target") || "").trim();
+          const on = target === active;
+          btn.classList.toggle("active", on);
+          btn.setAttribute("aria-current", on ? "page" : "false");
+        });
+      }
+
+      function updateMobileActionBarState_() {
+        if (!ui.mobileActionBar) return;
+        const onMobile = isMobileAppShell_();
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const show = onMobile && (screen === "results" || screen === "pinned");
+        ui.mobileActionBar.classList.toggle("is-visible", show);
+        if (ui.mobilePrintPacketBtn && ui.exportMeetingNotesBtn) {
+          ui.mobilePrintPacketBtn.disabled = !!ui.exportMeetingNotesBtn.disabled;
+          ui.mobilePrintPacketBtn.textContent = String(ui.exportMeetingNotesBtn.textContent || "Print Packet");
+        }
+      }
+
+      function updateResultsModeByScreen_() {
+        if (!ui.resultsPanel || !ui.advancedTools) return;
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const onMobile = isMobileAppShell_();
+        const compareMode = onMobile && screen === "compare";
+        ui.resultsPanel.classList.toggle("is-compare-screen", compareMode);
+        if (compareMode) ui.advancedTools.open = true;
+      }
+
+      function updateMobileShellForScreen_(opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const next = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const onMobile = isMobileAppShell_();
+        state.mobileScreen = next;
+        if (next !== "details") state.lastNonDetailScreen = next;
+        if (document.body) document.body.setAttribute("data-screen", next);
+        updateBottomNavState_();
+        updateResultsModeByScreen_();
+        updateMobileActionBarState_();
+        if (next === "details") closeFiltersDrawer_({ silent: true });
+        if (onMobile && options.syncHash !== false) {
+          window.history.replaceState({ screen: next }, "", `${MOBILE_HASH_PREFIX}${next}`);
+        }
+      }
+
+      function onBottomNavClick_(e) {
+        const btn = e.target && e.target.closest("button[data-screen-target]");
+        if (!btn) return;
+        const target = String(btn.getAttribute("data-screen-target") || "").trim();
+        setScreen(target, { skipRender: false, replaceHash: true });
+      }
+
+      function openDetailsScreen_(programKey, opts) {
+        if (!isMobileAppShell_()) return;
+        const options = opts && typeof opts === "object" ? opts : {};
+        const origin = normalizeMobileScreenName_(options.origin || state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        state.lastNonDetailScreen = origin === "details" ? MOBILE_SCREEN_DEFAULT : origin;
+        if (programKey) selectProgramKey(programKey);
+        setScreen("details", { pushHistory: true, replaceHash: false, skipRender: false });
+      }
+
+      function closeDetailsScreen_() {
+        if (!isMobileAppShell_()) return;
+        const target = normalizeMobileScreenName_(state.lastNonDetailScreen || MOBILE_SCREEN_DEFAULT);
+        setScreen(target, { replaceHash: true, skipRender: false });
+      }
+
+      function openFiltersDrawer_() {
+        if (!ui.filtersDrawer) return;
+        syncFiltersDrawerControls_();
+        state.mobileFilterDrawerOpen = true;
+        ui.filtersDrawer.classList.add("is-open");
+        ui.filtersDrawer.setAttribute("aria-hidden", "false");
+      }
+
+      function closeFiltersDrawer_(opts) {
+        if (!ui.filtersDrawer) return;
+        const options = opts && typeof opts === "object" ? opts : {};
+        state.mobileFilterDrawerOpen = false;
+        ui.filtersDrawer.classList.remove("is-open");
+        ui.filtersDrawer.setAttribute("aria-hidden", "true");
+        if (!options.silent) syncFiltersDrawerControls_();
+      }
+
+      function syncFiltersDrawerControls_() {
+        if (!ui.mobileResultSearch || !ui.mobileInstitutionFilter || !ui.mobileCredentialFilter || !ui.mobileSortSelect) return;
+        ui.mobileResultSearch.value = state.resultFilters.query || "";
+        ui.mobileInstitutionFilter.value = state.resultFilters.institution || "";
+        ui.mobileCredentialFilter.value = state.resultFilters.credential || "";
+        ui.mobileSortSelect.value = state.resultFilters.sort || DEFAULT_RESULT_SORT;
+      }
+
+      function applyFiltersDrawer_() {
+        if (!ui.mobileResultSearch || !ui.mobileInstitutionFilter || !ui.mobileCredentialFilter || !ui.mobileSortSelect) return;
+        state.resultFilters.query = String(ui.mobileResultSearch.value || "").trim();
+        state.resultFilters.institution = String(ui.mobileInstitutionFilter.value || "").trim();
+        state.resultFilters.credential = String(ui.mobileCredentialFilter.value || "").trim();
+        state.resultFilters.sort = String(ui.mobileSortSelect.value || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        syncResultControls();
+        resetMobileRenderLimit_();
+        closeFiltersDrawer_({ silent: true });
+        renderResults();
+      }
+
+      function onMobileActionBarClick_(e) {
+        const target = e.target && e.target.closest("button");
+        if (!target) return;
+        if (target === ui.mobileClearFiltersBtn) {
+          clearResultFilters();
+          return;
+        }
+        if (target === ui.mobilePrintPacketBtn && ui.exportMeetingNotesBtn && !ui.exportMeetingNotesBtn.disabled) {
+          exportMeetingPacketPdf();
+        }
       }
 
       function loadMeetingModePreference_() {
@@ -401,6 +629,7 @@ function boot() {
         ui.exportMeetingNotesBtn.disabled = count <= 0 && !hasPacketContext;
         ui.exportMeetingNotesBtn.textContent = count > 0 ? `Print Packet (${count})` : "Print Packet";
         ui.exportMeetingNotesBtn.title = meetingNotesStorageLabel_();
+        updateMobileActionBarState_();
       }
 
       function telemetrySessionId_() {
@@ -1106,6 +1335,13 @@ function boot() {
         updateSnapshotBannerFromResult_();
         updateFilterCounts();
         syncFilterButtons();
+        resetMobileRenderLimit_();
+        if (isMobileAppShell_()) {
+          state.mobileScreen = "results";
+          state.lastNonDetailScreen = "results";
+          closeFiltersDrawer_({ silent: true });
+          updateMobileShellForScreen_({ syncHash: true });
+        }
         renderResults();
         renderCompareStrip();
         renderCompareResults();
@@ -1572,6 +1808,7 @@ function boot() {
           return;
         }
         state.view = nextView;
+        resetMobileRenderLimit_();
         trackUiEvent_("view_switch", { to: nextView });
         updateFilterCounts();
         syncFilterButtons();
@@ -1600,6 +1837,8 @@ function boot() {
         state.resultFilters.credential = String(ui.credentialFilter.value || "").trim();
         state.resultFilters.requirementType = String((ui.requirementTypeFilter && ui.requirementTypeFilter.value) || "").trim();
         state.resultFilters.sort = String(ui.sortSelect.value || DEFAULT_RESULT_SORT).trim() || DEFAULT_RESULT_SORT;
+        resetMobileRenderLimit_();
+        syncFiltersDrawerControls_();
         renderResults();
       }
 
@@ -1614,8 +1853,10 @@ function boot() {
         state.resultFilters.credential = "";
         state.resultFilters.requirementType = "";
         state.resultFilters.sort = modeDefaultSort;
+        resetMobileRenderLimit_();
         syncResultControlContext_();
         syncResultControls();
+        syncFiltersDrawerControls_();
         renderResults();
         trackUiEvent_("filters_cleared", { mode: normalizePrimaryMode_(state.primaryMode) });
       }
@@ -1636,6 +1877,7 @@ function boot() {
           !state.resultFilters.credential &&
           !requirementTypeActive &&
           (state.resultFilters.sort || modeDefaultSort) === modeDefaultSort;
+        syncFiltersDrawerControls_();
       }
 
       function syncFilterButtons() {
@@ -1685,6 +1927,12 @@ function boot() {
         if (state.resultFilters.credential && credentials.indexOf(state.resultFilters.credential) < 0) {
           state.resultFilters.credential = "";
         }
+        if (ui.mobileInstitutionFilter) {
+          renderSelectOptions(ui.mobileInstitutionFilter, "All Institutions", institutions, state.resultFilters.institution);
+        }
+        if (ui.mobileCredentialFilter) {
+          renderSelectOptions(ui.mobileCredentialFilter, "All Credentials", credentials, state.resultFilters.credential);
+        }
         if (ui.requirementTypeFilter && isExplorerMode) {
           renderSelectOptions(
             ui.requirementTypeFilter,
@@ -1697,6 +1945,7 @@ function boot() {
           }
         }
         syncResultControls();
+        syncFiltersDrawerControls_();
       }
 
       function renderSelectOptions(select, emptyLabel, options, selectedValue) {
@@ -1727,6 +1976,13 @@ function boot() {
       }
 
       function onResultsWrapClick(e) {
+        const loadMoreBtn = e.target && e.target.closest("button[data-load-more-results]");
+        if (loadMoreBtn) {
+          state.mobileRenderLimit = Math.max(MOBILE_PAGE_SIZE, Number(state.mobileRenderLimit || MOBILE_PAGE_SIZE)) + MOBILE_PAGE_SIZE;
+          renderResults();
+          return;
+        }
+
         if (state.primaryMode === "explorer") {
           const detailBtn = e.target && e.target.closest("button[data-explorer-detail-key]");
           if (detailBtn) {
@@ -1790,6 +2046,10 @@ function boot() {
         if (detailBtn) {
           const key = String(detailBtn.getAttribute("data-detail-key") || "").trim();
           selectProgramKey(key);
+          if (isMobileAppShell_()) {
+            openDetailsScreen_(key, { origin: state.mobileScreen });
+            return;
+          }
           renderResults();
           renderDetailsDrawer();
           return;
@@ -1800,7 +2060,12 @@ function boot() {
 
         const rowEl = e.target && e.target.closest(".result-card[data-row-key]");
         if (!rowEl) return;
-        selectProgramKey(String(rowEl.getAttribute("data-row-key") || "").trim());
+        const rowKey = String(rowEl.getAttribute("data-row-key") || "").trim();
+        selectProgramKey(rowKey);
+        if (isMobileAppShell_()) {
+          openDetailsScreen_(rowKey, { origin: state.mobileScreen });
+          return;
+        }
         renderResults();
         renderDetailsDrawer();
       }
@@ -1924,6 +2189,31 @@ function boot() {
       }
 
       function onDetailsDrawerClick(e) {
+        const detailPinBtn = e.target && e.target.closest("button[data-detail-pin-key]");
+        if (detailPinBtn) {
+          const key = String(detailPinBtn.getAttribute("data-detail-pin-key") || "").trim();
+          if (!key) return;
+          toggleShortlistKey(key);
+          updateFilterCounts();
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+          return;
+        }
+
+        const detailCompareBtn = e.target && e.target.closest("button[data-detail-compare-key]");
+        if (detailCompareBtn) {
+          const key = String(detailCompareBtn.getAttribute("data-detail-compare-key") || "").trim();
+          if (!key) return;
+          toggleCompareKey(key);
+          renderResults();
+          renderCompareStrip();
+          renderCompareResults();
+          renderDetailsDrawer();
+          return;
+        }
+
         const decisionBtn = e.target && e.target.closest("button[data-meeting-decision-key]");
         if (decisionBtn) {
           const key = String(decisionBtn.getAttribute("data-meeting-decision-key") || "").trim();
@@ -1956,7 +2246,9 @@ function boot() {
       }
 
       function isCompactViewport_() {
-        return window.matchMedia ? window.matchMedia("(max-width: 980px)").matches : window.innerWidth <= 980;
+        return window.matchMedia
+          ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches
+          : window.innerWidth <= MOBILE_BREAKPOINT;
       }
 
       function renderEmptyStateHtml_(title, detail) {
@@ -1971,9 +2263,15 @@ function boot() {
       }
 
       function renderResults() {
+        if (isMobileAppShell_() && state.primaryMode === "explorer") {
+          state.primaryMode = "results";
+        }
         syncModeTabs_();
         updateModeCounts_();
         syncResultControlContext_();
+        updateMobileShellForScreen_({ syncHash: false });
+        const mobileShell = isMobileAppShell_();
+        const mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
 
         if (state.primaryMode === "explorer") {
           setResultsModeVisibility_(true);
@@ -2071,8 +2369,14 @@ function boot() {
 
         const viewRows = getRowsForView(state.view);
         const filteredRows = sortRows(filterRows(viewRows), state.resultFilters.sort || DEFAULT_RESULT_SORT);
+        const mobileListMode = mobileShell && (mobileScreen === "results" || mobileScreen === "pinned");
+        const renderLimit = mobileListMode
+          ? Math.max(MOBILE_PAGE_SIZE, Number(state.mobileRenderLimit || MOBILE_PAGE_SIZE))
+          : filteredRows.length;
+        const renderedRows = mobileListMode ? filteredRows.slice(0, renderLimit) : filteredRows;
+        const hasMoreRows = mobileListMode && renderedRows.length < filteredRows.length;
         const viewCount = viewRows.length;
-        const shownCount = filteredRows.length;
+        const shownCount = renderedRows.length;
         ui.rowsStamp.textContent = shownCount === viewCount ? `${shownCount} programs` : `${shownCount} of ${viewCount} programs`;
         updateFilterCounts();
 
@@ -2090,7 +2394,7 @@ function boot() {
         }
 
         const featuredKey = pickFeaturedRecommendationKey_(filteredRows);
-        const bodyHtml = filteredRows
+        const bodyHtml = renderedRows
           .map((row) => {
             const isPinned = !!state.shortlist[row.key];
             const isSelected = row.key === state.selectedProgramKey;
@@ -2133,6 +2437,16 @@ function boot() {
                   meetingDecisionLabel_(decision)
                 )}</span>`
               : "";
+            const cardActionsHtml = mobileListMode
+              ? `<div class="card-actions mobile-single-action">
+                  <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
+                </div>`
+              : `<div class="card-actions">
+                  ${sourceLinkHtml}
+                  <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
+                  <button class="${compareClass}" type="button" data-compare-key="${escapeAttr(row.key)}">${compareLabel}</button>
+                  <button class="${viewClass}" type="button" data-detail-key="${escapeAttr(row.key)}">${viewLabel}</button>
+                </div>`;
             const cardAria = `Open details for ${row.program || "program"} at ${row.institution || "institution"}`;
             return `
               <article
@@ -2168,17 +2482,15 @@ function boot() {
                 </div>
                 ${showReason ? `<div class="card-reason">${escapeHtml(reason)}</div>` : ""}
                 ${warningHtml}
-                <div class="card-actions">
-                  ${sourceLinkHtml}
-                  <button class="${pinClass}" type="button" data-pin-key="${escapeAttr(row.key)}">${pinLabel}</button>
-                  <button class="${compareClass}" type="button" data-compare-key="${escapeAttr(row.key)}">${compareLabel}</button>
-                  <button class="${viewClass}" type="button" data-detail-key="${escapeAttr(row.key)}">${viewLabel}</button>
-                </div>
+                ${cardActionsHtml}
               </article>
             `;
           })
           .join("");
-        ui.resultsWrap.innerHTML = `<div class="result-list">${bodyHtml}</div>`;
+        const loadMoreHtml = hasMoreRows
+          ? `<div class="results-load-more"><button class="btn btn-subtle" type="button" data-load-more-results="1">Load more (${renderedRows.length}/${filteredRows.length})</button></div>`
+          : "";
+        ui.resultsWrap.innerHTML = `<div class="result-list">${bodyHtml}</div>${loadMoreHtml}`;
         syncResultControls();
         renderCompareStrip();
         renderCompareResults();
@@ -2186,9 +2498,27 @@ function boot() {
       }
 
       function setResultsModeVisibility_(isExplorerMode) {
-        const hide = !!isExplorerMode;
-        if (ui.filterGroup) ui.filterGroup.style.display = hide ? "none" : "";
-        if (ui.advancedTools) ui.advancedTools.style.display = hide ? "none" : "";
+        const explorerMode = !!isExplorerMode;
+        const mobile = isMobileAppShell_();
+        const screen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
+        const compareScreen = mobile && screen === "compare";
+        const summaryEl = ui.resultsPanel ? ui.resultsPanel.querySelector(".summary") : null;
+        const snapshotEl = ui.snapshotBanner || null;
+        const toolbarControls = ui.resultsPanel ? ui.resultsPanel.querySelector(".toolbar-controls") : null;
+
+        if (ui.modeTabs) ui.modeTabs.style.display = mobile ? "none" : "";
+        if (ui.filterGroup) ui.filterGroup.style.display = explorerMode || compareScreen ? "none" : "";
+        if (snapshotEl) snapshotEl.style.display = compareScreen ? "none" : "";
+        if (summaryEl) summaryEl.style.display = compareScreen ? "none" : "";
+        if (toolbarControls) toolbarControls.style.display = compareScreen ? "none" : "";
+        if (ui.rowsStamp) ui.rowsStamp.style.display = compareScreen ? "none" : "";
+        if (ui.resultsWrap) ui.resultsWrap.style.display = compareScreen ? "none" : "";
+        if (ui.mobileFiltersBtn) ui.mobileFiltersBtn.style.display = mobile && !compareScreen && !explorerMode ? "" : "none";
+
+        if (ui.advancedTools) {
+          ui.advancedTools.style.display = explorerMode ? "none" : "";
+          if (compareScreen) ui.advancedTools.open = true;
+        }
       }
 
       function getExplorerSortKey_() {
@@ -2790,11 +3120,29 @@ function boot() {
           ? selectedElectives.map((e) => `${e.group}${e.name ? ` (${e.name})` : ""}=${formatCell(e.mark)}`).join(", ")
           : "None";
         const prominentSourceClass = confidence === "High" ? "" : " prominent";
+        const isPinned = !!state.shortlist[row.key];
+        const isCompared = state.compareKeys.indexOf(row.key) >= 0;
+        const pinLabel = isPinned ? "Pinned" : "Pin";
+        const compareLabel = isCompared ? "Compared" : "Compare";
         const programLinkHtml = programUrl
           ? `<div class="detail-link-row"><a class="detail-link${prominentSourceClass}" href="${escapeAttr(
               programUrl
             )}" target="_blank" rel="noopener noreferrer">Program Website</a></div>`
           : `<div class="detail-link-row"><span class="source-link-missing">Source link missing</span></div>`;
+        const detailActionLinkHtml = programUrl
+          ? `<a class="btn btn-subtle" href="${escapeAttr(programUrl)}" target="_blank" rel="noopener noreferrer">Program Link</a>`
+          : `<span class="btn btn-subtle is-disabled" aria-disabled="true">Program Link</span>`;
+        const detailActionsHtml = `
+          <div class="detail-actions-row">
+            ${detailActionLinkHtml}
+            <button class="btn btn-subtle ${isPinned ? "active" : ""}" type="button" data-detail-pin-key="${escapeAttr(
+              row.key
+            )}">${escapeHtml(pinLabel)}</button>
+            <button class="btn btn-subtle ${isCompared ? "active" : ""}" type="button" data-detail-compare-key="${escapeAttr(
+              row.key
+            )}">${escapeHtml(compareLabel)}</button>
+          </div>
+        `;
         const explainabilityHtml =
           confidence === "Uncheckable"
             ? `<div class="detail-block"><h4>Reason</h4><p>${escapeHtml(detail.uncheckableReason || "Manual review required.")}</p><h4>Next Step</h4><p>${escapeHtml(
@@ -2846,6 +3194,7 @@ function boot() {
             )}</p>
             ${programLinkHtml}
           </div>
+          ${detailActionsHtml}
           ${warningHtml}
           ${highlightsHtml}
           <div class="meaning-panel">
