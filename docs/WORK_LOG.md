@@ -1065,3 +1065,6 @@ Keep entries short and append-only.
 - Added sync validator `tools/validate-sync-surface.ps1` and sync deploy workflow `.github/workflows/deploy-apps-script-sync.yml`.
 - Added PR gate workflow `.github/workflows/pr-quality-gates.yml` for web/sync validators, pipeline fixtures, and canonical validation.
 - Updated architecture/deployment/sync docs for dedicated sync project boundary (`docs/DECISIONS.md`, `docs/APPS_SCRIPT_AUTODEPLOY.md`, `docs/APPS_SCRIPT_GITHUB_SYNC.md`, `docs/APPS_SCRIPT_ARCHITECTURE.md`, `docs/RELEASE_QUESTIONS.md`, `docs/SHEETS_SYNC.md`, `docs/MANUAL_SCRIPT_EXPORT.md`, `README.md`).
+## 2026-02-23 (sync deploy secret resolution fallback)
+- Hardened `.github/workflows/deploy-apps-script-sync.yml` to resolve IDs from secret -> variable -> workflow_dispatch input.
+- Added non-sensitive source diagnostics (`yes/no`) for sync/deployment ID sources to speed up root-cause checks when GitHub scope is misconfigured.

@@ -9,6 +9,15 @@ on:
       - "tools/validate-sync-surface.ps1"
       - ".github/workflows/deploy-apps-script-sync.yml"
   workflow_dispatch:
+    inputs:
+      apps_script_sync_id:
+        description: "Optional override for APPS_SCRIPT_SYNC_ID"
+        required: false
+        type: string
+      apps_script_sync_deployment_id:
+        description: "Optional override for APPS_SCRIPT_SYNC_DEPLOYMENT_ID"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -25,6 +34,8 @@ jobs:
       APPS_SCRIPT_SYNC_ID_VAR: ${{ vars.APPS_SCRIPT_SYNC_ID }}
       APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET: ${{ secrets.APPS_SCRIPT_SYNC_DEPLOYMENT_ID }}
       APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR: ${{ vars.APPS_SCRIPT_SYNC_DEPLOYMENT_ID }}
+      APPS_SCRIPT_SYNC_ID_INPUT: ${{ github.event.inputs.apps_script_sync_id }}
+      APPS_SCRIPT_SYNC_DEPLOYMENT_ID_INPUT: ${{ github.event.inputs.apps_script_sync_deployment_id }}
       CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
     steps:
       - name: Checkout
@@ -40,8 +51,11 @@ jobs:
 
       - name: Validate required secrets
         run: |
-          APPS_SCRIPT_SYNC_ID="${APPS_SCRIPT_SYNC_ID_SECRET:-$APPS_SCRIPT_SYNC_ID_VAR}"
-          APPS_SCRIPT_SYNC_DEPLOYMENT_ID="${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET:-$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR}"
+          APPS_SCRIPT_SYNC_ID="${APPS_SCRIPT_SYNC_ID_SECRET:-${APPS_SCRIPT_SYNC_ID_VAR:-$APPS_SCRIPT_SYNC_ID_INPUT}}"
+          APPS_SCRIPT_SYNC_DEPLOYMENT_ID="${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET:-${APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR:-$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_INPUT}}"
+
+          echo "Source check: sync_id_secret=$([ -n "$APPS_SCRIPT_SYNC_ID_SECRET" ] && echo yes || echo no), sync_id_var=$([ -n "$APPS_SCRIPT_SYNC_ID_VAR" ] && echo yes || echo no), sync_id_input=$([ -n "$APPS_SCRIPT_SYNC_ID_INPUT" ] && echo yes || echo no)"
+          echo "Source check: deploy_id_secret=$([ -n "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_SECRET" ] && echo yes || echo no), deploy_id_var=$([ -n "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_VAR" ] && echo yes || echo no), deploy_id_input=$([ -n "$APPS_SCRIPT_SYNC_DEPLOYMENT_ID_INPUT" ] && echo yes || echo no)"
 
           if [ -z "$CLASPRC_JSON" ]; then
             echo "Missing secret: CLASPRC_JSON"
