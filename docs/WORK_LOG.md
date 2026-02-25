@@ -1142,5 +1142,9 @@ Keep entries short and append-only.
 - Confirmed repository is clean and synced on `main` after fast-forward pull to `91d5a93`.
 - Verified latest automation pass succeeded: Dataset Validation, STEP 1 (web app deploy), STEP 2 (publish to Sheets), STEP 3 (Pages publish), and dynamic Pages deployment.
 - Regenerated `docs/SESSION_HANDOFF.md` for workstation transfer with current status, links, and next steps.
+## 2026-02-25 (offline Pages recovery: landing + mock default)
+- Added root `index.html` redirect to `./docs/` so branch-root GitHub Pages no longer falls back to rendering `README.md`.
+- Updated `isMockMode()` in `apps_script/WebAppScriptFunctions.html` to auto-enable mock mode on `*.github.io` unless explicitly overridden by `?mock=0`.
+- Recompiled `docs/index.html` via `npm run build:pages`; guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
 
 

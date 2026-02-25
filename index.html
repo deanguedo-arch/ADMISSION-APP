@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admissions Checker</title>
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=./docs/" />
+    </noscript>
+    <script>
+      (function () {
+        var path = String(window.location.pathname || "/");
+        if (path.indexOf("/docs/") !== -1) return;
+        var normalized = path.endsWith("/") ? path : path + "/";
+        var target = normalized + "docs/" + window.location.search + window.location.hash;
+        window.location.replace(target);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to the Admissions Checker...</p>
+    <p><a href="./docs/">Open the app</a></p>
+  </body>
+</html>
