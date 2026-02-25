@@ -13,6 +13,8 @@ param(
   [string]$NorquestRulesPath = ".\\config\\norquest_non_program_rules.json",
   [string]$NorquestSeedPath = ".\\pipeline\\norquest_program_seed.csv",
   [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
+  [string]$ProgramOverridesPath = ".\\data\\PROGRAM_OVERRIDES.csv",
+  [string]$RulesetsPath = ".\\data\\RULESETS.csv",
   [switch]$DropNaitNonPrograms = $true,
   [switch]$DropNorQuestNonPrograms = $true,
   [switch]$DropMinors = $true,
@@ -164,6 +166,194 @@ function Normalize-NorquestCredentialType([string]$credential) {
   return "Other"
 }
 
+function Normalize-CredentialKey([object]$value) {
+  return (Normalize-Text $value).ToLowerInvariant()
+}
+
+function Add-ToBucket([hashtable]$map, [string]$key, [object]$value) {
+  if ([string]::IsNullOrWhiteSpace($key)) { return }
+  if (-not $map.ContainsKey($key)) { $map[$key] = @() }
+  $map[$key] = @($map[$key]) + $value
+}
+
+function Build-ProgramOverrideKey([string]$institution, [string]$program, [string]$credential) {
+  $instKey = (Normalize-Text $institution).ToLowerInvariant()
+  $programKey = Normalize-ProgramKey $program
+  $credentialKey = Normalize-CredentialKey $credential
+  if (-not $instKey -or -not $programKey) { return "" }
+  return "{0}||{1}||{2}" -f $instKey, $programKey, $credentialKey
+}
+
+function Resolve-ProgramOverride(
+  [hashtable]$overrides,
+  [hashtable]$overridesByUrl,
+  [hashtable]$overridesByInstitution,
+  [string]$institution,
+  [string]$program,
+  [string]$credential,
+  [string]$sourceUrl = ""
+) {
+  if ($null -eq $overrides -or $overrides.Count -eq 0) { return $null }
+  $instKey = (Normalize-Text $institution).ToLowerInvariant()
+  if (-not $instKey) { return $null }
+
+  $sourceUrlKey = Normalize-UrlKey $sourceUrl
+  if ($sourceUrlKey -and $null -ne $overridesByUrl -and $overridesByUrl.ContainsKey("$instKey||$sourceUrlKey")) {
+    $urlCandidates = @($overridesByUrl["$instKey||$sourceUrlKey"])
+    if ($urlCandidates.Count -eq 1) {
+      return $urlCandidates[0]
+    }
+
+    $credKey = Normalize-CredentialKey $credential
+    $credCandidates = @($urlCandidates | Where-Object { -not $_.Credential_Key -or $_.Credential_Key -eq $credKey })
+    if ($credCandidates.Count -eq 1) {
+      return $credCandidates[0]
+    }
+
+    $programKeyForUrl = Normalize-ProgramKey $program
+    if ($programKeyForUrl) {
+      $exactProgramCandidates = @($credCandidates | Where-Object { $_.Program_Key -eq $programKeyForUrl })
+      if ($exactProgramCandidates.Count -eq 1) {
+        return $exactProgramCandidates[0]
+      }
+    }
+  }
+
+  $exactKey = Build-ProgramOverrideKey -institution $institution -program $program -credential $credential
+  if ($exactKey -and $overrides.ContainsKey($exactKey)) {
+    return $overrides[$exactKey]
+  }
+
+  $fallbackKey = Build-ProgramOverrideKey -institution $institution -program $program -credential ""
+  if ($fallbackKey -and $overrides.ContainsKey($fallbackKey)) {
+    return $overrides[$fallbackKey]
+  }
+
+  if ($null -eq $overridesByInstitution -or -not $overridesByInstitution.ContainsKey($instKey)) {
+    return $null
+  }
+
+  $programTokens = @(Get-Tokens $program)
+  if ($programTokens.Count -eq 0) { return $null }
+
+  $credKey = Normalize-CredentialKey $credential
+  $candidates = @($overridesByInstitution[$instKey])
+  if ($credKey) {
+    $candidates = @($candidates | Where-Object { -not $_.Credential_Key -or $_.Credential_Key -eq $credKey })
+  }
+  if ($candidates.Count -eq 0) { return $null }
+
+  $scored = @()
+  foreach ($candidate in $candidates) {
+    $candTokens = @($candidate.Program_Tokens)
+    if ($candTokens.Count -eq 0) { continue }
+    $score = Score-Jaccard -a $programTokens -b $candTokens
+    if ($score -le 0) { continue }
+    $scored += [pscustomobject]@{
+      Score = [double]$score
+      Override = $candidate
+    }
+  }
+  if ($scored.Count -eq 0) { return $null }
+
+  $scored = @($scored | Sort-Object @{ Expression = "Score"; Descending = $true })
+  $best = $scored[0]
+  if ($best.Score -lt 0.62) { return $null }
+  if ($scored.Count -gt 1) {
+    $gap = [double]$best.Score - [double]$scored[1].Score
+    if ($gap -lt 0.10) { return $null }
+  }
+  return $best.Override
+}
+
+function New-ProgramOverrideRecord(
+  [string]$institution,
+  [string]$program,
+  [string]$credentialType,
+  [string]$includeOrExclude,
+  [string]$requirementTypeOverride,
+  [string]$minAvgOverride,
+  [string]$electiveQtyOverride,
+  [string]$avgTotalOverride,
+  [string]$parentAdmissionsUrl,
+  [string]$sourcePageUrl,
+  [string]$needsParentSource,
+  [string]$manualReviewFlag,
+  [string]$notes
+) {
+  $programKey = Normalize-ProgramKey $program
+  return [pscustomobject]@{
+    Institution               = $institution
+    Program                   = $program
+    Program_Key               = $programKey
+    Program_Tokens            = (Get-Tokens $program)
+    Credential_Type           = $credentialType
+    Credential_Key            = Normalize-CredentialKey $credentialType
+    Include_Or_Exclude        = $includeOrExclude
+    Requirement_Type_Override = $requirementTypeOverride
+    Min_Avg_Override          = $minAvgOverride
+    Elective_Qty_Override     = $electiveQtyOverride
+    Avg_Total_Override        = $avgTotalOverride
+    Parent_Admissions_Url     = $parentAdmissionsUrl
+    Source_Page_Url           = $sourcePageUrl
+    Needs_Parent_Source       = $needsParentSource
+    Manual_Review_Flag        = $manualReviewFlag
+    Notes                     = $notes
+  }
+}
+
+function Add-ProgramOverrideUrlKeys([hashtable]$bucket, [object]$overrideRecord) {
+  if ($null -eq $bucket -or $null -eq $overrideRecord) { return }
+  $instKey = (Normalize-Text $overrideRecord.Institution).ToLowerInvariant()
+  if (-not $instKey) { return }
+
+  $urlCandidates = @()
+  if (Is-HttpUrl $overrideRecord.Source_Page_Url) { $urlCandidates += (Normalize-UrlKey $overrideRecord.Source_Page_Url) }
+  if (Is-HttpUrl $overrideRecord.Parent_Admissions_Url) { $urlCandidates += (Normalize-UrlKey $overrideRecord.Parent_Admissions_Url) }
+
+  foreach ($urlKey in @($urlCandidates | Sort-Object -Unique)) {
+    if (-not $urlKey) { continue }
+    Add-ToBucket -map $bucket -key "$instKey||$urlKey" -value $overrideRecord
+  }
+}
+
+function Is-ActiveOverrideStatus([object]$status) {
+  $raw = (Normalize-Text $status).ToLowerInvariant()
+  if (-not $raw) { return $true }
+  if ($raw -in @("inactive", "disabled", "archived", "off", "no", "false", "0")) { return $false }
+  return $true
+}
+
+function Parse-TruthyFlag([object]$value, [bool]$defaultValue = $false) {
+  $raw = (Normalize-Text $value).ToLowerInvariant()
+  if (-not $raw) { return $defaultValue }
+  if ($raw -in @("yes", "y", "true", "1", "required")) { return $true }
+  if ($raw -in @("no", "n", "false", "0", "not_required")) { return $false }
+  return $defaultValue
+}
+
+function Parse-CredentialScopeTokens([object]$value) {
+  $scope = Normalize-Text $value
+  if (-not $scope -or $scope.ToLowerInvariant() -eq "any") { return ,@() }
+  $tokens = @(
+    $scope -split "[|,;/]" |
+      ForEach-Object { (Normalize-Text $_).ToLowerInvariant() } |
+      Where-Object { $_ }
+  )
+  return ,$tokens
+}
+
+function Credential-MatchesScope([string]$credentialType, [string[]]$scopeTokens) {
+  if ($null -eq $scopeTokens -or $scopeTokens.Count -eq 0) { return $true }
+  $cred = (Normalize-Text $credentialType).ToLowerInvariant()
+  if (-not $cred) { return $false }
+  foreach ($token in $scopeTokens) {
+    if (-not $token) { continue }
+    if ($cred -like "*$token*") { return $true }
+  }
+  return $false
+}
+
 function Ensure-Dir([string]$path) {
   $dir = Split-Path -Parent $path
   if (-not (Test-Path $dir)) {
@@ -183,6 +373,7 @@ if ($DropMinors) {
 }
 
 $naitSeedNames = @{}
+$naitSeedRowsByKey = @{}
 $naitAllowlistNames = @{}
 $naitAllowlistUrls = @{}
 $naitLegacyAllowlistNames = @{}
@@ -199,6 +390,7 @@ $naitStats = @{
   kept_allowlist_override = 0
   kept_legacy_allowlist = 0
   kept_seed_match = 0
+  seed_backfill_added = 0
 }
 
 $norquestSeedNames = @{}
@@ -241,6 +433,32 @@ $ualbertaStats = @{
   rows_with_program_url = 0
 }
 
+$programOverridesByKey = @{}
+$programOverridesByUrlKey = @{}
+$programOverridesByInstitution = @{}
+$programOverrideStats = @{
+  rows_loaded = 0
+  include_rows = 0
+  exclude_rows = 0
+  disabled_rows = 0
+  duplicate_keys_overwritten = 0
+  row_include_forced = 0
+  row_excluded = 0
+  field_overrides_applied = 0
+  url_overrides_applied = 0
+}
+
+$rulesetsByInstitution = @{}
+$rulesetStats = @{
+  rows_loaded = 0
+  rows_skipped = 0
+  rows_with_default_avg_total = 0
+  rows_with_placement_required = 0
+  rows_applied = 0
+  avg_total_filled = 0
+  placement_flags_set = 0
+}
+
 if (Test-Path $FilterRulesPath) {
   $rulesJson = Get-Content -Raw $FilterRulesPath | ConvertFrom-Json
   $naitBlockedUrlPatterns = To-StringArray $rulesJson.blocked_url_patterns
@@ -275,7 +493,16 @@ if (Test-Path $NorquestRulesPath) {
 
 if (Test-Path $NaitSeedPath) {
   foreach ($seed in (Import-Csv $NaitSeedPath)) {
-    Add-ToSet -set $naitSeedNames -key (Normalize-ProgramKey $seed.program_name)
+    $name = Normalize-Text (Get-PropValue -row $seed -names @("program_name", "Program"))
+    $key = Normalize-ProgramKey $name
+    $url = Normalize-Text (Get-PropValue -row $seed -names @("program_url", "Program_URL", "source_url", "url"))
+    Add-ToSet -set $naitSeedNames -key $key
+    if ($key -and -not $naitSeedRowsByKey.ContainsKey($key)) {
+      $naitSeedRowsByKey[$key] = [pscustomobject]@{
+        Program = $name
+        Program_URL = $url
+      }
+    }
   }
 }
 
@@ -372,15 +599,157 @@ if (Test-Path $ProgramEvidencePath) {
   }
 }
 
+if (Test-Path $ProgramOverridesPath) {
+  foreach ($overrideRow in (Import-Csv $ProgramOverridesPath)) {
+    $institution = Normalize-Text (Get-PropValue -row $overrideRow -names @("institution", "Institution"))
+    $program = Normalize-Text (Get-PropValue -row $overrideRow -names @("program", "Program"))
+    if (-not $institution -or -not $program) { continue }
+
+    $status = Normalize-Text (Get-PropValue -row $overrideRow -names @("status", "Status"))
+    if (-not (Is-ActiveOverrideStatus $status)) {
+      $programOverrideStats.disabled_rows++
+      continue
+    }
+
+    $credentialType = Normalize-Text (Get-PropValue -row $overrideRow -names @("credential_type", "Credential_Type"))
+    $includeOrExcludeRaw = (Normalize-Text (Get-PropValue -row $overrideRow -names @("include_or_exclude", "Include_Or_Exclude"))).ToLowerInvariant()
+    $includeOrExclude = ""
+    if ($includeOrExcludeRaw -eq "include" -or $includeOrExcludeRaw -eq "exclude") {
+      $includeOrExclude = $includeOrExcludeRaw
+    }
+
+    $key = Build-ProgramOverrideKey -institution $institution -program $program -credential $credentialType
+    if (-not $key) { continue }
+
+    if ($programOverridesByKey.ContainsKey($key)) {
+      $programOverrideStats.duplicate_keys_overwritten++
+    }
+
+    $overrideRecord = New-ProgramOverrideRecord `
+      -institution $institution `
+      -program $program `
+      -credentialType $credentialType `
+      -includeOrExclude $includeOrExclude `
+      -requirementTypeOverride (Normalize-Text (Get-PropValue -row $overrideRow -names @("requirement_type_override", "Requirement_Type_Override"))) `
+      -minAvgOverride (Normalize-Text (Get-PropValue -row $overrideRow -names @("min_avg_override", "Min_Avg_Override"))) `
+      -electiveQtyOverride (Normalize-Text (Get-PropValue -row $overrideRow -names @("elective_qty_override", "Elective_Qty_Override"))) `
+      -avgTotalOverride (Normalize-Text (Get-PropValue -row $overrideRow -names @("avg_total_override", "Avg_Total_Override"))) `
+      -parentAdmissionsUrl (Normalize-Text (Get-PropValue -row $overrideRow -names @("parent_admissions_url", "Parent_Admissions_Url"))) `
+      -sourcePageUrl (Normalize-Text (Get-PropValue -row $overrideRow -names @("source_page_url", "Source_Page_Url"))) `
+      -needsParentSource (Normalize-Text (Get-PropValue -row $overrideRow -names @("needs_parent_source", "Needs_Parent_Source"))) `
+      -manualReviewFlag (Normalize-Text (Get-PropValue -row $overrideRow -names @("manual_review_flag", "Manual_Review_Flag"))) `
+      -notes (Normalize-Text (Get-PropValue -row $overrideRow -names @("notes", "Notes")))
+
+    $programOverridesByKey[$key] = $overrideRecord
+    Add-ProgramOverrideUrlKeys -bucket $programOverridesByUrlKey -overrideRecord $overrideRecord
+    Add-ToBucket -map $programOverridesByInstitution -key ((Normalize-Text $institution).ToLowerInvariant()) -value $overrideRecord
+
+    $programOverrideStats.rows_loaded++
+    if ($includeOrExclude -eq "include") { $programOverrideStats.include_rows++ }
+    if ($includeOrExclude -eq "exclude") { $programOverrideStats.exclude_rows++ }
+  }
+}
+
+if (Test-Path $RulesetsPath) {
+  foreach ($rulesetRow in (Import-Csv $RulesetsPath)) {
+    $institution = Normalize-Text (Get-PropValue -row $rulesetRow -names @("institution", "Institution"))
+    if (-not $institution) {
+      $rulesetStats.rows_skipped++
+      continue
+    }
+
+    $defaultAvgTotalRaw = Normalize-Text (Get-PropValue -row $rulesetRow -names @("default_avg_total", "Default_Avg_Total"))
+    $defaultAvgTotal = 0
+    if ($defaultAvgTotalRaw) {
+      try { $defaultAvgTotal = [int][double]$defaultAvgTotalRaw } catch { $defaultAvgTotal = 0 }
+    }
+
+    $placementRequired = Parse-TruthyFlag (Get-PropValue -row $rulesetRow -names @("placement_required", "Placement_Required")) $false
+    $credentialScope = Normalize-Text (Get-PropValue -row $rulesetRow -names @("credential_scope", "Credential_Scope"))
+    $credentialTokens = Parse-CredentialScopeTokens $credentialScope
+    $requirementTypePattern = (Normalize-Text (Get-PropValue -row $rulesetRow -names @("requirement_type_pattern", "Requirement_Type_Pattern"))).ToLowerInvariant()
+    $rulesetKey = Normalize-Text (Get-PropValue -row $rulesetRow -names @("ruleset_key", "Ruleset_Key"))
+
+    if ($defaultAvgTotal -le 0 -and -not $placementRequired) {
+      $rulesetStats.rows_skipped++
+      continue
+    }
+
+    $specificity = 0
+    if ($credentialTokens.Count -gt 0) { $specificity += 1 }
+    if ($requirementTypePattern) { $specificity += 1 }
+
+    $ruleRecord = [pscustomobject]@{
+      Institution_Key = $institution.ToLowerInvariant()
+      Ruleset_Key = $rulesetKey
+      Credential_Tokens = $credentialTokens
+      Requirement_Type_Pattern = $requirementTypePattern
+      Default_Avg_Total = $defaultAvgTotal
+      Placement_Required = $placementRequired
+      Specificity = $specificity
+    }
+
+    Add-ToBucket -map $rulesetsByInstitution -key $ruleRecord.Institution_Key -value $ruleRecord
+    $rulesetStats.rows_loaded++
+    if ($defaultAvgTotal -gt 0) { $rulesetStats.rows_with_default_avg_total++ }
+    if ($placementRequired) { $rulesetStats.rows_with_placement_required++ }
+  }
+
+  foreach ($instKey in @($rulesetsByInstitution.Keys)) {
+    $rulesetsByInstitution[$instKey] = @(
+      $rulesetsByInstitution[$instKey] |
+        Sort-Object @{ Expression = "Specificity"; Descending = $true }, @{ Expression = "Ruleset_Key"; Descending = $false }
+    )
+  }
+}
+
+if ($programOverridesByKey.Count -gt 0) {
+  $rows = @(
+    $rows | Where-Object {
+      $inst = Normalize-Text $_.Institution
+      $programName = Normalize-Text $_.Program
+      $credentialType = Normalize-Text $_.Credential_Type
+      $programUrl = Get-RowProgramUrl $_
+      $override = Resolve-ProgramOverride `
+        -overrides $programOverridesByKey `
+        -overridesByUrl $programOverridesByUrlKey `
+        -overridesByInstitution $programOverridesByInstitution `
+        -institution $inst `
+        -program $programName `
+        -credential $credentialType `
+        -sourceUrl $programUrl
+      if ($null -eq $override) { return $true }
+      if ($override.Include_Or_Exclude -eq "exclude") {
+        $programOverrideStats.row_excluded++
+        return $false
+      }
+      return $true
+    }
+  )
+}
+
 if ($DropNaitNonPrograms -or $DropNorQuestNonPrograms) {
   $rows = $rows | Where-Object {
     $inst = Normalize-Text $_.Institution
     $programName = Normalize-Text $_.Program
+    $credentialType = Normalize-Text $_.Credential_Type
     $programKey = Normalize-ProgramKey $programName
     $programUrl = Get-RowProgramUrl $_
     $programUrlKey = Normalize-UrlKey $programUrl
+    $programOverride = Resolve-ProgramOverride `
+      -overrides $programOverridesByKey `
+      -overridesByUrl $programOverridesByUrlKey `
+      -overridesByInstitution $programOverridesByInstitution `
+      -institution $inst `
+      -program $programName `
+      -credential $credentialType `
+      -sourceUrl $programUrl
 
     if ($inst -eq "NAIT" -and $DropNaitNonPrograms) {
+      if ($null -ne $programOverride -and $programOverride.Include_Or_Exclude -eq "include") {
+        $programOverrideStats.row_include_forced++
+        return $true
+      }
       $naitStats.nait_rows_examined++
 
       $evidenceNotes = ""
@@ -417,7 +786,7 @@ if ($DropNaitNonPrograms -or $DropNorQuestNonPrograms) {
         return $true
       }
 
-      if ($programKey -and $naitLegacyAllowlistNames.ContainsKey($programKey)) {
+      if ($naitSeedNames.Count -eq 0 -and $programKey -and $naitLegacyAllowlistNames.ContainsKey($programKey)) {
         $naitStats.kept_legacy_allowlist++
         return $true
       }
@@ -432,6 +801,10 @@ if ($DropNaitNonPrograms -or $DropNorQuestNonPrograms) {
     }
 
     if ($inst -eq "NorQuest" -and $DropNorQuestNonPrograms) {
+      if ($null -ne $programOverride -and $programOverride.Include_Or_Exclude -eq "include") {
+        $programOverrideStats.row_include_forced++
+        return $true
+      }
       $norquestStats.norquest_rows_examined++
 
       $evidenceNotes = ""
@@ -532,6 +905,81 @@ $canonical = foreach ($r in $rows) {
   }
 }
 
+if ($DropNaitNonPrograms -and $naitSeedRowsByKey.Count -gt 0) {
+  $existingNaitKeys = @{}
+  foreach ($row in @($canonical | Where-Object { $_.Institution -eq "NAIT" })) {
+    $key = Normalize-ProgramKey $row.Program
+    if ($key) { $existingNaitKeys[$key] = $true }
+  }
+
+  $backfillRows = @()
+  foreach ($key in $naitSeedRowsByKey.Keys) {
+    if ($existingNaitKeys.ContainsKey($key)) { continue }
+    $seedRow = $naitSeedRowsByKey[$key]
+    $seedProgram = Normalize-Text $seedRow.Program
+    if (-not $seedProgram) { continue }
+
+    $seedOverride = Resolve-ProgramOverride `
+      -overrides $programOverridesByKey `
+      -overridesByUrl $programOverridesByUrlKey `
+      -overridesByInstitution $programOverridesByInstitution `
+      -institution "NAIT" `
+      -program $seedProgram `
+      -credential "" `
+      -sourceUrl (Normalize-Text $seedRow.Program_URL)
+    if ($null -ne $seedOverride -and $seedOverride.Include_Or_Exclude -eq "exclude") {
+      $programOverrideStats.row_excluded++
+      continue
+    }
+
+    $backfillRows += [pscustomobject]@{
+      Institution          = "NAIT"
+      Program              = $seedProgram
+      Credential_Type      = Infer-MacewanCredentialType $seedProgram
+      Status               = "Active"
+      Program_URL          = (Normalize-Text $seedRow.Program_URL)
+
+      Min_Avg_Final        = ""
+      Competitive_Final    = ""
+      Avg_Total            = ""
+
+      English_Req          = ""
+      English_Min          = ""
+      Eng_30_2_Allowed     = ""
+
+      Math_Req             = ""
+      Math_Min             = ""
+
+      Social_Req           = ""
+      Social_Min           = ""
+
+      Science_Req          = ""
+      Science_Min          = ""
+      Bio_30_Req           = ""
+      Chem_30_Req          = ""
+      Phys_30_Req          = ""
+      Sci_30_Req           = ""
+
+      Elective_Qty         = ""
+      Elective_Pool        = ""
+      Pool_Allows_Group_A  = ""
+      Pool_Allows_Group_B  = ""
+      Pool_Allows_Group_C  = ""
+      Pool_Allows_Group_D  = ""
+
+      Requirement_Type     = "Unknown"
+      HS_Diploma_Req       = "Unknown"
+      Math_Assessment_Flag = "Unknown"
+      ELP_Tests_Mentioned  = ""
+    }
+  }
+
+  if ($backfillRows.Count -gt 0) {
+    $naitStats.seed_backfill_added = $backfillRows.Count
+    $canonical = @($canonical) + @($backfillRows)
+  }
+}
+
 if ($DropNorQuestNonPrograms -and $norquestSeedRowsByKey.Count -gt 0) {
   $existingNorquestKeys = @{}
   foreach ($row in @($canonical | Where-Object { $_.Institution -eq "NorQuest" })) {
@@ -543,12 +991,27 @@ if ($DropNorQuestNonPrograms -and $norquestSeedRowsByKey.Count -gt 0) {
   foreach ($key in $norquestSeedRowsByKey.Keys) {
     if ($existingNorquestKeys.ContainsKey($key)) { continue }
     $seedRow = $norquestSeedRowsByKey[$key]
+    $seedProgram = Normalize-Text $seedRow.Program
+    $seedUrl = Normalize-Text $seedRow.Program_URL
+    $seedOverride = Resolve-ProgramOverride `
+      -overrides $programOverridesByKey `
+      -overridesByUrl $programOverridesByUrlKey `
+      -overridesByInstitution $programOverridesByInstitution `
+      -institution "NorQuest" `
+      -program $seedProgram `
+      -credential (Normalize-Text $seedRow.Credential_Type) `
+      -sourceUrl $seedUrl
+    if ($null -ne $seedOverride -and $seedOverride.Include_Or_Exclude -eq "exclude") {
+      $programOverrideStats.row_excluded++
+      continue
+    }
+
     $backfillRows += [pscustomobject]@{
       Institution          = "NorQuest"
-      Program              = $seedRow.Program
+      Program              = $seedProgram
       Credential_Type      = (Normalize-NorquestCredentialType $seedRow.Credential_Type)
       Status               = "Active"
-      Program_URL          = (Normalize-Text $seedRow.Program_URL)
+      Program_URL          = $seedUrl
 
       Min_Avg_Final        = ""
       Competitive_Final    = ""
@@ -617,6 +1080,7 @@ if ($macewanSeedRows.Count -gt 0 -or $MacewanRequireFullSeedCoverage) {
   }
 
   $rebuiltMacewanRows = @()
+  $macewanSeedExcludedByOverride = 0
   foreach ($seed in $macewanSeedRows) {
     $seedName = Normalize-Text $seed.Program
     $seedTokens = @($seed.Tokens)
@@ -662,6 +1126,20 @@ if ($macewanSeedRows.Count -gt 0 -or $MacewanRequireFullSeedCoverage) {
       $fallbackUrl = $seedProgramUrl
     } elseif (Is-HttpUrl $seedPreferredUrl) {
       $fallbackUrl = $seedPreferredUrl
+    }
+
+    $seedOverride = Resolve-ProgramOverride `
+      -overrides $programOverridesByKey `
+      -overridesByUrl $programOverridesByUrlKey `
+      -overridesByInstitution $programOverridesByInstitution `
+      -institution "MacEwan" `
+      -program $seedName `
+      -credential (Infer-MacewanCredentialType $seedName) `
+      -sourceUrl $fallbackUrl
+    if ($null -ne $seedOverride -and $seedOverride.Include_Or_Exclude -eq "exclude") {
+      $macewanSeedExcludedByOverride++
+      $programOverrideStats.row_excluded++
+      continue
     }
 
     if ($isMatch -and $bestRow) {
@@ -712,10 +1190,11 @@ if ($macewanSeedRows.Count -gt 0 -or $MacewanRequireFullSeedCoverage) {
     $rebuiltMacewanRows += $rebuilt
   }
 
-  if ($MacewanRequireFullSeedCoverage -and ($rebuiltMacewanRows.Count -ne $macewanSeedRows.Count)) {
+  $expectedMacewanRows = $macewanSeedRows.Count - $macewanSeedExcludedByOverride
+  if ($MacewanRequireFullSeedCoverage -and ($rebuiltMacewanRows.Count -ne $expectedMacewanRows)) {
     throw (
       "MacEwan seed coverage mismatch: expected {0} rows, rebuilt {1}" -f
-      $macewanSeedRows.Count, $rebuiltMacewanRows.Count
+      $expectedMacewanRows, $rebuiltMacewanRows.Count
     )
   }
 
@@ -786,6 +1265,103 @@ if ($UalbertaRequireFullCoverage) {
   }
 }
 
+if ($rulesetsByInstitution.Count -gt 0) {
+  foreach ($row in @($canonical)) {
+    $instKey = (Normalize-Text $row.Institution).ToLowerInvariant()
+    if (-not $instKey -or -not $rulesetsByInstitution.ContainsKey($instKey)) { continue }
+
+    $rulesForInst = @($rulesetsByInstitution[$instKey])
+    if ($rulesForInst.Count -eq 0) { continue }
+
+    $rowCredential = Normalize-Text $row.Credential_Type
+    $rowReqType = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+    $matchedRule = $null
+    foreach ($rule in $rulesForInst) {
+      if (-not (Credential-MatchesScope -credentialType $rowCredential -scopeTokens @($rule.Credential_Tokens))) {
+        continue
+      }
+      if ($rule.Requirement_Type_Pattern -and (-not $rowReqType.Contains($rule.Requirement_Type_Pattern))) {
+        continue
+      }
+      $matchedRule = $rule
+      break
+    }
+    if ($null -eq $matchedRule) { continue }
+
+    $rowApplied = $false
+    $currentAvgTotal = Normalize-Text $row.Avg_Total
+    if ($matchedRule.Default_Avg_Total -gt 0 -and -not $currentAvgTotal) {
+      $row.Avg_Total = [string]$matchedRule.Default_Avg_Total
+      $rulesetStats.avg_total_filled++
+      $rowApplied = $true
+    }
+
+    if ($matchedRule.Placement_Required) {
+      $flagRaw = (Normalize-Text $row.Math_Assessment_Flag).ToLowerInvariant()
+      if (-not $flagRaw -or $flagRaw -in @("unknown", "nan", "none", "null")) {
+        $row.Math_Assessment_Flag = "Yes"
+        $rulesetStats.placement_flags_set++
+        $rowApplied = $true
+      }
+    }
+
+    if ($rowApplied) {
+      $rulesetStats.rows_applied++
+    }
+  }
+}
+
+if ($programOverridesByKey.Count -gt 0) {
+  foreach ($row in @($canonical)) {
+    $rowProgramUrl = Normalize-Text $row.Program_URL
+    $override = Resolve-ProgramOverride `
+      -overrides $programOverridesByKey `
+      -overridesByUrl $programOverridesByUrlKey `
+      -overridesByInstitution $programOverridesByInstitution `
+      -institution (Normalize-Text $row.Institution) `
+      -program (Normalize-Text $row.Program) `
+      -credential (Normalize-Text $row.Credential_Type) `
+      -sourceUrl $rowProgramUrl
+    if ($null -eq $override) { continue }
+
+    $rowTouched = $false
+    if ($override.Requirement_Type_Override) {
+      $row.Requirement_Type = $override.Requirement_Type_Override
+      $rowTouched = $true
+    }
+    if ($override.Min_Avg_Override) {
+      $row.Min_Avg_Final = $override.Min_Avg_Override
+      $rowTouched = $true
+    }
+    if ($override.Elective_Qty_Override) {
+      $row.Elective_Qty = $override.Elective_Qty_Override
+      $rowTouched = $true
+    }
+    if ($override.Avg_Total_Override) {
+      $row.Avg_Total = $override.Avg_Total_Override
+      $rowTouched = $true
+    }
+
+    $overrideUrl = ""
+    if (Is-HttpUrl $override.Parent_Admissions_Url) {
+      $overrideUrl = $override.Parent_Admissions_Url
+    } elseif (Is-HttpUrl $override.Source_Page_Url) {
+      $overrideUrl = $override.Source_Page_Url
+    }
+
+    $existingUrl = Normalize-Text $row.Program_URL
+    if ($overrideUrl -and -not (Is-HttpUrl $existingUrl)) {
+      $row.Program_URL = $overrideUrl
+      $programOverrideStats.url_overrides_applied++
+      $rowTouched = $true
+    }
+
+    if ($rowTouched) {
+      $programOverrideStats.field_overrides_applied++
+    }
+  }
+}
+
 if ($DropExactDuplicates) {
   if ($macewanSeedRows.Count -gt 0) {
     $nonMacewanDedup = @(
@@ -833,6 +1409,7 @@ if ($DropNaitNonPrograms) {
   Write-Host ("  kept_allowlist_override: {0}" -f $naitStats.kept_allowlist_override)
   Write-Host ("  kept_legacy_allowlist: {0}" -f $naitStats.kept_legacy_allowlist)
   Write-Host ("  kept_seed_match: {0}" -f $naitStats.kept_seed_match)
+  Write-Host ("  seed_backfill_added: {0}" -f $naitStats.seed_backfill_added)
 }
 if ($DropNorQuestNonPrograms) {
   Write-Host "NorQuest cleanup summary:"
@@ -864,4 +1441,26 @@ if ($ualbertaStats.map_rows_loaded -gt 0 -or $UalbertaRequireFullCoverage) {
   Write-Host ("  rows_missing_map: {0}" -f $ualbertaStats.rows_missing_map)
   Write-Host ("  rows_invalid_map_url: {0}" -f $ualbertaStats.rows_invalid_map_url)
   Write-Host ("  rows_with_program_url: {0}" -f $ualbertaStats.rows_with_program_url)
+}
+if ((Test-Path $RulesetsPath) -or $rulesetStats.rows_loaded -gt 0) {
+  Write-Host "Rulesets summary:"
+  Write-Host ("  ruleset_rows_loaded: {0}" -f $rulesetStats.rows_loaded)
+  Write-Host ("  ruleset_rows_skipped: {0}" -f $rulesetStats.rows_skipped)
+  Write-Host ("  rows_with_default_avg_total: {0}" -f $rulesetStats.rows_with_default_avg_total)
+  Write-Host ("  rows_with_placement_required: {0}" -f $rulesetStats.rows_with_placement_required)
+  Write-Host ("  canonical_rows_touched: {0}" -f $rulesetStats.rows_applied)
+  Write-Host ("  avg_total_filled: {0}" -f $rulesetStats.avg_total_filled)
+  Write-Host ("  placement_flags_set: {0}" -f $rulesetStats.placement_flags_set)
+}
+if ((Test-Path $ProgramOverridesPath) -or $programOverrideStats.rows_loaded -gt 0) {
+  Write-Host "Program overrides summary:"
+  Write-Host ("  override_rows_loaded: {0}" -f $programOverrideStats.rows_loaded)
+  Write-Host ("  include_rows: {0}" -f $programOverrideStats.include_rows)
+  Write-Host ("  exclude_rows: {0}" -f $programOverrideStats.exclude_rows)
+  Write-Host ("  disabled_rows_skipped: {0}" -f $programOverrideStats.disabled_rows)
+  Write-Host ("  duplicate_keys_overwritten: {0}" -f $programOverrideStats.duplicate_keys_overwritten)
+  Write-Host ("  rows_excluded: {0}" -f $programOverrideStats.row_excluded)
+  Write-Host ("  rows_force_kept: {0}" -f $programOverrideStats.row_include_forced)
+  Write-Host ("  rows_with_field_overrides: {0}" -f $programOverrideStats.field_overrides_applied)
+  Write-Host ("  rows_with_url_overrides: {0}" -f $programOverrideStats.url_overrides_applied)
 }

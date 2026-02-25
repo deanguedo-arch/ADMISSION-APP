@@ -1,4 +1,4 @@
-# Work Log
+﻿# Work Log
 
 Keep entries short and append-only.
 
@@ -13,18 +13,18 @@ Keep entries short and append-only.
 - Added `tools/handoff.ps1` to create `docs/SESSION_HANDOFF.md` for long chat restarts.
 - Added optional local->Sheets automation: `apps_script/SyncPrograms.gs`, `pipeline/push_to_sheets.py`, and `docs/SHEETS_SYNC.md`.
 - Added `examples/student_template.tsv` for a pre-filled Student tab course list.
-- Hardened Apps Script column matching (case-insensitive headers) and added a clear error when `Programs` doesn’t contain the admissions dataset.
+- Hardened Apps Script column matching (case-insensitive headers) and added a clear error when `Programs` doesnâ€™t contain the admissions dataset.
 - Split output into `Missing` vs `Notes` columns; moved assessment/placement to Notes (does not make ineligible); added `Eligible`/`Ineligible` tabs and competitive highlighting.
 - Dropped MacEwan `Minor` rows from the canonical dataset and changed canonical CSV writing to UTF-8 without BOM (with `.new` fallback when the file is locked).
 - Updated `pipeline/push_to_sheets.py` to auto-prefer `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new` and read CSV as `utf-8-sig`.
 - Fixed `apps_script/SyncPrograms.gs` JSON responses to avoid unsupported `setHeader`/`setStatusCode`; hardened `pipeline/push_to_sheets.py` to fail fast on Apps Script HTML error pages.
 - Added one-click local sync: `config/sheets_sync.json` + `tools/sync-programs.ps1` + `SYNC_PROGRAMS.cmd`.
-- Improved NAIT admission-average handling by defaulting unknown course-counts to 5, and fixed NAIT multi-science prerequisites (flags now require ALL listed sciences, not “one of”).
-- Tweaked Apps Script output + averages: moved `Competitive Guidance` after average columns; only shows `Student Avg` when the average is complete; adds a “needed elective avg” hint when electives are missing.
+- Improved NAIT admission-average handling by defaulting unknown course-counts to 5, and fixed NAIT multi-science prerequisites (flags now require ALL listed sciences, not â€œone ofâ€).
+- Tweaked Apps Script output + averages: moved `Competitive Guidance` after average columns; only shows `Student Avg` when the average is complete; adds a â€œneeded elective avgâ€ hint when electives are missing.
 
 
 - Seeded 14 `UAlberta` first-year buckets in `ALBERTA_ADMISSIONS_MASTER_FINAL_v3.csv` and regenerated `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new`.
-- Extended Apps Script to support AND-required subjects, science k-of rules (e.g., �Two of ��), and combined science rules (ALL + one-of); defaulted `UAlberta` admission averages to 5 subjects; kept audition/portfolio/interview as Notes/advisories (no auto-fail).
+- Extended Apps Script to support AND-required subjects, science k-of rules (e.g., “Two of …”), and combined science rules (ALL + one-of); defaulted `UAlberta` admission averages to 5 subjects; kept audition/portfolio/interview as Notes/advisories (no auto-fail).
 ## 2026-02-09
 - Added sync validation gate: `tools/validate-canonical.ps1` (schema + row count + required institution checks, plus optional baseline row-drop guard).
 - Hardened `tools/sync-programs.ps1` to select freshest canonical file (`.csv` vs `.csv.new`), run validation before upload, and update `out/last_good_programs.csv` after successful sync.
@@ -1125,3 +1125,13 @@ Keep entries short and append-only.
 - Rebuilt NAIT/MacEwan seed artifacts and regenerated `pipeline/program_index.cleaned.csv` using current non-program guardrails.
 - Fixture checks PASS (`nait_program_filter`, `avg_total`, `enrichment_link`, `macewan_seed`) after rebuild.
 - Refreshed `config/nait_legacy_allowlist.csv` and removed continuing-education/walkthrough rows from cleaned index.
+## 2026-02-25 (overrides wiring + sync upload guardrails + NAIT seed coverage)
+- Wired `data/PROGRAM_OVERRIDES.csv` into `tools/clean-master.ps1` (active-row include/exclude handling, field overrides for `Requirement_Type`/`Min_Avg_Final`/`Elective_Qty`/`Avg_Total`, and URL fallback from parent/source admissions URLs when canonical `Program_URL` is missing).
+- Added NAIT seed backfill in `tools/clean-master.ps1` so canonical output keeps full NAIT seed coverage (131 rows) instead of collapsing to legacy allowlist-only rows.
+- Hardened Sheets sync upload safety: `pipeline/push_to_sheets.py` now refuses non-canonical `Programs` payloads and too-small uploads; `apps_script_sync/SyncPrograms.gs` now validates required headers/min rows before clearing target tab.
+- Rebuilt canonical snapshot and validated with `tools/validate-canonical.ps1` (PASS; counts: NAIT 131, NorQuest 77, MacEwan 114, UAlberta 14).
+## 2026-02-25 (generalized sample-to-pipeline wiring pass)
+- Extended tools/clean-master.ps1 override resolver to match by source_page_url/parent_admissions_url and high-confidence program-name similarity (not exact-name only), so sampled rows propagate to institution-specific variants.
+- Wired Tier 1 ruleset application from data/RULESETS.csv into canonical build (institution+credential+requirement-type matching; fills missing Avg_Total; sets placement flag when required).
+- Hardened seed backfill/rebuild stages (NAIT/NorQuest/MacEwan) to respect include_or_exclude=exclude; MacEwan seed coverage validation now accounts for excluded seed rows.
+- Rebuilt canonical + validated (tools/clean-master.ps1, tools/validate-canonical.ps1) PASS with counts: NAIT 131, NorQuest 77, MacEwan 112, UAlberta 14.

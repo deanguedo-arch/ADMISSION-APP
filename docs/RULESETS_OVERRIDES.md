@@ -17,6 +17,16 @@ This file defines the planned structure for high-school admissions rule layering
 
 Use Tier 1 to avoid repeating the same assumptions on every program row.
 
+Current wiring:
+- `tools/clean-master.ps1` now consumes active Tier 1 rows from `data/RULESETS.csv`.
+- Matching keys:
+  - institution (required)
+  - credential scope (`Any` or token match from `credential_scope`)
+  - optional requirement type substring match (`requirement_type_pattern`)
+- Applied effects (only when target fields are missing/unknown):
+  - fill `Avg_Total` from `default_avg_total`
+  - set `Math_Assessment_Flag=Yes` when `placement_required` is truthy
+
 ## Tier 2: Program Overrides
 
 - File: `data/PROGRAM_OVERRIDES.csv`
@@ -26,6 +36,13 @@ Use Tier 1 to avoid repeating the same assumptions on every program row.
   - explicit parent admissions URL for inheritance rows
   - program-specific average/elective overrides
   - extraction hints (selector/snippet evidence)
+
+Current wiring:
+- `tools/clean-master.ps1` now consumes active override rows and applies:
+  - `include_or_exclude=exclude` to remove rows before canonical output
+  - `include_or_exclude=include` to bypass NAIT/NorQuest non-program drops
+  - field overrides: `Requirement_Type`, `Min_Avg_Final`, `Elective_Qty`, `Avg_Total`
+  - URL fallback from `parent_admissions_url` / `source_page_url` when canonical `Program_URL` is missing
 
 Tier 2 always wins over Tier 1 when both exist.
 

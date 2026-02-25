@@ -9,6 +9,7 @@ param(
   [string]$NorquestSeedPath = ".\\pipeline\\norquest_program_seed.csv",
   [string]$NorquestRulesPath = ".\\config\\norquest_non_program_rules.json",
   [string]$ProgramEvidencePath = ".\\PROGRAMS_ONLY.csv",
+  [string]$ProgramOverridesPath = ".\\data\\PROGRAM_OVERRIDES.csv",
   [switch]$RequireUalbertaMap = $true,
   [int]$MinRows = 100,
   [double]$MaxRowDropPercent = 35,
@@ -60,6 +61,13 @@ function Is-HttpUrl([object]$value) {
   return ($t -match "^(?i:https?)://")
 }
 
+function Is-ActiveOverrideStatus([object]$value) {
+  $raw = (Normalize-Text $value).ToLowerInvariant()
+  if (-not $raw) { return $true }
+  if ($raw -in @("inactive", "disabled", "archived", "off", "no", "false", "0")) { return $false }
+  return $true
+}
+
 function To-StringArray([object]$value) {
   $items = @()
   if ($null -eq $value) { return ,@() }
@@ -80,6 +88,20 @@ function Add-ToSet([hashtable]$set, [string]$key) {
   if (-not $set.ContainsKey($key)) {
     $set[$key] = $true
   }
+}
+
+function Add-ToNestedSet([hashtable]$map, [string]$instKey, [string]$valueKey) {
+  if ([string]::IsNullOrWhiteSpace($instKey) -or [string]::IsNullOrWhiteSpace($valueKey)) { return }
+  if (-not $map.ContainsKey($instKey)) {
+    $map[$instKey] = @{}
+  }
+  Add-ToSet -set $map[$instKey] -key $valueKey
+}
+
+function In-NestedSet([hashtable]$map, [string]$instKey, [string]$valueKey) {
+  if ([string]::IsNullOrWhiteSpace($instKey) -or [string]::IsNullOrWhiteSpace($valueKey)) { return $false }
+  if (-not $map.ContainsKey($instKey)) { return $false }
+  return $map[$instKey].ContainsKey($valueKey)
 }
 
 function Get-PropValue([object]$row, [string[]]$names) {
@@ -150,6 +172,35 @@ foreach ($inst in $RequiredInstitutions) {
   }
 }
 
+$overrideExcludeNameByInst = @{}
+$overrideExcludeUrlByInst = @{}
+if (Test-Path $ProgramOverridesPath) {
+  foreach ($overrideRow in (Import-Csv $ProgramOverridesPath)) {
+    $status = Normalize-Text (Get-PropValue -row $overrideRow -names @("status", "Status"))
+    if (-not (Is-ActiveOverrideStatus $status)) { continue }
+
+    $includeOrExclude = (Normalize-Text (Get-PropValue -row $overrideRow -names @("include_or_exclude", "Include_Or_Exclude"))).ToLowerInvariant()
+    if ($includeOrExclude -ne "exclude") { continue }
+
+    $inst = (Normalize-Text (Get-PropValue -row $overrideRow -names @("institution", "Institution"))).ToLowerInvariant()
+    if (-not $inst) { continue }
+
+    $programKey = Normalize-ProgramKey (Get-PropValue -row $overrideRow -names @("program", "Program"))
+    if ($programKey) {
+      Add-ToNestedSet -map $overrideExcludeNameByInst -instKey $inst -valueKey $programKey
+    }
+
+    $sourceUrlKey = Normalize-UrlKey (Get-PropValue -row $overrideRow -names @("source_page_url", "Source_Page_Url"))
+    if ($sourceUrlKey) {
+      Add-ToNestedSet -map $overrideExcludeUrlByInst -instKey $inst -valueKey $sourceUrlKey
+    }
+    $parentUrlKey = Normalize-UrlKey (Get-PropValue -row $overrideRow -names @("parent_admissions_url", "Parent_Admissions_Url"))
+    if ($parentUrlKey) {
+      Add-ToNestedSet -map $overrideExcludeUrlByInst -instKey $inst -valueKey $parentUrlKey
+    }
+  }
+}
+
 $naitSeed = @{}
 if (-not (Test-Path $NaitSeedPath)) {
   throw "Validation failed: NAIT seed file not found: $NaitSeedPath"
@@ -177,6 +228,16 @@ foreach ($seedRow in (Import-Csv $MacewanSeedPath)) {
   $seedProgramUrl = Normalize-Text (Get-PropValue -row $seedRow -names @("program_url_seed", "program_url", "Program_URL", "url"))
   $seedUrl = if ($requirementsUrl) { $requirementsUrl } else { $seedProgramUrl }
   if (-not $nameKey -or -not $seedUrl) { continue }
+
+  $seedUrlKey = Normalize-UrlKey $seedUrl
+  $reqUrlKey = Normalize-UrlKey $requirementsUrl
+  $programUrlKey = Normalize-UrlKey $seedProgramUrl
+  $isExcluded = (In-NestedSet -map $overrideExcludeNameByInst -instKey "macewan" -valueKey $nameKey) -or
+    (In-NestedSet -map $overrideExcludeUrlByInst -instKey "macewan" -valueKey $seedUrlKey) -or
+    (In-NestedSet -map $overrideExcludeUrlByInst -instKey "macewan" -valueKey $reqUrlKey) -or
+    (In-NestedSet -map $overrideExcludeUrlByInst -instKey "macewan" -valueKey $programUrlKey)
+  if ($isExcluded) { continue }
+
   $macewanSeedRowCount++
   Add-ToSet -set $macewanSeed -key $nameKey
 }

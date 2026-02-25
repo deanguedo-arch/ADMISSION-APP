@@ -1,10 +1,54 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
+import io
 from pathlib import Path
 
 import requests
+
+REQUIRED_PROGRAM_COLUMNS = {
+    "institution",
+    "program",
+    "credential_type",
+    "status",
+}
+MIN_PROGRAM_ROWS = 100
+
+
+def _normalized_headers(csv_text: str) -> set[str]:
+    reader = csv.reader(io.StringIO(csv_text))
+    try:
+        header = next(reader)
+    except StopIteration:
+        return set()
+    return {str(col or "").strip().lower() for col in header if str(col or "").strip()}
+
+
+def _count_rows(csv_text: str) -> int:
+    reader = csv.reader(io.StringIO(csv_text))
+    # Subtract header row if present.
+    row_count = sum(1 for _ in reader)
+    return max(0, row_count - 1)
+
+
+def validate_programs_payload(csv_text: str, sheet_name: str) -> None:
+    if sheet_name.strip().lower() != "programs":
+        return
+    headers = _normalized_headers(csv_text)
+    missing = sorted(REQUIRED_PROGRAM_COLUMNS - headers)
+    if missing:
+        raise SystemExit(
+            "Refusing upload to Programs: CSV is not canonical admissions shape "
+            f"(missing columns: {', '.join(missing)})."
+        )
+
+    row_count = _count_rows(csv_text)
+    if row_count < MIN_PROGRAM_ROWS:
+        raise SystemExit(
+            f"Refusing upload to Programs: only {row_count} data rows; expected at least {MIN_PROGRAM_ROWS}."
+        )
 
 
 def main(argv: list[str]) -> int:
@@ -25,6 +69,7 @@ def main(argv: list[str]) -> int:
 
     # Use utf-8-sig so BOM headers don't break downstream tools if a file was exported with BOM.
     csv_text = csv_path.read_text(encoding="utf-8-sig")
+    validate_programs_payload(csv_text=csv_text, sheet_name=args.sheet)
 
     payload = {"token": args.token, "csv": csv_text, "sheetName": args.sheet}
     resp = requests.post(

@@ -56,6 +56,11 @@ function doPost(e) {
       return jsonResponse_(400, { ok: false, error: "CSV parsed empty" });
     }
 
+    const validationError = validateIncomingCsv_(values, sheetName, props);
+    if (validationError) {
+      return jsonResponse_(400, { ok: false, error: validationError });
+    }
+
     const backup = backupSheetSnapshot_(ss, sheet, sheetName);
 
     sheet.clearContents();
@@ -72,6 +77,46 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse_(500, { ok: false, error: String(err && err.stack ? err.stack : err) });
   }
+}
+
+function validateIncomingCsv_(values, sheetName, props) {
+  if (String(sheetName || "").trim().toLowerCase() !== "programs") {
+    return "";
+  }
+
+  if (!values || values.length < 2) {
+    return "Programs upload must include at least one data row.";
+  }
+
+  const header = values[0] || [];
+  const idx = {};
+  for (let i = 0; i < header.length; i++) {
+    const key = normalizeHeaderKey_(header[i]);
+    if (!key) continue;
+    if (idx[key] === undefined) idx[key] = i;
+  }
+
+  const required = ["institution", "program", "credential_type", "status"];
+  const missing = required.filter((key) => idx[key] === undefined);
+  if (missing.length) {
+    return `Programs upload missing required columns: ${missing.join(", ")}`;
+  }
+
+  const minRowsRaw = String((props && props.getProperty("MIN_PROGRAM_ROWS")) || "100").trim();
+  const minRows = Math.max(1, Number(minRowsRaw) || 100);
+  const dataRows = Math.max(0, values.length - 1);
+  if (dataRows < minRows) {
+    return `Programs upload too small: ${dataRows} data rows (minimum ${minRows}).`;
+  }
+
+  return "";
+}
+
+function normalizeHeaderKey_(value) {
+  return String(value || "")
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .toLowerCase();
 }
 
 function jsonResponse_(status, obj) {
