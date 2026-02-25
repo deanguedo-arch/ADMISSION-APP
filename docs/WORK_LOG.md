@@ -1105,3 +1105,7 @@ Keep entries short and append-only.
 - Fixed non-mobile overflow in Program Results toolbar by adding a results-panel container query for desktop (@media (min-width: 981px) + @container results-panel (max-width: 980px)).
 - Toolbar controls now switch to a 12-column grid when the results panel is narrow, keeping Clear, All, and Print Packet contained within panel bounds.
 - Rebuilt offline snapshot and re-ran guardrails (alidate-webapp-surface, alidate-apps-script-structure) PASS.
+## 2026-02-25 (P0 trust gating + staleness banner + next semester planning)
+- Added featured recommendation trust gating (eligible + High confidence + valid source URL + non-stale dataset date) with no fallback badge when criteria fail.
+- Upgraded snapshot banner date line to show data age in days and freshness classes (`fresh`/`aging`/`stale`) plus subtle aging/stale styles.
+- Added per-program Next Semester Plan generation in details and a new pinned consolidated print export (`Generate Next Semester Plan (Pinned)`).
