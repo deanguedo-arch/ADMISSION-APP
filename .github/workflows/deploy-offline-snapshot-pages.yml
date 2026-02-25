@@ -6,8 +6,9 @@ on:
       - main
     paths:
       - "apps_script/**"
-      - "tools/build-pages.js"
-      - "package.json"
+      - "offline_snapshot/**"
+      - "data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv"
+      - "data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new"
       - ".github/workflows/deploy-offline-snapshot-pages.yml"
   workflow_dispatch:
 
@@ -30,13 +31,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: "20"
+          python-version: "3.12"
 
-      - name: Compile Web App for Pages
-        run: node tools/build-pages.js
+      - name: Build Offline Snapshot for Pages
+        run: python offline_snapshot/build_snapshot.py --out docs
+
+      - name: Verify snapshot row count
+        run: |
+          python - << 'PY'
+          import json
+          from pathlib import Path
+          meta = json.loads(Path("docs/snapshot.meta.json").read_text(encoding="utf-8"))
+          rows = int(meta.get("row_count_total", 0))
+          if rows < 100:
+              raise SystemExit(f"Snapshot row count unexpectedly low: {rows}")
+          print(f"Snapshot rows: {rows}")
+          PY
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

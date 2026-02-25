@@ -1146,5 +1146,10 @@ Keep entries short and append-only.
 - Added root `index.html` redirect to `./docs/` so branch-root GitHub Pages no longer falls back to rendering `README.md`.
 - Updated `isMockMode()` in `apps_script/WebAppScriptFunctions.html` to auto-enable mock mode on `*.github.io` unless explicitly overridden by `?mock=0`.
 - Recompiled `docs/index.html` via `npm run build:pages`; guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
+## 2026-02-25 (offline Pages full dataset wiring)
+- Switched STEP 3 Pages workflow to build from `offline_snapshot/build_snapshot.py --out docs` (full canonical snapshot) instead of mock-only compile.
+- Added snapshot row-count gate in workflow (`docs/snapshot.meta.json` must be >=100 rows) to prevent accidental tiny/mock publishes.
+- Updated `isMockMode()` fallback logic to use mock on `*.github.io` only when no Apps Script/offline bridge runtime is available.
+- Local verification: snapshot build rows=334 (`dataset_date=2026-02-25`); guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
 
 
