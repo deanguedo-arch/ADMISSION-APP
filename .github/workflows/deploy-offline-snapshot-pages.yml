@@ -51,6 +51,25 @@ jobs:
           print(f"Snapshot rows: {rows}")
           PY
 
+      - name: Verify Pages paths and offline runtime files
+        run: |
+          python - << 'PY'
+          from pathlib import Path
+          required = [
+              Path("docs/index.html"),
+              Path("docs/docs/index.html"),  # legacy /docs bookmark compatibility
+              Path("docs/runtime/offline_bridge.js"),
+              Path("docs/data/snapshot_data.js"),
+          ]
+          missing = [str(p) for p in required if not p.exists()]
+          if missing:
+              raise SystemExit("Missing required Pages artifact files: " + ", ".join(missing))
+          html = Path("docs/index.html").read_text(encoding="utf-8")
+          if "runtime/offline_bridge.js" not in html or "data/snapshot_data.js" not in html:
+              raise SystemExit("docs/index.html is missing offline runtime script includes.")
+          print("Pages artifact path/runtime checks passed.")
+          PY
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

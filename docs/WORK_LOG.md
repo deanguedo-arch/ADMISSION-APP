@@ -1160,5 +1160,6 @@ Keep entries short and append-only.
 - Root cause confirmed for user-facing 404: app is deployed at `/ADMISSION-APP/` but stale bookmark/link hit `/ADMISSION-APP/docs/#...`, which had no path in current Pages artifact.
 - Added compatibility alias generation in `offline_snapshot/build_snapshot.py` so snapshot builds now emit `docs/docs/index.html` redirecting to `../` while preserving query/hash.
 - Rebuilt snapshot to `docs` (rows=334) and verified alias exists; guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
+- Hardened STEP 3 workflow with required-artifact checks for `docs/index.html`, `docs/docs/index.html`, `docs/runtime/offline_bridge.js`, and `docs/data/snapshot_data.js` plus script-include assertions.
 
 
