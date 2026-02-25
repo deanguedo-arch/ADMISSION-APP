@@ -1135,3 +1135,6 @@ Keep entries short and append-only.
 - Wired Tier 1 ruleset application from data/RULESETS.csv into canonical build (institution+credential+requirement-type matching; fills missing Avg_Total; sets placement flag when required).
 - Hardened seed backfill/rebuild stages (NAIT/NorQuest/MacEwan) to respect include_or_exclude=exclude; MacEwan seed coverage validation now accounts for excluded seed rows.
 - Rebuilt canonical + validated (tools/clean-master.ps1, tools/validate-canonical.ps1) PASS with counts: NAIT 131, NorQuest 77, MacEwan 112, UAlberta 14.
+## 2026-02-25 (dataset gate fix: missing Program_URL after merge)
+- Added NAIT/NorQuest seed URL fill in `tools/clean-master.ps1` so existing rows with blank/non-http `Program_URL` are backfilled from seed URLs (not only newly backfilled rows).
+- Rebuilt canonical dataset; missing `Program_URL` ratio reduced from 14.07% (47/334) to 0% (0/334), unblocking `tools/validate-dataset.py` CI gate.

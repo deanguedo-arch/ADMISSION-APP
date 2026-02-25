@@ -391,6 +391,7 @@ $naitStats = @{
   kept_legacy_allowlist = 0
   kept_seed_match = 0
   seed_backfill_added = 0
+  seed_url_filled = 0
 }
 
 $norquestSeedNames = @{}
@@ -410,6 +411,7 @@ $norquestStats = @{
   kept_allowlist_override = 0
   kept_seed_match = 0
   seed_backfill_added = 0
+  seed_url_filled = 0
 }
 
 $macewanSeedRows = @()
@@ -1054,6 +1056,36 @@ if ($DropNorQuestNonPrograms -and $norquestSeedRowsByKey.Count -gt 0) {
   }
 }
 
+if ($naitSeedRowsByKey.Count -gt 0 -or $norquestSeedRowsByKey.Count -gt 0) {
+  foreach ($row in @($canonical)) {
+    $inst = Normalize-Text $row.Institution
+    if ($inst -ne "NAIT" -and $inst -ne "NorQuest") { continue }
+
+    $programKey = Normalize-ProgramKey $row.Program
+    if (-not $programKey) { continue }
+
+    $currentUrl = Normalize-Text $row.Program_URL
+    if (Is-HttpUrl $currentUrl) { continue }
+
+    if ($inst -eq "NAIT" -and $naitSeedRowsByKey.ContainsKey($programKey)) {
+      $seedUrl = Normalize-Text $naitSeedRowsByKey[$programKey].Program_URL
+      if (Is-HttpUrl $seedUrl) {
+        $row.Program_URL = $seedUrl
+        $naitStats.seed_url_filled++
+        continue
+      }
+    }
+
+    if ($inst -eq "NorQuest" -and $norquestSeedRowsByKey.ContainsKey($programKey)) {
+      $seedUrl = Normalize-Text $norquestSeedRowsByKey[$programKey].Program_URL
+      if (Is-HttpUrl $seedUrl) {
+        $row.Program_URL = $seedUrl
+        $norquestStats.seed_url_filled++
+      }
+    }
+  }
+}
+
 if ($macewanSeedRows.Count -gt 0 -or $MacewanRequireFullSeedCoverage) {
   if ($MacewanRequireFullSeedCoverage -and $macewanSeedRows.Count -eq 0) {
     throw "MacEwan seed file is required but no rows were loaded: $MacewanSeedPath"
@@ -1410,6 +1442,7 @@ if ($DropNaitNonPrograms) {
   Write-Host ("  kept_legacy_allowlist: {0}" -f $naitStats.kept_legacy_allowlist)
   Write-Host ("  kept_seed_match: {0}" -f $naitStats.kept_seed_match)
   Write-Host ("  seed_backfill_added: {0}" -f $naitStats.seed_backfill_added)
+  Write-Host ("  seed_url_filled: {0}" -f $naitStats.seed_url_filled)
 }
 if ($DropNorQuestNonPrograms) {
   Write-Host "NorQuest cleanup summary:"
@@ -1423,6 +1456,7 @@ if ($DropNorQuestNonPrograms) {
   Write-Host ("  kept_allowlist_override: {0}" -f $norquestStats.kept_allowlist_override)
   Write-Host ("  kept_seed_match: {0}" -f $norquestStats.kept_seed_match)
   Write-Host ("  seed_backfill_added: {0}" -f $norquestStats.seed_backfill_added)
+  Write-Host ("  seed_url_filled: {0}" -f $norquestStats.seed_url_filled)
 }
 if ($macewanStats.seed_rows_loaded -gt 0 -or $MacewanRequireFullSeedCoverage) {
   Write-Host "MacEwan seed summary:"
