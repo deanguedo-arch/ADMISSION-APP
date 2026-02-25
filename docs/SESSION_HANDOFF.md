@@ -11,6 +11,7 @@
 - Working tree: clean
 - Local/remote sync: `main...origin/main` (up to date)
 - Latest commits:
+  - `3dcbe30` - `docs: log full handoff status`
   - `91d5a93` - `chore: refresh dataset + sync artifacts (CI)`
   - `5c11432` - `fix: backfill seed URLs for NAIT/NorQuest`
 
