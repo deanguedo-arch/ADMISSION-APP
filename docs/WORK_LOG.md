@@ -1161,5 +1161,10 @@ Keep entries short and append-only.
 - Added compatibility alias generation in `offline_snapshot/build_snapshot.py` so snapshot builds now emit `docs/docs/index.html` redirecting to `../` while preserving query/hash.
 - Rebuilt snapshot to `docs` (rows=334) and verified alias exists; guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
 - Hardened STEP 3 workflow with required-artifact checks for `docs/index.html`, `docs/docs/index.html`, `docs/runtime/offline_bridge.js`, and `docs/data/snapshot_data.js` plus script-include assertions.
+## 2026-02-25 (pinned workflow hardening: no-popup reports + button-state gating)
+- Replaced pinned report exports (`Generate Program Comparison Sheet (Pinned)`, `Generate Next Semester Plan (Pinned)`) to use `printHtmlDocument_` iframe-print path instead of `window.open` popups.
+- Added pinned report button state sync (`syncPinnedExportButtons_`): buttons now disable until eligibility results exist and at least one program is pinned.
+- Added immediate pin feedback status (`Pinned programs: N`) on card/detail pin toggles to make pin state changes explicit.
+- Recompiled `docs/index.html` and re-ran guardrails (`validate-webapp-surface`, `validate-apps-script-structure`) PASS.
 
 

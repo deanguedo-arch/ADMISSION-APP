@@ -7266,6 +7266,23 @@ function boot() {
         if (ui.sumMissing) ui.sumMissing.textContent = String(ineligible);
         if (ui.sumUncheckable) ui.sumUncheckable.textContent = String(uncheckable);
         updateModeCounts_();
+        syncPinnedExportButtons_();
+      }
+
+      function syncPinnedExportButtons_() {
+        const hasModel = !!(state.resultModel && state.resultModel.rowsByKey);
+        const pinnedCount = hasModel ? getRowsForPinned_().length : 0;
+        const disabled = !hasModel || pinnedCount <= 0;
+        const reason = !hasModel
+          ? "Run Check Eligibility first."
+          : "Pin at least one program to enable this report.";
+        const buttons = [ui.pinnedComparisonBtn, ui.pinnedSemesterPlanBtn];
+        buttons.forEach((btn) => {
+          if (!btn) return;
+          btn.disabled = disabled;
+          btn.setAttribute("aria-disabled", disabled ? "true" : "false");
+          btn.title = disabled ? reason : "";
+        });
       }
 
       function populateResultFilterOptions() {
@@ -7382,6 +7399,7 @@ function boot() {
           if (!key) return;
           toggleShortlistKey(key);
           updateFilterCounts();
+          setStatus(`Pinned programs: ${countShortlistRows()}.`);
           renderResults();
           renderCompareStrip();
           renderCompareResults();
@@ -7554,6 +7572,7 @@ function boot() {
           if (!key) return;
           toggleShortlistKey(key);
           updateFilterCounts();
+          setStatus(`Pinned programs: ${countShortlistRows()}.`);
           renderResults();
           renderCompareStrip();
           renderCompareResults();
@@ -9312,14 +9331,7 @@ function boot() {
   </body>
 </html>`;
 
-        const win = window.open("", "_blank", "noopener,noreferrer");
-        if (!win) {
-          setStatus("Could not open semester plan window. Allow pop-ups and try again.", true);
-          return;
-        }
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+        printHtmlDocument_(html, "Could not open semester plan print view in this browser.");
         setStatus(`Generated Next Semester Plan for ${pinnedRows.length} pinned program(s).`);
         trackUiEvent_("semester_plan_export", {
           programs: pinnedRows.length,
@@ -9418,14 +9430,7 @@ function boot() {
   </body>
 </html>`;
 
-        const win = window.open("", "_blank", "noopener,noreferrer");
-        if (!win) {
-          setStatus("Could not open comparison sheet window. Allow pop-ups and try again.", true);
-          return;
-        }
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+        printHtmlDocument_(html, "Could not open comparison sheet print view in this browser.");
         setStatus(`Generated Program Comparison Sheet for ${pinnedRows.length} pinned program(s).`);
         trackUiEvent_("compare_sheet_export", { programs: pinnedRows.length });
       }
