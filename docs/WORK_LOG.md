@@ -1109,3 +1109,7 @@ Keep entries short and append-only.
 - Added featured recommendation trust gating (eligible + High confidence + valid source URL + non-stale dataset date) with no fallback badge when criteria fail.
 - Upgraded snapshot banner date line to show data age in days and freshness classes (`fresh`/`aging`/`stale`) plus subtle aging/stale styles.
 - Added per-program Next Semester Plan generation in details and a new pinned consolidated print export (`Generate Next Semester Plan (Pinned)`).
+## 2026-02-25 (P1 review queue + dataset validator + CI)
+- Added review queue generator (`tools/build-review-queue.py`) with CSV + markdown outputs and operator guide (`docs/REVIEW_QUEUE.md`).
+- Added strict dataset validator (`tools/validate-dataset.py`) and new GitHub Actions gate (`.github/workflows/dataset-validation.yml`) for push/PR checks.
+- Hardened NAIT non-program rules for continuing-education/walkthrough URL patterns and extended NAIT filter fixtures accordingly.

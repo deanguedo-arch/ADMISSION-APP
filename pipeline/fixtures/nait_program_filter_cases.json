@@ -33,19 +33,35 @@
   },
   {
     "id": "drop-not-in-seed",
-    "program_name": "AI and Data Governance for Innovation and Impact",
-    "source_url": "https://www.nait.ca/nait/continuing-education/programs/ai-and-data-governance-certificate",
+    "program_name": "Sample Non Seed Program",
+    "source_url": "https://www.nait.ca/programs/sample-non-seed-program",
     "evidence_notes": "",
     "expected_keep": false,
     "expected_reason": "dropped_not_in_seed"
   },
   {
-    "id": "keep-allowlist-override",
+    "id": "drop-continuing-education-url",
     "program_name": "AI and Data Governance for Innovation and Impact",
     "source_url": "https://www.nait.ca/nait/continuing-education/programs/ai-and-data-governance-certificate",
     "evidence_notes": "",
+    "expected_keep": false,
+    "expected_reason": "dropped_blocked_url"
+  },
+  {
+    "id": "drop-walkthrough-url",
+    "program_name": "Animation (Area of Emphasis)",
+    "source_url": "https://www.nait.ca/nait/schools-programs/school-of-applied-sciences-and-technology/walkthroughs/dmit-areas-of-emphasis/animation",
+    "evidence_notes": "",
+    "expected_keep": false,
+    "expected_reason": "dropped_blocked_url"
+  },
+  {
+    "id": "keep-allowlist-override",
+    "program_name": "Sample Non Seed Program",
+    "source_url": "https://www.nait.ca/programs/sample-non-seed-program",
+    "evidence_notes": "",
     "extra_allowlist_program_names": [
-      "AI and Data Governance for Innovation and Impact"
+      "Sample Non Seed Program"
     ],
     "expected_keep": true,
     "expected_reason": "kept_allowlist_override"
