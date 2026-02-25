@@ -1151,5 +1151,10 @@ Keep entries short and append-only.
 - Added snapshot row-count gate in workflow (`docs/snapshot.meta.json` must be >=100 rows) to prevent accidental tiny/mock publishes.
 - Updated `isMockMode()` fallback logic to use mock on `*.github.io` only when no Apps Script/offline bridge runtime is available.
 - Local verification: snapshot build rows=334 (`dataset_date=2026-02-25`); guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
+## 2026-02-25 (UI fixes: summary filters + details actions + credential width)
+- Removed mobile-only gating from summary quick-filter click handling so `Programs Checked / Likely eligible / Likely ineligible / Uncheckable` buttons switch views on desktop and mobile in Results mode.
+- Removed redundant details action-row `Program Link` button; kept the main `Program Website` link in the details header.
+- Widened narrow desktop results-panel container layout for `Institution`/`Credential` filters (span 3 each; search span 4) to prevent `All Credentials` truncation.
+- Recompiled `docs/index.html` via `npm run build:pages`; guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
 
 

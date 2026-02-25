@@ -4812,12 +4812,16 @@
           }
 
           #resultsPanel #resultSearch {
-            grid-column: span 5;
+            grid-column: span 4;
             min-width: 0;
           }
 
           #resultsPanel #institutionFilter,
-          #resultsPanel #credentialFilter,
+          #resultsPanel #credentialFilter {
+            grid-column: span 3;
+            min-width: 0;
+          }
+
           #resultsPanel #requirementTypeFilter {
             grid-column: span 2;
             min-width: 0;
@@ -7142,9 +7146,7 @@ function boot() {
       function onSummaryFilterClick_(e) {
         const btn = e.target && e.target.closest("button[data-view-target]");
         if (!btn) return;
-        if (!isMobileAppShell_()) return;
         if (normalizePrimaryMode_(state.primaryMode) !== "results") return;
-        if (normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT) !== "results") return;
         const nextView = String(btn.getAttribute("data-view-target") || "").trim();
         if (RESULT_VIEWS.indexOf(nextView) < 0) return;
         if (state.view === nextView) return;
@@ -8681,12 +8683,8 @@ function boot() {
               programUrl
             )}" target="_blank" rel="noopener noreferrer">Program Website</a></div>`
           : `<div class="detail-link-row"><span class="source-link-missing">Source link missing</span></div>`;
-        const detailActionLinkHtml = programUrl
-          ? `<a class="btn btn-subtle" href="${escapeAttr(programUrl)}" target="_blank" rel="noopener noreferrer">Program Link</a>`
-          : `<span class="btn btn-subtle is-disabled" aria-disabled="true">Program Link</span>`;
         const detailActionsHtml = `
           <div class="detail-actions-row">
-            ${detailActionLinkHtml}
             <button class="btn btn-subtle ${isPinned ? "active" : ""}" type="button" data-detail-pin-key="${escapeAttr(
               row.key
             )}">${escapeHtml(pinLabel)}</button>
