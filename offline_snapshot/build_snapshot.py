@@ -52,6 +52,34 @@ def _write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8", newline="\n")
 
 
+def _write_legacy_docs_alias(out_dir: Path) -> None:
+    # Backward-compatibility for old bookmarks using /docs/ on project Pages.
+    redirect_html = """<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admissions Checker</title>
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=../" />
+    </noscript>
+    <script>
+      (function () {
+        var query = String(window.location.search || "");
+        var hash = String(window.location.hash || "");
+        window.location.replace("../" + query + hash);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to the Admissions Checker...</p>
+    <p><a href="../">Open the app</a></p>
+  </body>
+</html>
+"""
+    _write_text(out_dir / "docs/index.html", redirect_html)
+
+
 def _resolve_canonical_path(
     repo_root: Path, explicit_path: str | None, fallback_path: str | None
 ) -> Path:
@@ -475,6 +503,7 @@ def main() -> int:
     _write_text(out_dir / "data/snapshot_data.js", snapshot_js)
     _write_text(out_dir / MANIFEST_FILE_NAME, json.dumps(web_manifest, indent=2) + "\n")
     _write_text(out_dir / "snapshot.meta.json", json.dumps(meta, indent=2) + "\n")
+    _write_legacy_docs_alias(out_dir)
 
     print(f"Built offline snapshot -> {out_dir}")
     print(f"  canonical_source: {canonical_path}")

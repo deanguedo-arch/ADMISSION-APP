@@ -1156,5 +1156,9 @@ Keep entries short and append-only.
 - Removed redundant details action-row `Program Link` button; kept the main `Program Website` link in the details header.
 - Widened narrow desktop results-panel container layout for `Institution`/`Credential` filters (span 3 each; search span 4) to prevent `All Credentials` truncation.
 - Recompiled `docs/index.html` via `npm run build:pages`; guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
+## 2026-02-25 (Pages path mismatch hardening: /docs alias)
+- Root cause confirmed for user-facing 404: app is deployed at `/ADMISSION-APP/` but stale bookmark/link hit `/ADMISSION-APP/docs/#...`, which had no path in current Pages artifact.
+- Added compatibility alias generation in `offline_snapshot/build_snapshot.py` so snapshot builds now emit `docs/docs/index.html` redirecting to `../` while preserving query/hash.
+- Rebuilt snapshot to `docs` (rows=334) and verified alias exists; guardrails PASS (`validate-webapp-surface`, `validate-apps-script-structure`).
 
 
