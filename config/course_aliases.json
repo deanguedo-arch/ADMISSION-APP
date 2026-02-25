@@ -1,0 +1,14 @@
+{
+  "English 30-1": ["ELA 30-1", "English Language Arts 30-1"],
+  "English 30-2": ["ELA 30-2", "English Language Arts 30-2"],
+  "Math 30-1": ["Mathematics 30-1"],
+  "Math 30-2": ["Mathematics 30-2"],
+  "Math 31": ["Mathematics 31", "Calculus 31"],
+  "Biology 30": ["Biology 30"],
+  "Chemistry 30": ["Chemistry 30"],
+  "Physics 30": ["Physics 30"],
+  "Science 30": ["Science 30"],
+  "Social 30-1": ["Social Studies 30-1"],
+  "Social 30-2": ["Social Studies 30-2"],
+  "Aboriginal Studies 30": ["Aboriginal Studies 30"]
+}

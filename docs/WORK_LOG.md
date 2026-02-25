@@ -1117,3 +1117,7 @@ Keep entries short and append-only.
 - Added include-compiler script (`tools/build-pages.js`) to compile `apps_script/WebApp.html` into `docs/index.html` with hard checks for missing includes/cycles.
 - Added npm command `build:pages` and switched STEP 3 Pages workflow to compile and publish directly from `/docs`.
 - Generated and committed compiled `docs/index.html` for deterministic static preview (`?mock=1`).
+## 2026-02-25 (P3 rulesets/overrides scaffolding + seed pack)
+- Added scaffolding files: `data/RULESETS.csv`, `data/PROGRAM_OVERRIDES.csv`, and `config/course_aliases.json` with HS-focused starter structure.
+- Added docs for tiering model in `docs/RULESETS_OVERRIDES.md` and local test checklist updates in `docs/LOCAL_WEBAPP_DEV.md`.
+- Added generators/importers: `tools/generate-ruleset-seed-pack.py` and `tools/import-program-overrides-samples.py`; imported 12 sample overrides from the uploaded spreadsheet.

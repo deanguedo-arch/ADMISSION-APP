@@ -95,3 +95,44 @@ Set Script Properties:
 - `WEBAPP_ALLOWED_GOOGLE_CLIENT_IDS` (optional comma-separated list)
 
 The web app validates Google ID tokens and allows only verified `@eips.ca` users.
+
+## How To Test Locally (Trust + Plan + Automation)
+
+1. Start local preview:
+
+```powershell
+.\tools\start-webapp-preview.ps1
+```
+
+2. Open browser:
+
+```text
+http://localhost:5173/WebApp.html?mock=1
+```
+
+3. Run dataset and review queue checks:
+
+```bash
+python tools/validate-dataset.py
+python tools/build-review-queue.py
+```
+
+4. Build GitHub Pages compiled app:
+
+```bash
+node tools/build-pages.js
+```
+
+5. Confirm compiled output:
+- Open `docs/index.html?mock=1` in browser.
+- Verify there are no Apps Script include directives in `docs/index.html`.
+
+6. Manual smoke tests:
+- Featured badge gating:
+  - High confidence + eligible + valid source + fresh/aging dataset should show featured.
+  - Medium/Low/Uncheckable, missing source, or stale dataset should not show featured.
+- Next Semester Plan section:
+  - Open a program with missing/low-mark/average-gap signals and confirm concrete course actions appear.
+- Pinned semester export:
+  - Pin at least 2 programs and run **Generate Next Semester Plan (Pinned)**.
+  - Confirm ranked courses and course-to-program mapping render and print cleanly.
