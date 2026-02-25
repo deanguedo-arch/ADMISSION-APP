@@ -1,23 +1,15 @@
 name: STEP 3 - Publish Offline Snapshot (GitHub Pages)
 
 on:
-  schedule:
-    - cron: "0 14 * * 1"
+  push:
+    branches:
+      - main
+    paths:
+      - "apps_script/**"
+      - "tools/build-pages.js"
+      - "package.json"
+      - ".github/workflows/deploy-offline-snapshot-pages.yml"
   workflow_dispatch:
-    inputs:
-      refresh_mode:
-        description: "Dataset refresh mode before snapshot build"
-        required: false
-        type: choice
-        default: fast
-        options:
-          - fast
-          - full
-      skip_fixtures:
-        description: "Skip fixture checks during refresh (faster, less strict)"
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -30,7 +22,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -38,45 +30,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
+          node-version: "20"
 
-      - name: Setup project venv/deps
-        shell: pwsh
-        run: |
-          .\tools\setup-python.ps1
-
-      - name: Refresh dataset for offline snapshot
-        shell: pwsh
-        run: |
-          $refreshParams = @{
-            SkipSync = $true
-            SkipElectivePrefill = $true
-            AllowStaleNorquestSeed = $true
-          }
-          if ("${{ inputs.refresh_mode }}" -eq "fast") {
-            $refreshParams.SkipScrape = $true
-            $refreshParams.SkipAvgApply = $true
-          }
-          if ("${{ inputs.skip_fixtures }}" -eq "true") {
-            $refreshParams.SkipFixtures = $true
-          }
-          $enabled = @($refreshParams.GetEnumerator() | Sort-Object Name | Where-Object { $_.Value } | ForEach-Object { "-$($_.Name)" })
-          Write-Host "refresh-all switches: $($enabled -join ' ')"
-          & .\tools\refresh-all.ps1 @refreshParams
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Build offline snapshot
-        shell: pwsh
-        run: |
-          .\.venv\Scripts\python.exe .\offline_snapshot\build_snapshot.py
-
-      - name: Print snapshot metadata
-        shell: pwsh
-        run: |
-          Get-Content .\offline_snapshot\site\snapshot.meta.json
+      - name: Compile Web App for Pages
+        run: node tools/build-pages.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -84,7 +44,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: offline_snapshot/site
+          path: docs
 
       - name: Deploy to GitHub Pages
         id: deployment

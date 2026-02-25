@@ -1113,3 +1113,7 @@ Keep entries short and append-only.
 - Added review queue generator (`tools/build-review-queue.py`) with CSV + markdown outputs and operator guide (`docs/REVIEW_QUEUE.md`).
 - Added strict dataset validator (`tools/validate-dataset.py`) and new GitHub Actions gate (`.github/workflows/dataset-validation.yml`) for push/PR checks.
 - Hardened NAIT non-program rules for continuing-education/walkthrough URL patterns and extended NAIT filter fixtures accordingly.
+## 2026-02-25 (P2 GitHub Pages compile build)
+- Added include-compiler script (`tools/build-pages.js`) to compile `apps_script/WebApp.html` into `docs/index.html` with hard checks for missing includes/cycles.
+- Added npm command `build:pages` and switched STEP 3 Pages workflow to compile and publish directly from `/docs`.
+- Generated and committed compiled `docs/index.html` for deterministic static preview (`?mock=1`).
