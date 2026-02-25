@@ -1121,3 +1121,7 @@ Keep entries short and append-only.
 - Added scaffolding files: `data/RULESETS.csv`, `data/PROGRAM_OVERRIDES.csv`, and `config/course_aliases.json` with HS-focused starter structure.
 - Added docs for tiering model in `docs/RULESETS_OVERRIDES.md` and local test checklist updates in `docs/LOCAL_WEBAPP_DEV.md`.
 - Added generators/importers: `tools/generate-ruleset-seed-pack.py` and `tools/import-program-overrides-samples.py`; imported 12 sample overrides from the uploaded spreadsheet.
+## 2026-02-25 (scraper rebuild refresh)
+- Rebuilt NAIT/MacEwan seed artifacts and regenerated `pipeline/program_index.cleaned.csv` using current non-program guardrails.
+- Fixture checks PASS (`nait_program_filter`, `avg_total`, `enrichment_link`, `macewan_seed`) after rebuild.
+- Refreshed `config/nait_legacy_allowlist.csv` and removed continuing-education/walkthrough rows from cleaned index.
