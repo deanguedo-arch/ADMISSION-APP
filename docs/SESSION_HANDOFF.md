@@ -1,54 +1,42 @@
-# Session Handoff (2026-02-23)
+# Session Handoff (2026-02-25)
 
-## Status
-4-mode IA migration and mobile simplification are implemented and pushed.
-
-## Git
-- Commit: `25e872c`
-- Branch: `main`
-- Remote: `origin/main` updated
-
-## Implemented
-- Top mode tabs (desktop):
-  - `Program Explorer`, `Eligibility Results`, `Pinned`, `Compare`
-- Removed shortlist as a result-view mode:
-  - pin state remains and is surfaced via `Pinned` mode.
-- Compare flow moved to dedicated `compare-panel` presentation:
-  - visible in Compare mode
-  - hidden in Results/Pinned.
-- Added `All` quick action (`showAllBtn`) and mode-aware routing.
-- Mobile simplification retained:
-  - 4 quick summary filters only (`Programs Checked`, `Likely eligible`, `Likely ineligible`, `Uncheckable`)
-  - compact mobile hides top metadata strips (`Data updated`, local preview/auth strip)
-  - reduced footprint for `Grid`/`Filters` buttons.
-- Mobile app-shell behavior active:
-  - bottom tabs + details screen push/back
-  - contextual mobile action bar
-  - filters drawer
-  - chunked `Load more` rendering.
-
-## Surfaces Updated
-- `apps_script/WebAppBody.html`
-- `apps_script/WebAppStyles.html`
-- `apps_script/WebAppScriptState.html`
-- `apps_script/WebAppScriptFunctions.html`
-- `apps_script/WebAppScriptInit.html`
-- `offline_snapshot/site/index.html`
+## Read first
+- `docs/PROJECT_CONTEXT.md`
+- `docs/DECISIONS.md`
+- `docs/SPRINT_SLICE.md`
 - `docs/WORK_LOG.md`
 
-## Validation
-- Passed:
-  - `node --check /tmp/apps_script_combined.js`
-  - `node --check /tmp/offline_snapshot_combined.js`
-- Pending in PowerShell-capable environment:
-  - `tools/validate-webapp-surface.ps1`
-  - `tools/validate-apps-script-structure.ps1`
+## Repo state
+- Branch: `main`
+- Working tree: clean
+- Local/remote sync: `main...origin/main` (up to date)
+- Latest commits:
+  - `91d5a93` - `chore: refresh dataset + sync artifacts (CI)`
+  - `5c11432` - `fix: backfill seed URLs for NAIT/NorQuest`
 
-## Next QA Focus
-- Mobile results usability on iPhone width:
-  - quick filters tappability
-  - `Grid`/`Filters` compact spacing
-  - compare select/toggle from cards + details
-  - bottom action bar visibility (`Clear`, `Print Packet`).
-- Desktop top-mode tab behavior:
-  - counts update correctly for Results / Explorer / Pinned / Compare.
+## What was fixed this session
+- Resolved merge regression that left many `Program_URL` blanks in canonical.
+- Added seed URL fill logic for NAIT/NorQuest in `tools/clean-master.ps1`.
+- Rebuilt canonical and cleared dataset gate (`Program_URL` missing ratio now 0%).
+- Confirmed canonical row counts: NAIT 131, NorQuest 77, MacEwan 112, UAlberta 14.
+
+## Automation status (latest)
+- Dataset Validation: success  
+  `https://github.com/deanguedo-arch/ADMISSION-APP/actions/runs/22408460841`
+- STEP 1 - Deploy Apps Script Web App: success  
+  `https://github.com/deanguedo-arch/ADMISSION-APP/actions/runs/22408486910`
+- STEP 2 - Publish Admissions Data to Sheets: success  
+  `https://github.com/deanguedo-arch/ADMISSION-APP/actions/runs/22408471406`
+- STEP 3 - Publish Offline Snapshot (GitHub Pages): success  
+  `https://github.com/deanguedo-arch/ADMISSION-APP/actions/runs/22408478417`
+- Pages deployment job (dynamic): success  
+  `https://github.com/deanguedo-arch/ADMISSION-APP/actions/runs/22408539969`
+
+## Live endpoints
+- GitHub Pages snapshot: `https://deanguedo-arch.github.io/ADMISSION-APP/`
+- Staff web app: Apps Script deploy from STEP 1 run above
+
+## Operator notes for next workstation
+- If the page shows `Not connected to Apps Script backend`, that is expected on static Pages preview mode.
+- Use the Apps Script staff URL for real backend eligibility checks.
+- For a fresh data publish, run STEP 2 from Actions.
