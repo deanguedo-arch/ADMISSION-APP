@@ -4856,7 +4856,15 @@
       }
     </style>
 
-    </head>
+        <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/icon-180.png" />
+    <meta name="theme-color" content="#1f9d72" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Next Step" />
+</head>
   <body data-screen="results">
     <div class="shell" id="appShell">
       <div id="appHeader">
@@ -10366,7 +10374,12 @@ function boot() {
       }
 </script>
 
-    ﻿<script>
+    ﻿
+    <script src="./runtime/eligibility_core.js"></script>
+    <script src="./data/snapshot_data.js"></script>
+    <script src="./runtime/offline_bridge.js"></script>
+
+<script>
       boot();
 
       if (isMobileAppShell_()) {

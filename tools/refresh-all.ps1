@@ -106,6 +106,7 @@ if (-not $SkipFixtures) {
   Write-Host ""
   Write-Host "Step 3/9: Run extractor/link fixture checks"
   Invoke-PythonChecked @(".\\pipeline\\check_avg_total_fixtures.py")
+  Invoke-PythonChecked @(".\\pipeline\\check_program_field_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_enrichment_link_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_nait_program_filter_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_macewan_seed_fixtures.py")

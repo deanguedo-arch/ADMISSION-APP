@@ -110,6 +110,49 @@ Default behavior keeps MacEwan rows at 114 in `pipeline/program_index.cleaned.cs
 
 These fields make extraction behavior auditable before fully automated publishing.
 
+## Multi-field extraction fixtures
+Use program-field fixtures to lock extraction behavior for:
+- minimum average
+- competitive guidance + numeric floor hint
+- subject requirements/minimums
+- elective quantity/pool
+- requirement type
+
+```powershell
+python .\pipeline\check_program_field_fixtures.py
+```
+
+Fixture cases live in:
+- `pipeline/fixtures/program_field_cases.json`
+
+## `pipeline/run.py` shadow-profile mode
+`pipeline/run.py` now supports:
+- `--profile baseline|candidate` (default `baseline`)
+- `--fetch-dir <path>` (shared/frozen fetch-enrich artifacts)
+- `--extract-only` (reuse cached artifacts without HTTP fetch)
+
+Outputs now include:
+- `extract/avg_total_candidates.csv` (legacy compatibility)
+- `extract/program_field_candidates.csv` (multi-field extraction candidates)
+
+This enables deterministic baseline-vs-candidate comparison against the same frozen fetch corpus.
+
+Operator workflow is routed through:
+- `.\scraper_lab\run.ps1`
+
+Cycle artifacts are written to:
+- `scraper_lab/runs/<cycle_id>/...`
+
+When running `.\scraper_lab\run.ps1 -RunScope both`, artifacts are split by scope:
+- `scraper_lab/runs/<cycle_id>/canonical334/...`
+- `scraper_lab/runs/<cycle_id>/filtered220/...`
+
+Canonical 334-first index builder:
+
+```powershell
+python .\pipeline\build_canonical_index.py --out .\scraper_lab\runs\<cycle_id>\index\program_index.canonical334.csv
+```
+
 ## Phase 2 starter: adapter regression fixtures
 Use fixture checks to lock extraction behavior before adding more scraping logic:
 

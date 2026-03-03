@@ -1,5 +1,7 @@
 /.venv/
 /pipeline_artifacts*/
+/scraper_lab/runs/
+/scraper_lab/CURRENT_CYCLE.txt
 /out/
 /data/*.new
 /config/sheets_sync.json

@@ -1168,3 +1168,45 @@ Keep entries short and append-only.
 - Recompiled `docs/index.html` and re-ran guardrails (`validate-webapp-surface`, `validate-apps-script-structure`) PASS.
 
 
+## 2026-02-25 (scraper-lab shadow system implementation)
+- Added operationally safe lab runner `tools/run-scraper-lab-cycle.ps1` (branch guard against `main`, shadow-only artifact paths under `pipeline_artifacts/compare/<cycle_id>`, baseline vs candidate compare gate).
+- Extended `pipeline/run.py` with `--profile baseline|candidate`, `--fetch-dir`, and `--extract-only`; preserves legacy `avg_total_candidates.csv` and now emits `program_field_candidates.csv` with field-level confidence/rule/snippet/source-url metadata.
+- Extended adapter contract in `pipeline/adapters/base.py` with structured multi-field extraction (`min_avg_final`, `competitive_final`, `competitive_floor_numeric`, subject req/min fields, electives, requirement_type) while keeping `extract_avg_total` compatibility.
+- Added compare and promotion tooling: `tools/compare-scraper-runs.py` (coverage/changes/issues/gate report) and `tools/apply-program-field-candidates.ps1` (manual fill-first canonical apply with confidence gating + dry run).
+- Added relevance traceability in `pipeline/build_index.py` + filter modules (`rule_source` metadata, relevance decision CSV output, PROGRAM_OVERRIDES include/exclude integration in filter decisions, trace rows for overrides/seed phases).
+- Added multi-field fixture harness `pipeline/check_program_field_fixtures.py` + `pipeline/fixtures/program_field_cases.json`, and wired fixture execution into `tools/refresh-all.ps1`.
+- Added lab workflow and issue-pack docs/templates: `docs/SCRAPER_LAB_WORKFLOW.md`, `docs/templates/scraper_issue_pack.template.csv`, and linked workflow in `docs/PROJECT_CONTEXT.md`; updated pipeline docs (`docs/PIPELINE.md`, `pipeline/README.md`).
+- Validation run: py_compile PASS for modified Python files; fixture checks PASS (avg_total, program_field, NAIT filter, MacEwan seed, UAlberta URL map); lab cycle smoke pass via `run-scraper-lab-cycle.ps1` (`smoke-lab-5`) with gate PASS.
+## 2026-02-25 (scraper-lab UX simplification: one-folder operator flow)
+- Added single operator home folder `scraper_lab/` with `START_HERE.md`, `run.ps1`, `apply.ps1`, and local `issue_pack.csv`.
+- Updated lab runner defaults in `tools/run-scraper-lab-cycle.ps1` to write runs under `scraper_lab/runs/<cycle_id>` and use `scraper_lab/issue_pack.csv` (auto-seeded from template if missing).
+- Updated workflow docs to point operators to one-folder commands (`.\scraper_lab\run.ps1`, `.\scraper_lab\apply.ps1`) and new artifact paths.
+- Smoke validation PASS: `.\scraper_lab\run.ps1 -CycleId smoke-onefolder -Limit 1 -SkipFixtures` and `.\scraper_lab\apply.ps1` (dry-run default).
+## 2026-02-25 (scraper-lab batch launcher flow)
+- Added numbered BAT launchers in `scraper_lab/` so operators can run the process without manual command typing:
+  - `STEP_1_RUN_LAB_CYCLE.bat`
+  - `STEP_2_OPEN_LATEST_DIFF.bat`
+  - `STEP_3_RERUN_FROZEN_FETCH.bat`
+  - `STEP_4_APPLY_DRY_RUN.bat`
+  - `STEP_5_APPLY_FOR_REAL.bat` (requires typing `APPLY` to proceed)
+  - `STEP_6_VALIDATE_AFTER_APPLY.bat`
+- Added cycle memory file `scraper_lab/CURRENT_CYCLE.txt` used by steps 2-5.
+- Smoke validation PASS for batch path: STEP 1/3/4/6 succeeded on `bat-smoke-1`; STEP 5 cancel path verified.
+## 2026-02-25 (scraper-lab original-vs-new compare outputs)
+- Added `tools/compare-original-vs-candidate.py` to compare canonical (`original`) vs candidate (`new`) directly with row-match status and field-level deltas.
+- Wired Step 6 into `tools/run-scraper-lab-cycle.ps1` so each cycle now emits:
+  - `diff/original_vs_new_summary.md`
+  - `diff/original_vs_new_row_status.csv`
+  - `diff/original_vs_new_missing_programs.csv`
+  - `diff/original_vs_new_field_changes.csv`
+  - `diff/original_vs_new_candidate_only.csv`
+- Updated `scraper_lab/STEP_2_OPEN_LATEST_DIFF.bat` and docs to open/show new compare artifacts.
+- Validation: py_compile PASS for `compare-original-vs-candidate.py`; lab smoke run PASS (`TEST-RUN-ORIGNEW-SMOKE`, gate PASS + original-vs-new artifacts generated).
+## 2026-02-27 (334-first canonical baseline + scope plumbing)
+- Added canonical-first index builder `pipeline/build_canonical_index.py` and integrated run scope selection into `tools/run-scraper-lab-cycle.ps1` with `-RunScope canonical334|filtered220|both` (default `canonical334`).
+- Added `index_row_id` passthrough in `pipeline/run.py` to both `avg_total_candidates.csv` and `program_field_candidates.csv` and updated compare/apply tooling to prioritize row-id mapping.
+- Reworked `tools/compare-original-vs-candidate.py` to match on `index_row_id` first, keep fallback matching, and emit `proposed_removals.csv` with evidence metadata.
+- Extended issue-pack/apply contract for approval-gated overwrites (`canonical_row_id`, `approval_state`, `approved_by`, `approved_at`) and updated templates + `scraper_lab/apply.ps1` defaults.
+- Hardened generic extractor conservatively for NAIT/NorQuest subject requirements without forced percentages and tighter competitive/elective parsing; updated fixtures in `pipeline/fixtures/program_field_cases.json`.
+- Updated lab runner behavior so gate failures do not abort artifact generation (Step 6 still runs; gate status is reported per scope).
+- Validation: `check_avg_total_fixtures.py` PASS, `check_program_field_fixtures.py` PASS, py_compile PASS (changed Python files), smoke cycles PASS for `canonical334`, `filtered220`, and `both` scope modes; apply dry-run PASS with row-id matching.

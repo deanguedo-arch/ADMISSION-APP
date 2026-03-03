@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 from collections import Counter
 import re
 from pathlib import Path
@@ -34,6 +35,7 @@ except ImportError:
 
 try:
     from norquest_program_filter import (
+        NorquestFilterDecision,
         classify_norquest_row,
         load_norquest_filter_rules,
         load_norquest_seed,
@@ -42,6 +44,7 @@ try:
     )
 except ImportError:
     from pipeline.norquest_program_filter import (
+        NorquestFilterDecision,
         classify_norquest_row,
         load_norquest_filter_rules,
         load_norquest_seed,
@@ -71,6 +74,141 @@ def parse_institution_filters(raw_values: list[str]) -> list[str]:
             seen.add(value)
             parsed.append(value)
     return parsed
+
+
+def normalize_url_key(value: object) -> str:
+    token = norm(value).lower()
+    token = re.sub(r"#.*$", "", token)
+    if token.endswith("/"):
+        token = token[:-1]
+    return token
+
+
+def is_active_override_status(value: object) -> bool:
+    token = norm(value).lower()
+    if not token:
+        return True
+    return token not in {"inactive", "disabled", "archived", "off", "no", "false", "0"}
+
+
+def load_override_allow_exclude_sets(
+    path: Path,
+) -> tuple[
+    dict[str, set[str]],
+    dict[str, set[str]],
+    dict[str, set[str]],
+    dict[str, set[str]],
+    list[dict[str, str]],
+]:
+    include_names_by_inst: dict[str, set[str]] = {}
+    include_urls_by_inst: dict[str, set[str]] = {}
+    exclude_names_by_inst: dict[str, set[str]] = {}
+    exclude_urls_by_inst: dict[str, set[str]] = {}
+    trace_rows: list[dict[str, str]] = []
+
+    if not path.exists():
+        return include_names_by_inst, include_urls_by_inst, exclude_names_by_inst, exclude_urls_by_inst, trace_rows
+
+    with path.open("r", newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            include_or_exclude = norm(row.get("include_or_exclude") or row.get("Include_Or_Exclude")).lower()
+            if include_or_exclude not in {"include", "exclude"}:
+                continue
+            if not is_active_override_status(row.get("status") or row.get("Status")):
+                continue
+
+            institution = norm(row.get("institution") or row.get("Institution")).lower()
+            if not institution:
+                continue
+            program = norm(row.get("program") or row.get("Program"))
+            source_url = norm(row.get("source_page_url") or row.get("Source_Page_Url"))
+            parent_url = norm(row.get("parent_admissions_url") or row.get("Parent_Admissions_Url"))
+            credential = norm(row.get("credential_type") or row.get("Credential_Type"))
+
+            name_key = normalize_name(program) if program else ""
+            source_url_key = normalize_url_key(source_url)
+            parent_url_key = normalize_url_key(parent_url)
+            url_key = source_url_key or parent_url_key
+
+            if include_or_exclude == "include":
+                if name_key:
+                    include_names_by_inst.setdefault(institution, set()).add(name_key)
+                if source_url_key:
+                    include_urls_by_inst.setdefault(institution, set()).add(source_url_key)
+                if parent_url_key:
+                    include_urls_by_inst.setdefault(institution, set()).add(parent_url_key)
+            else:
+                if name_key:
+                    exclude_names_by_inst.setdefault(institution, set()).add(name_key)
+                if source_url_key:
+                    exclude_urls_by_inst.setdefault(institution, set()).add(source_url_key)
+                if parent_url_key:
+                    exclude_urls_by_inst.setdefault(institution, set()).add(parent_url_key)
+
+            trace_rows.append(
+                {
+                    "institution": institution,
+                    "program_name": program,
+                    "credential": credential,
+                    "source_url": source_url or parent_url,
+                    "decision": "keep" if include_or_exclude == "include" else "drop",
+                    "reason_code": f"override_{include_or_exclude}",
+                    "rule_source": "PROGRAM_OVERRIDES",
+                    "stage": "override",
+                    "evidence_notes": norm(row.get("notes") or row.get("Notes")),
+                }
+            )
+
+    return include_names_by_inst, include_urls_by_inst, exclude_names_by_inst, exclude_urls_by_inst, trace_rows
+
+
+def append_relevance_decision(
+    decisions: list[dict[str, str]],
+    *,
+    institution: str,
+    program_name: str,
+    credential: str,
+    source_url: str,
+    decision: str,
+    reason_code: str,
+    rule_source: str,
+    stage: str,
+    evidence_notes: str = "",
+) -> None:
+    decisions.append(
+        {
+            "institution": norm(institution),
+            "program_name": norm(program_name),
+            "credential": norm(credential),
+            "source_url": norm(source_url),
+            "decision": norm(decision).lower(),
+            "reason_code": norm(reason_code),
+            "rule_source": norm(rule_source),
+            "stage": norm(stage),
+            "evidence_notes": norm(evidence_notes),
+        }
+    )
+
+
+def write_relevance_decisions(path: Path, decisions: list[dict[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "institution",
+        "program_name",
+        "credential",
+        "source_url",
+        "decision",
+        "reason_code",
+        "rule_source",
+        "stage",
+        "evidence_notes",
+    ]
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in decisions:
+            writer.writerow({k: norm(row.get(k)) for k in fieldnames})
 
 
 def load_macewan_seed(seed_path: Path) -> list[dict[str, str]]:
@@ -162,6 +300,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--ualberta-seed", default="config/ualberta_canonical_url_map.csv")
     ap.add_argument("--no-ualberta-seed-replace", action="store_true")
     ap.add_argument("--evidence", default="PROGRAMS_ONLY.csv")
+    ap.add_argument("--program-overrides", default="data/PROGRAM_OVERRIDES.csv")
+    ap.add_argument(
+        "--relevance-out",
+        default="",
+        help="Optional relevance decision CSV output path. Defaults beside --out.",
+    )
     args = ap.parse_args(argv)
 
     in_path = Path(args.in_path)
@@ -174,6 +318,12 @@ def main(argv: list[str]) -> int:
     macewan_seed_path = Path(args.macewan_seed)
     ualberta_seed_path = Path(args.ualberta_seed)
     evidence_path = Path(args.evidence)
+    program_overrides_path = Path(args.program_overrides)
+    relevance_out_path = (
+        Path(args.relevance_out)
+        if norm(args.relevance_out)
+        else out_path.with_name(f"{out_path.stem}.relevance_decisions.csv")
+    )
 
     df = pd.read_csv(in_path)
     cols = {c.lower(): c for c in df.columns}
@@ -215,6 +365,13 @@ def main(argv: list[str]) -> int:
     norquest_seed_names, norquest_seed_urls, norquest_seed_rows = load_norquest_seed(norquest_seed_path)
     macewan_seed_rows = load_macewan_seed(macewan_seed_path)
     ualberta_seed_rows = load_ualberta_seed(ualberta_seed_path)
+    (
+        include_names_by_inst,
+        include_urls_by_inst,
+        exclude_names_by_inst,
+        exclude_urls_by_inst,
+        override_trace_rows,
+    ) = load_override_allow_exclude_sets(program_overrides_path)
     evidence_lookup = load_evidence_notes_by_key(evidence_path)
     nait_evidence_found = 0
     norquest_evidence_found = 0
@@ -223,14 +380,27 @@ def main(argv: list[str]) -> int:
     nait_reason_counts: Counter[str] = Counter()
     norquest_reason_counts: Counter[str] = Counter()
     dropped_missing_required = 0
+    relevance_decisions: list[dict[str, str]] = []
 
     keep_mask: list[bool] = []
     for _, row in df.iterrows():
         inst = row["institution"]
         name = row["program_name"]
+        credential = row["credential"]
         url = row["source_url"]
         if not inst or not name or not url:
             dropped_missing_required += 1
+            append_relevance_decision(
+                relevance_decisions,
+                institution=inst,
+                program_name=name,
+                credential=credential,
+                source_url=url,
+                decision="drop",
+                reason_code="dropped_missing_required",
+                rule_source="required_fields",
+                stage="index_filter",
+            )
             keep_mask.append(False)
             continue
 
@@ -252,6 +422,8 @@ def main(argv: list[str]) -> int:
                 evidence_notes=evidence_notes,
                 rules=nait_rules,
                 seed_names=nait_seed_names,
+                extra_allowlist_names=include_names_by_inst.get("nait", set()),
+                extra_allowlist_urls=include_urls_by_inst.get("nait", set()),
             )
             if (
                 not decision.keep
@@ -259,8 +431,38 @@ def main(argv: list[str]) -> int:
                 and norm_space(name)
                 and normalize_name(name) in nait_legacy_allowlist_names
             ):
-                decision = NaitFilterDecision(keep=True, reason="kept_legacy_allowlist")
+                decision = NaitFilterDecision(
+                    keep=True,
+                    reason="kept_legacy_allowlist",
+                    rule_source="legacy_allowlist",
+                )
+            name_key = normalize_name(name)
+            url_key = normalize_url_key(url)
+            if (
+                decision.keep
+                and (
+                    (name_key and name_key in exclude_names_by_inst.get("nait", set()))
+                    or (url_key and url_key in exclude_urls_by_inst.get("nait", set()))
+                )
+            ):
+                decision = NaitFilterDecision(
+                    keep=False,
+                    reason="dropped_override_exclude",
+                    rule_source="PROGRAM_OVERRIDES",
+                )
             nait_reason_counts[decision.reason] += 1
+            append_relevance_decision(
+                relevance_decisions,
+                institution=inst,
+                program_name=name,
+                credential=credential,
+                source_url=url,
+                decision="keep" if decision.keep else "drop",
+                reason_code=decision.reason,
+                rule_source=decision.rule_source or "nait_filter",
+                stage="index_filter",
+                evidence_notes=evidence_notes,
+            )
             keep_mask.append(decision.keep)
             continue
 
@@ -283,12 +485,51 @@ def main(argv: list[str]) -> int:
                 rules=norquest_rules,
                 seed_names=norquest_seed_names,
                 seed_urls=norquest_seed_urls,
+                extra_allowlist_names=include_names_by_inst.get("norquest", set()),
+                extra_allowlist_urls=include_urls_by_inst.get("norquest", set()),
             )
+            name_key = normalize_norquest_name(name)
+            url_key = normalize_url_key(url)
+            if (
+                decision.keep
+                and (
+                    (name_key and name_key in exclude_names_by_inst.get("norquest", set()))
+                    or (url_key and url_key in exclude_urls_by_inst.get("norquest", set()))
+                )
+            ):
+                decision = NorquestFilterDecision(
+                    keep=False,
+                    reason="dropped_override_exclude",
+                    rule_source="PROGRAM_OVERRIDES",
+                )
             norquest_reason_counts[decision.reason] += 1
+            append_relevance_decision(
+                relevance_decisions,
+                institution=inst,
+                program_name=name,
+                credential=credential,
+                source_url=url,
+                decision="keep" if decision.keep else "drop",
+                reason_code=decision.reason,
+                rule_source=decision.rule_source or "norquest_filter",
+                stage="index_filter",
+                evidence_notes=evidence_notes,
+            )
             keep_mask.append(decision.keep)
             continue
 
         if inst not in {"NAIT", "NorQuest"}:
+            append_relevance_decision(
+                relevance_decisions,
+                institution=inst,
+                program_name=name,
+                credential=credential,
+                source_url=url,
+                decision="keep",
+                reason_code="kept_non_target_institution",
+                rule_source="default_pass_through",
+                stage="index_filter",
+            )
             keep_mask.append(True)
             continue
 
@@ -318,6 +559,17 @@ def main(argv: list[str]) -> int:
             if "notes_uncertain" in cleaned.columns:
                 new_row["notes_uncertain"] = ""
             additions.append(new_row)
+            append_relevance_decision(
+                relevance_decisions,
+                institution="NorQuest",
+                program_name=seed_row.program_name,
+                credential=seed_row.credential or "Other",
+                source_url=seed_row.program_url,
+                decision="keep",
+                reason_code="kept_seed_backfill",
+                rule_source="norquest_seed_backfill",
+                stage="seed_backfill",
+            )
         if additions:
             cleaned = pd.concat([cleaned, pd.DataFrame(additions)], ignore_index=True)
             norquest_backfill_added = len(additions)
@@ -336,6 +588,17 @@ def main(argv: list[str]) -> int:
             if "notes_uncertain" in cleaned.columns:
                 new_row["notes_uncertain"] = ""
             additions.append(new_row)
+            append_relevance_decision(
+                relevance_decisions,
+                institution="MacEwan",
+                program_name=seed_row["program_name"],
+                credential="Other",
+                source_url=seed_row["source_url"],
+                decision="keep",
+                reason_code="kept_seed_replace",
+                rule_source="macewan_seed_replace",
+                stage="seed_replace",
+            )
         if additions:
             cleaned = pd.concat([cleaned, pd.DataFrame(additions)], ignore_index=True)
 
@@ -352,6 +615,17 @@ def main(argv: list[str]) -> int:
             if "notes_uncertain" in cleaned.columns:
                 new_row["notes_uncertain"] = ""
             additions.append(new_row)
+            append_relevance_decision(
+                relevance_decisions,
+                institution="UAlberta",
+                program_name=seed_row["program_name"],
+                credential=seed_row["credential"] or "Other",
+                source_url=seed_row["source_url"],
+                decision="keep",
+                reason_code="kept_seed_replace",
+                rule_source="ualberta_seed_replace",
+                stage="seed_replace",
+            )
         if additions:
             cleaned = pd.concat([cleaned, pd.DataFrame(additions)], ignore_index=True)
 
@@ -369,6 +643,10 @@ def main(argv: list[str]) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     cleaned.to_csv(out_path, index=False)
     print(f"Wrote {len(cleaned)} rows -> {out_path}")
+    if override_trace_rows:
+        relevance_decisions.extend(override_trace_rows)
+    write_relevance_decisions(relevance_out_path, relevance_decisions)
+    print(f"Wrote relevance decisions ({len(relevance_decisions)}) -> {relevance_out_path}")
     if nait_examined > 0:
         print("NAIT filter summary:")
         print(f"  nait_rows_examined: {nait_examined}")
@@ -380,6 +658,7 @@ def main(argv: list[str]) -> int:
             "dropped_blocked_url",
             "dropped_blocked_name",
             "dropped_not_in_seed",
+            "dropped_override_exclude",
             "kept_allowlist_override",
             "kept_legacy_allowlist",
             "kept_seed_match",
@@ -395,6 +674,7 @@ def main(argv: list[str]) -> int:
             "dropped_blocked_url",
             "dropped_blocked_name",
             "dropped_not_in_seed",
+            "dropped_override_exclude",
             "kept_allowlist_override",
             "kept_seed_match",
             "kept_seed_backfill",

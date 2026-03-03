@@ -1,0 +1,2 @@
+issue_id,canonical_row_id,institution,program,credential,program_url,issue_type,field_name,expected_value,actual_value,evidence_url,evidence_snippet,severity,status,approval_state,approved_by,approved_at,notes
+example-001,canonical_000001,NAIT,Example Program,Other,https://example.edu/admissions,avg_total,avg_total,5,4,https://example.edu/admissions,"Admission average is calculated on five subjects",high,active,pending,,,Replace with real issue rows.

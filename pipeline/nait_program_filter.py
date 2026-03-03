@@ -52,6 +52,7 @@ class NaitFilterRules:
 class NaitFilterDecision:
     keep: bool
     reason: str
+    rule_source: str = ""
 
 
 def _as_list(raw: object) -> list[str]:
@@ -211,27 +212,59 @@ def classify_nait_row(
     extra_allowlist_urls: set[str] | None = None,
 ) -> NaitFilterDecision:
     if evidence_marks_non_program(evidence_notes, rules):
-        return NaitFilterDecision(keep=False, reason="dropped_evidence_non_program")
+        return NaitFilterDecision(
+            keep=False,
+            reason="dropped_evidence_non_program",
+            rule_source="evidence_not_program_tokens",
+        )
 
     if _matches_any_regex(source_url, rules.blocked_url_patterns):
-        return NaitFilterDecision(keep=False, reason="dropped_blocked_url")
+        return NaitFilterDecision(
+            keep=False,
+            reason="dropped_blocked_url",
+            rule_source="blocked_url_patterns",
+        )
 
     if _matches_any_regex(program_name, rules.blocked_name_patterns):
-        return NaitFilterDecision(keep=False, reason="dropped_blocked_name")
+        return NaitFilterDecision(
+            keep=False,
+            reason="dropped_blocked_name",
+            rule_source="blocked_name_patterns",
+        )
 
     name_key = normalize_name(program_name)
     url_key = normalize_url(source_url)
 
     if name_key in rules.allowlist_program_names or url_key in rules.allowlist_urls:
-        return NaitFilterDecision(keep=True, reason="kept_allowlist_override")
+        return NaitFilterDecision(
+            keep=True,
+            reason="kept_allowlist_override",
+            rule_source="rules_allowlist",
+        )
 
     if extra_allowlist_names and name_key in extra_allowlist_names:
-        return NaitFilterDecision(keep=True, reason="kept_allowlist_override")
+        return NaitFilterDecision(
+            keep=True,
+            reason="kept_allowlist_override",
+            rule_source="manual_override_allowlist_name",
+        )
 
     if extra_allowlist_urls and url_key in extra_allowlist_urls:
-        return NaitFilterDecision(keep=True, reason="kept_allowlist_override")
+        return NaitFilterDecision(
+            keep=True,
+            reason="kept_allowlist_override",
+            rule_source="manual_override_allowlist_url",
+        )
 
     if name_key and name_key in seed_names:
-        return NaitFilterDecision(keep=True, reason="kept_seed_match")
+        return NaitFilterDecision(
+            keep=True,
+            reason="kept_seed_match",
+            rule_source="seed_program_name",
+        )
 
-    return NaitFilterDecision(keep=False, reason="dropped_not_in_seed")
+    return NaitFilterDecision(
+        keep=False,
+        reason="dropped_not_in_seed",
+        rule_source="seed_program_name",
+    )

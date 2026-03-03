@@ -90,6 +90,10 @@ Pipeline must:
 
 See: `docs/PIPELINE.md` and `pipeline/README.md`
 
+For operationally safe scraper tuning (shadow baseline vs candidate):
+- `docs/SCRAPER_LAB_WORKFLOW.md`
+- Use `.\scraper_lab\START_HERE.md` as the operator entrypoint (single-folder workflow).
+
 ## Long chat handoff
 If a chat gets long, run:
 

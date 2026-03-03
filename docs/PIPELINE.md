@@ -120,3 +120,39 @@ Publish artifacts:
 - `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
 - Google Sheet `Programs` tab (same columns)
 - optional: a changelog snapshot for diffing across runs
+
+## 7) Scraper Lab Shadow Compare (safe tuning workflow)
+
+For scraper tuning, run the lab cycle instead of publishing flows:
+
+```powershell
+.\scraper_lab\run.ps1
+```
+
+Default lab scope is canonical baseline (`334` rows):
+
+```powershell
+.\scraper_lab\run.ps1 -RunScope canonical334
+```
+
+Optional diagnostic scope:
+
+```powershell
+.\scraper_lab\run.ps1 -RunScope filtered220
+```
+
+This creates deterministic baseline-vs-candidate outputs using frozen fetch artifacts under:
+
+- `scraper_lab/runs/<cycle_id>/fetch_frozen`
+- `scraper_lab/runs/<cycle_id>/baseline/extract/program_field_candidates.csv`
+- `scraper_lab/runs/<cycle_id>/candidate/extract/program_field_candidates.csv`
+- `scraper_lab/runs/<cycle_id>/diff/gate_report.md`
+
+If you run `-RunScope both`, artifacts are nested per scope:
+
+- `scraper_lab/runs/<cycle_id>/canonical334/...`
+- `scraper_lab/runs/<cycle_id>/filtered220/...`
+
+Lab runner note: compare gate failures are reported but do not stop Step 6 original-vs-new artifact generation.
+
+Use this path for iterative extraction improvements before any canonical/sync/deploy steps.

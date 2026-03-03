@@ -1,0 +1,106 @@
+[
+  {
+    "id": "nait-min-average-and-subjects",
+    "institution": "NAIT",
+    "text": "Applicants must have a minimum overall average of 60 percent with 50% in English 30-1 and 50% in Mathematics 30-1.",
+    "expected_exact": {
+      "min_avg_final": "60",
+      "english_req": "English 30-1",
+      "math_req": "Math 30-1",
+      "requirement_type": "alberta_high_school_courses"
+    },
+    "min_confidence": {
+      "min_avg_final": "high",
+      "english_req": "medium",
+      "math_req": "medium"
+    }
+  },
+  {
+    "id": "norquest-placement-requirement-type",
+    "institution": "NorQuest",
+    "text": "Applicants may meet academic requirements through a free academic assessment or placement test.",
+    "expected_exact": {
+      "requirement_type": "placement_assessment"
+    },
+    "min_confidence": {
+      "requirement_type": "high"
+    }
+  },
+  {
+    "id": "macewan-elective-groups",
+    "institution": "MacEwan",
+    "text": "Applicants must have a minimum overall average of 65 percent in the following high school courses: English 30-1 and Mathematics 30-2 and Three subjects from Group A, B, C or D.",
+    "expected_exact": {
+      "min_avg_final": "65",
+      "elective_qty": "3",
+      "elective_pool": "A,B,C,D",
+      "requirement_type": "alberta_high_school_courses"
+    },
+    "min_confidence": {
+      "elective_qty": "medium",
+      "elective_pool": "medium"
+    }
+  },
+  {
+    "id": "ualberta-competitive-and-avg-total",
+    "institution": "University of Alberta",
+    "text": "Competitive average for recent years has been in the low 80s. Admission average is calculated using five required Grade 12 subjects.",
+    "expected_exact": {
+      "avg_total": "5",
+      "competitive_floor_numeric": "80"
+    },
+    "expected_contains": {
+      "competitive_final": "competitive average"
+    },
+    "min_confidence": {
+      "avg_total": "high",
+      "competitive_final": "medium"
+    }
+  },
+  {
+    "id": "norquest-english-math-required-no-percent",
+    "institution": "NorQuest",
+    "text": "Admission requires English 30-1 or 30-2 and Mathematics 30-2 (or equivalent).",
+    "expected_exact": {
+      "english_req": "English 30-1 or English 30-2",
+      "math_req": "Math 30-2",
+      "requirement_type": "alberta_high_school_courses"
+    },
+    "expected_missing": [
+      "english_min",
+      "math_min"
+    ]
+  },
+  {
+    "id": "nait-subject-required-without-percent",
+    "institution": "NAIT",
+    "text": "Applicants must complete English 30-1 and Mathematics 30-2 prior to admission.",
+    "expected_exact": {
+      "english_req": "English 30-1",
+      "math_req": "Math 30-2",
+      "requirement_type": "alberta_high_school_courses"
+    },
+    "expected_missing": [
+      "english_min",
+      "math_min"
+    ]
+  },
+  {
+    "id": "competitive-without-average-not-set",
+    "institution": "NAIT",
+    "text": "Applicants may be waitlisted because the program is competitive and seats are limited.",
+    "expected_missing": [
+      "competitive_final",
+      "competitive_floor_numeric"
+    ]
+  },
+  {
+    "id": "elective-ambiguous-no-parse",
+    "institution": "MacEwan",
+    "text": "Applicants may present electives from various groups depending on stream and pathway.",
+    "expected_missing": [
+      "elective_qty",
+      "elective_pool"
+    ]
+  }
+]
