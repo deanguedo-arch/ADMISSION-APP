@@ -3,7 +3,6 @@
 This project is now set up to support:
 - local guarded sync (`tools/sync-programs.ps1`)
 - GitHub Actions full publish (`.github/workflows/refresh_and_sync.yml`)
-- GitHub Actions programs-only sync (`.github/workflows/sync-programs.yml`)
 
 ## 1) Publish this repo to GitHub
 `gh` is not required.
@@ -25,16 +24,24 @@ In GitHub -> Settings -> Secrets and variables -> Actions, add:
 ## 3) Run once manually before schedule
 In GitHub -> Actions -> `Publish Admissions Data to Sheets (Refresh + Sync + Commit)` -> `Run workflow`.
 
+Use:
+- `limit = 0`
+- `institutions =` blank
+- `skip_scrape = false`
+
 Confirm:
 - workflow passes
 - `Programs` tab updates
 - `Programs_BACKUP` tab is created/updated
 
-## 4) Optional programs-only schedule
-The programs-only workflow includes a daily schedule (`13:00 UTC`) and manual run.
+## 4) Fast local publish from existing artifacts
+Only use `-SkipScrape` locally or on a runner that already has `pipeline_artifacts/extract/programs_structured.csv`:
 
-Adjust schedule in:
-- `.github/workflows/sync-programs.yml`
+```powershell
+.\REFRESH_ALL.cmd -SkipScrape -SkipAvgApply
+```
+
+Fresh GitHub Actions runners do not keep ignored `pipeline_artifacts`, so the Step 2 workflow should run with `skip_scrape = false`.
 
 ## Built-in fail-safes
 - Pre-upload validation gate (`tools/validate-canonical.ps1`)

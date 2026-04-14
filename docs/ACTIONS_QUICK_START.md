@@ -11,16 +11,16 @@ Use these workflows in order. Everything else was removed on purpose.
 - Workflow: `STEP 2 - Publish Admissions Data to Sheets`
 - Use this when you want fresh data synced to the `Programs` sheet.
 - Typical manual run settings:
-  - `skip_scrape = true` (fast, routine)
   - `limit = 0`
   - `institutions =` blank
+  - `skip_scrape = false`
+- Only set `skip_scrape = true` when you are running locally or on a runner that already has `pipeline_artifacts/extract/programs_structured.csv`. Fresh GitHub Actions runners do not have those ignored artifacts.
 
 ## STEP 3 - Publish Offline Snapshot (GitHub Pages)
 - Workflow: `STEP 3 - Publish Offline Snapshot (GitHub Pages)`
 - Use this when you want the public/offline snapshot site updated.
-- Typical manual run settings:
-  - `refresh_mode = fast`
-  - `skip_fixtures = false`
+- This builds from the committed canonical CSV. It does not run the scraper.
+- Usually it runs automatically after Step 2 commits canonical dataset changes. Run it manually only when you need to republish Pages from the current canonical CSV.
 
 ## STEP 4 (Optional) - Deploy Apps Script Sync Webhook
 - Workflow: `STEP 4 (Optional) - Deploy Apps Script Sync Webhook`

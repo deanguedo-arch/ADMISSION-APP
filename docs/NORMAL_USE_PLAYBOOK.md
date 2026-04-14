@@ -16,28 +16,30 @@ This document is the day-to-day workflow after one-time setup is complete.
 
 | Workflow | File | Triggers |
 |---|---|---|
-| Publish Admissions Data to Sheets (Refresh + Sync + Commit) | .github/workflows/refresh_and_sync.yml | workflow_dispatch |
-| Sync Programs Only to Sheets (Programs Tab) | .github/workflows/sync-programs.yml | workflow_dispatch, schedule |
-| Deploy Apps Script Web App | .github/workflows/deploy-apps-script.yml | workflow_dispatch, push |
+| STEP 2 - Publish Admissions Data to Sheets | .github/workflows/refresh_and_sync.yml | workflow_dispatch |
+| STEP 1 - Deploy Apps Script Web App | .github/workflows/deploy-apps-script.yml | workflow_dispatch, push |
+| STEP 3 - Publish Offline Snapshot (GitHub Pages) | .github/workflows/deploy-offline-snapshot-pages.yml | workflow_dispatch, push |
+| STEP 4 (Optional) - Deploy Apps Script Sync Webhook | .github/workflows/deploy-apps-script-sync.yml | workflow_dispatch, push |
 
 ## Normal use (no engineering changes)
 
 ### A) Full data refresh (primary one-click run)
 1. Open GitHub -> Actions.
-2. Run workflow: `Publish Admissions Data to Sheets (Refresh + Sync + Commit)`.
-3. Wait for green status.
-4. Confirm canonical dataset changed only when expected.
+2. Run workflow: `STEP 2 - Publish Admissions Data to Sheets`.
+3. Use `limit = 0`, blank `institutions`, and `skip_scrape = false` for fresh GitHub Actions runs.
+4. Wait for green status.
+5. Confirm canonical dataset changed only when expected.
 
 Expected outcome:
 - Canonical CSV refreshed.
 - Sync/publish path executed from CI.
 
-### B) Fast Programs-only run (optional)
+### B) Publish offline snapshot (optional)
 1. Open GitHub -> Actions.
-2. Run workflow: `Sync Programs Only to Sheets (Programs Tab)`.
+2. Run workflow: `STEP 3 - Publish Offline Snapshot (GitHub Pages)`.
 3. Wait for green status.
 
-Use this when you only need a Programs publish/update path and do not want a full refresh pass.
+Use this when you need GitHub Pages rebuilt from the current canonical CSV. It usually runs automatically after Step 2 commits dataset changes.
 
 ### C) Sheet-side immediate refresh (if staff needs it now)
 1. Open the Google Sheet.
@@ -64,8 +66,8 @@ Expected outcome:
 6. Wait for required check `quality-gates` to pass.
 7. Merge PR.
 8. Post-merge, GitHub Actions auto-runs deploy workflows on `main` changes:
-   - `Deploy Apps Script Web App` (for `apps_script/**`)
-   - `Deploy Apps Script Sync Webhook` (for `apps_script_sync/**`)
+   - `STEP 1 - Deploy Apps Script Web App` (for `apps_script/**`)
+   - `STEP 4 (Optional) - Deploy Apps Script Sync Webhook` (for `apps_script_sync/**`)
 9. Refresh Sheet and run `onOpen` once if menus are stale.
 
 ## Fast incident triage
@@ -84,7 +86,6 @@ Expected outcome:
 
 - Source file: `tools/generate-normal-use-playbook.ps1`
 - Generated output: `docs/NORMAL_USE_PLAYBOOK.md`
-- CI auto-regeneration workflow: `.github/workflows/update-normal-use-playbook.yml`
 - Manual regenerate command:
 
 ```powershell

@@ -201,7 +201,7 @@ One-click local sync (Windows):
 - `SYNC_PROGRAMS.cmd`
 - `SYNC_ELECTIVE_RULES.cmd` (uploads `out/ElectiveRules.*.csv` to `ElectiveRules` tab)
 - `SYNC_ALL.cmd` (Programs + ElectiveRules in one run)
-- `REFRESH_ALL.cmd` (full refresh: rebuild + scrape/enrich + apply Avg_Total + prefill ElectiveRules + sync)
+- `REFRESH_ALL.cmd` (full refresh: rebuild seeds/index + scrape/enrich structured fields + rebuild canonical + prefill ElectiveRules + sync)
 
 Full end-to-end refresh in one command:
 
@@ -211,7 +211,7 @@ Full end-to-end refresh in one command:
 
 Useful variants:
 - quick smoke run (no publish): `.\REFRESH_ALL.cmd -Limit 10 -SkipSync`
-- reuse existing scrape output and just publish: `.\REFRESH_ALL.cmd -SkipScrape -SkipAvgApply`
+- reuse existing local scrape output and just publish: `.\REFRESH_ALL.cmd -SkipScrape -SkipAvgApply` (requires `pipeline_artifacts/extract/programs_structured.csv`)
 - run full flow but skip fixture checks: `.\REFRESH_ALL.cmd -SkipFixtures`
 
 Guardrails now included in local sync:
@@ -226,7 +226,6 @@ Apps Script structure guardrail:
 GitHub automation setup:
 - `docs/GITHUB_AUTOMATION.md`
 - workflow: `Publish Admissions Data to Sheets (Refresh + Sync + Commit)` (`.github/workflows/refresh_and_sync.yml`)
-- workflow: `Sync Programs Only to Sheets (Programs Tab)` (`.github/workflows/sync-programs.yml`)
 - Apps Script code auto-deploy: `docs/APPS_SCRIPT_AUTODEPLOY.md` (`.github/workflows/deploy-apps-script.yml`)
 
 ## Optional: program-specific average rules (recommended)

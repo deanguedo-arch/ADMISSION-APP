@@ -1274,3 +1274,4 @@ Keep entries short and append-only.
 - Updated `tools/validate-canonical.ps1` so the MacEwan unresolved-row gate accepts the current normalized `Requirement_Type` leading-token format instead of requiring only the legacy literal `See Degree` value.
 - Counted `Competitive_Final` and `Avg_Total` as structured MacEwan signals in the same gate, matching the richer canonical schema now produced by the structured pipeline.
 - Changed the Step 2 GitHub workflow default so fresh Actions runs do not skip structured scraping by default; `tools/refresh-all.ps1` now fails clearly if `-SkipScrape` is used without existing `programs_structured.csv` artifacts.
+- Updated operator docs and the normal-use playbook generator so Step 2 instructions say `skip_scrape = false` for fresh GitHub Actions runs and no longer reference the removed `sync-programs.yml` workflow.

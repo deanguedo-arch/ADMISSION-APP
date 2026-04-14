@@ -19,9 +19,9 @@ function Get-WorkflowInfo([string]$path) {
   $name = if ($nameMatch.Success) { $nameMatch.Groups[1].Value.Trim() } else { [IO.Path]::GetFileName($path) }
 
   $triggers = New-Object System.Collections.Generic.List[string]
-  if ([regex]::IsMatch($raw, '(?m)^[ \t]*workflow_dispatch:[ \t]*$')) { $triggers.Add("workflow_dispatch") }
-  if ([regex]::IsMatch($raw, '(?m)^[ \t]*push:[ \t]*$')) { $triggers.Add("push") }
-  if ([regex]::IsMatch($raw, '(?m)^[ \t]*schedule:[ \t]*$')) { $triggers.Add("schedule") }
+  if ([regex]::IsMatch($raw, '(?m)^\s*workflow_dispatch:\s*(#.*)?$')) { $triggers.Add("workflow_dispatch") }
+  if ([regex]::IsMatch($raw, '(?m)^\s*push:\s*(#.*)?$')) { $triggers.Add("push") }
+  if ([regex]::IsMatch($raw, '(?m)^\s*schedule:\s*(#.*)?$')) { $triggers.Add("schedule") }
   if ($triggers.Count -eq 0) { $triggers.Add("custom") }
 
   return [PSCustomObject]@{
@@ -40,8 +40,9 @@ function Get-Detected([string]$relativePath) {
 }
 
 $refreshWorkflow = Get-WorkflowInfo -path (Join-Path $repo ".github/workflows/refresh_and_sync.yml")
-$syncWorkflow = Get-WorkflowInfo -path (Join-Path $repo ".github/workflows/sync-programs.yml")
 $deployWorkflow = Get-WorkflowInfo -path (Join-Path $repo ".github/workflows/deploy-apps-script.yml")
+$offlineWorkflow = Get-WorkflowInfo -path (Join-Path $repo ".github/workflows/deploy-offline-snapshot-pages.yml")
+$syncDeployWorkflow = Get-WorkflowInfo -path (Join-Path $repo ".github/workflows/deploy-apps-script-sync.yml")
 
 $hasRefreshScript = Get-Detected "scripts/REFRESH_ALL.cmd"
 $hasSyncScript = Get-Detected "scripts/SYNC_ALL.cmd"
@@ -50,12 +51,14 @@ $hasCatalogFn = Get-Detected "apps_script/WorkbookAdmin.gs"
 $hasSyncFn = Get-Detected "apps_script_sync/SyncPrograms.gs"
 
 $refreshName = if ($refreshWorkflow) { $refreshWorkflow.Name } else { "Refresh + Sync workflow (missing)" }
-$syncName = if ($syncWorkflow) { $syncWorkflow.Name } else { "Programs-only sync workflow (missing)" }
 $deployName = if ($deployWorkflow) { $deployWorkflow.Name } else { "Apps Script deploy workflow (missing)" }
+$offlineName = if ($offlineWorkflow) { $offlineWorkflow.Name } else { "Offline snapshot workflow (missing)" }
+$syncDeployName = if ($syncDeployWorkflow) { $syncDeployWorkflow.Name } else { "Sync webhook deploy workflow (missing)" }
 
 $refreshTriggers = if ($refreshWorkflow) { ($refreshWorkflow.Triggers -join ", ") } else { "n/a" }
-$syncTriggers = if ($syncWorkflow) { ($syncWorkflow.Triggers -join ", ") } else { "n/a" }
 $deployTriggers = if ($deployWorkflow) { ($deployWorkflow.Triggers -join ", ") } else { "n/a" }
+$offlineTriggers = if ($offlineWorkflow) { ($offlineWorkflow.Triggers -join ", ") } else { "n/a" }
+$syncDeployTriggers = if ($syncDeployWorkflow) { ($syncDeployWorkflow.Triggers -join ", ") } else { "n/a" }
 
 $lines = @(
   "# Normal Use Playbook (Operator SOP)",
@@ -77,27 +80,29 @@ $lines = @(
   "| Workflow | File | Triggers |",
   "|---|---|---|",
   "| $refreshName | .github/workflows/refresh_and_sync.yml | $refreshTriggers |",
-  "| $syncName | .github/workflows/sync-programs.yml | $syncTriggers |",
   "| $deployName | .github/workflows/deploy-apps-script.yml | $deployTriggers |",
+  "| $offlineName | .github/workflows/deploy-offline-snapshot-pages.yml | $offlineTriggers |",
+  "| $syncDeployName | .github/workflows/deploy-apps-script-sync.yml | $syncDeployTriggers |",
   "",
   "## Normal use (no engineering changes)",
   "",
   "### A) Full data refresh (primary one-click run)",
   "1. Open GitHub -> Actions.",
   "2. Run workflow: ``$refreshName``.",
-  "3. Wait for green status.",
-  "4. Confirm canonical dataset changed only when expected.",
+  "3. Use ``limit = 0``, blank ``institutions``, and ``skip_scrape = false`` for fresh GitHub Actions runs.",
+  "4. Wait for green status.",
+  "5. Confirm canonical dataset changed only when expected.",
   "",
   "Expected outcome:",
   "- Canonical CSV refreshed.",
   "- Sync/publish path executed from CI.",
   "",
-  "### B) Fast Programs-only run (optional)",
+  "### B) Publish offline snapshot (optional)",
   "1. Open GitHub -> Actions.",
-  "2. Run workflow: ``$syncName``.",
+  "2. Run workflow: ``$offlineName``.",
   "3. Wait for green status.",
   "",
-  "Use this when you only need a Programs publish/update path and do not want a full refresh pass.",
+  "Use this when you need GitHub Pages rebuilt from the current canonical CSV. It usually runs automatically after Step 2 commits dataset changes.",
   "",
   "### C) Sheet-side immediate refresh (if staff needs it now)",
   "1. Open the Google Sheet.",
@@ -125,7 +130,7 @@ $lines = @(
   "7. Merge PR.",
   "8. Post-merge, GitHub Actions auto-runs deploy workflows on ``main`` changes:",
   "   - ``$deployName`` (for ``apps_script/**``)",
-  "   - ``Deploy Apps Script Sync Webhook`` (for ``apps_script_sync/**``)",
+  "   - ``$syncDeployName`` (for ``apps_script_sync/**``)",
   "9. Refresh Sheet and run ``onOpen`` once if menus are stale.",
   "",
   "## Fast incident triage",
@@ -144,7 +149,6 @@ $lines = @(
   "",
   "- Source file: ``tools/generate-normal-use-playbook.ps1``",
   "- Generated output: ``docs/NORMAL_USE_PLAYBOOK.md``",
-  "- CI auto-regeneration workflow: ``.github/workflows/update-normal-use-playbook.yml``",
   "- Manual regenerate command:",
   "",
   '```powershell',
@@ -152,8 +156,8 @@ $lines = @(
   '```'
 )
 
-$content = $lines -join "`r`n"
+$content = ($lines -join "`r`n") + "`r`n"
 
 New-Item -ItemType Directory -Path (Split-Path -Parent $output) -Force | Out-Null
-$content | Set-Content -LiteralPath $output -Encoding UTF8
+[System.IO.File]::WriteAllText($output, $content, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "Updated $OutputPath"
