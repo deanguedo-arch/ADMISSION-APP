@@ -1,6 +1,6 @@
-# Where `Avg_Total` gets created (and how rescraping works)
+# Where structured admissions fields get created
 
-`Avg_Total` is **not** a Google Sheets concept. It must be produced by your **scrape/enrich/extract pipeline** and written into the dataset row for each program.
+`Avg_Total` and the subject/minimum requirement fields are **not** Google Sheets concepts. They must be produced by the **scrape/enrich/extract pipeline** and written into the dataset row for each program.
 
 ## The exact place to compute it
 During extraction, after you have a program’s **enriched text corpus** (program page + followed admissions links), compute:
@@ -127,9 +127,9 @@ python .\pipeline\check_program_field_fixtures.py
 Fixture cases live in:
 - `pipeline/fixtures/program_field_cases.json`
 
-## `pipeline/run.py` shadow-profile mode
+## `pipeline/run.py` profile mode
 `pipeline/run.py` now supports:
-- `--profile baseline|candidate` (default `baseline`)
+- `--profile baseline|candidate` (default `candidate`)
 - `--fetch-dir <path>` (shared/frozen fetch-enrich artifacts)
 - `--extract-only` (reuse cached artifacts without HTTP fetch)
 
@@ -141,7 +141,15 @@ Outputs now include:
 - `extract/errors.csv`
 - `qa/coverage_summary.md`
 
-This enables deterministic baseline-vs-candidate comparison against the same frozen fetch corpus.
+This enables deterministic baseline-vs-candidate comparison against the same frozen fetch corpus. The operator refresh path uses `candidate`; `baseline` is only for scraper-lab comparisons.
+
+Primary operator workflow:
+
+```powershell
+.\tools\refresh-all.ps1 -SkipSync
+```
+
+`refresh-all.ps1` now builds seeds/index first, runs structured extraction with `--profile candidate`, rebuilds canonical from `programs_structured.csv`, validates, and rebuilds the review queue before sync/publish.
 
 Canonical rebuild command:
 
@@ -208,8 +216,10 @@ python .\pipeline\check_nait_program_filter_fixtures.py
 Fixture cases live in:
 - `pipeline/fixtures/nait_program_filter_cases.json`
 
-## Apply extracted `Avg_Total` into canonical
-After `pipeline/run.py` writes `pipeline_artifacts/extract/avg_total_candidates.csv`, apply confident values into the freshest canonical file (`.csv` vs `.csv.new`):
+## Legacy `Avg_Total` candidate apply
+`pipeline_artifacts/extract/avg_total_candidates.csv` is kept as a compatibility/debug artifact. It is no longer the authoritative canonical merge path.
+
+Only use the legacy apply script when debugging an old Avg_Total-only cycle:
 
 ```powershell
 .\tools\apply-avg-total-candidates.ps1 -CandidatesPath .\pipeline_artifacts\extract\avg_total_candidates.csv

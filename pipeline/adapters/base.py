@@ -343,21 +343,88 @@ def extract_group_constraint_notes(text: str) -> list[str]:
     return notes
 
 
-def extract_note_tokens(text: str) -> list[str]:
+def split_note_fragments(text: str) -> list[str]:
+    normalized = normalize_text(text)
+    if not normalized:
+        return []
+    return [
+        fragment.strip()
+        for fragment in re.split(r"(?:[.;]\s+|\n+|\s+\|\s+|\s+-\s+)", normalized)
+        if fragment.strip()
+    ]
+
+
+STRICT_NOTE_CONTEXT_PATTERN = (
+    r"\b(?:admission|admissions|entrance|require|required|requirements|applicant|applicants|application|"
+    r"eligibility|selection|pre-screening|must|submit|provide|non-academic)\b"
+)
+ELP_NOTE_CONTEXT_PATTERN = (
+    r"\b(?:english\s+language\s+proficiency|proficiency|admission|admissions|require|required|requirements|"
+    r"test\s+scores?|applicant|applicants)\b"
+)
+POST_SECONDARY_NOTE_CONTEXT_PATTERN = (
+    r"\b(?:admission|admissions|entrance|require|required|requirements|applicant|applicants|must|minimum|"
+    r"eligible|eligibility|accredited|recognized)\b"
+)
+
+
+def fragment_has_requirement_context(fragment: str, context_pattern: str = STRICT_NOTE_CONTEXT_PATTERN) -> bool:
+    return bool(
+        re.search(
+            context_pattern,
+            fragment,
+            flags=re.I,
+        )
+    )
+
+
+def has_requirement_local_note(text: str, pattern: str, context_pattern: str = STRICT_NOTE_CONTEXT_PATTERN) -> bool:
+    for fragment in split_note_fragments(text):
+        if not re.search(pattern, fragment, flags=re.I):
+            continue
+        if fragment_has_requirement_context(fragment, context_pattern):
+            return True
+    return False
+
+
+def is_broad_accessory_note_source(source_url: str | None) -> bool:
+    url = normalize_text(source_url).lower()
+    if not url:
+        return False
+    broad_tokens = (
+        "/admissions/how-to-apply",
+        "/apply-enrol/admissions/application/how-to-apply",
+        "/programs-and-courses/open-studies",
+        "/english-language-proficiency",
+    )
+    return any(token in url for token in broad_tokens)
+
+
+def extract_note_tokens(text: str, source_url: str | None = "") -> list[str]:
     notes = extract_group_constraint_notes(text)
-    if re.search(r"\bcasper\b", text, flags=re.I):
-        notes.append("CASPer required")
-    if re.search(r"\bportfolio\b", text, flags=re.I):
-        notes.append("portfolio required")
-    if re.search(r"\baudition\b", text, flags=re.I):
-        notes.append("audition required")
-    if re.search(r"\binterview\b", text, flags=re.I):
-        notes.append("interview required")
+    allow_accessory_notes = not is_broad_accessory_note_source(source_url)
+    if allow_accessory_notes:
+        if has_requirement_local_note(text, r"\bcasper\b"):
+            notes.append("CASPer required")
+        if has_requirement_local_note(text, r"\bportfolio\b"):
+            notes.append("portfolio required")
+        if has_requirement_local_note(text, r"\baudition\b"):
+            notes.append("audition required")
+        if has_requirement_local_note(text, r"\binterview\b"):
+            notes.append("interview required")
     if re.search(r"\bregular admission\b", text, flags=re.I):
         notes.append("regular admission")
-    if re.search(r"\benglish\s+language\s+proficiency\b|\bielts\b|\btoefl\b|\bduolingo\b|\bcael\b|\bpearson\b|\bpte\b", text, flags=re.I):
+    if has_requirement_local_note(
+        text,
+        r"\benglish\s+language\s+proficiency\b|\bielts\b|\btoefl\b|\bduolingo\b|\bcael\b|\bpearson\b|\bpte\b",
+        ELP_NOTE_CONTEXT_PATTERN,
+    ):
         notes.append("ELP tests mentioned")
-    if re.search(r"\b(?:two-year diploma|post-secondary credits?|minimum gpa|graduation gpa|accredited or recognized institution)\b", text, flags=re.I):
+    if has_requirement_local_note(
+        text,
+        r"\b(?:two-year diploma|post-secondary credits?|minimum gpa|graduation gpa|accredited or recognized institution)\b",
+        POST_SECONDARY_NOTE_CONTEXT_PATTERN,
+    ):
         notes.append("post-secondary pathway")
     deduped: list[str] = []
     seen: set[str] = set()
@@ -518,7 +585,16 @@ def extract_elective_details(text: str) -> tuple[str | None, str | None, str | N
     return None, None, None
 
 
-def has_assessment_pathway_signal(text: str) -> bool:
+ASSESSMENT_CONTEXT_PATTERN = (
+    r"\b(?:academic\s+requirements?|admission|admissions|applicant|applicants|application|"
+    r"may\s+meet|can\s+meet|meet\s+their|free\s+assessment|accuplacer|placement\s+assessment|"
+    r"math\s+assessment)\b"
+)
+
+
+def has_assessment_pathway_signal(text: str, source_url: str | None = "") -> bool:
+    if is_broad_accessory_note_source(source_url):
+        return False
     patterns = [
         r"\bacademic assessment\b",
         r"\bplacement assessment\b",
@@ -528,7 +604,7 @@ def has_assessment_pathway_signal(text: str) -> bool:
         r"\bmeet(?:ing)?(?: their)? academic requirements? with (?:a|an|free )?(?:academic )?assessment\b",
         r"\bacademic requirements? (?:can|may) be met with (?:a|an|free )?(?:academic )?assessment\b",
     ]
-    return any(re.search(pattern, text, flags=re.I) for pattern in patterns)
+    return any(has_requirement_local_note(text, pattern, ASSESSMENT_CONTEXT_PATTERN) for pattern in patterns)
 
 
 def has_post_secondary_pathway_signal(text: str) -> bool:
@@ -648,7 +724,9 @@ def extract_elp_tests(text: str) -> tuple[str | None, str | None]:
     return "; ".join(tests), snippet
 
 
-def detect_math_assessment(text: str) -> tuple[str | None, str | None]:
+def detect_math_assessment(text: str, source_url: str | None = "") -> tuple[str | None, str | None]:
+    if is_broad_accessory_note_source(source_url):
+        return None, None
     patterns = [
         r"\bacademic assessment\b",
         r"\bplacement assessment\b",
@@ -658,7 +736,11 @@ def detect_math_assessment(text: str) -> tuple[str | None, str | None]:
     ]
     match = None
     for pattern in patterns:
-        match = re.search(pattern, text, flags=re.I)
+        for candidate in re.finditer(pattern, text, flags=re.I):
+            fragment = excerpt_around(text, candidate.start(), candidate.end(), radius=140)
+            if fragment_has_requirement_context(fragment, ASSESSMENT_CONTEXT_PATTERN):
+                match = candidate
+                break
         if match:
             break
     if not match:
@@ -671,9 +753,10 @@ def derive_requirement_type(
     *,
     has_subject_requirements: bool,
     has_min_average: bool,
+    source_url: str | None = "",
 ) -> tuple[str | None, list[str], str]:
-    notes = extract_note_tokens(text)
-    if has_assessment_pathway_signal(text):
+    notes = extract_note_tokens(text, source_url=source_url)
+    if has_assessment_pathway_signal(text, source_url=source_url):
         return "placement_assessment", notes, "high"
     if has_subject_requirements or has_min_average:
         return "alberta_high_school_courses", notes, ("high" if notes else "medium")
@@ -792,7 +875,7 @@ def extract_generic_program_fields(
         )
 
         if doc_has_core_requirement_signal:
-            math_assessment_flag, assessment_snippet = detect_math_assessment(text)
+            math_assessment_flag, assessment_snippet = detect_math_assessment(text, source_url=document.url)
             if math_assessment_flag:
                 record_field(fields, evidence, "math_assessment_flag", math_assessment_flag, confidence="high", rule_id="math_assessment_detect", snippet=assessment_snippet, source_url=document.url)
 
@@ -807,6 +890,7 @@ def extract_generic_program_fields(
                 text,
                 has_subject_requirements=bool(english_req or math_req or social_req or science_req),
                 has_min_average=bool(min_avg),
+                source_url=document.url,
             )
             req_value = compose_requirement_type(req_base, req_notes)
             if req_value:

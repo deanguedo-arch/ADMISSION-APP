@@ -264,5 +264,15 @@
     "min_confidence": {
       "avg_total": "medium"
     }
+  },
+  {
+    "id": "broad-admissions-page-does-not-promote-note-dump",
+    "institution": "NAIT",
+    "source_url": "https://www.nait.ca/nait/admissions/how-to-apply/entrance-requirements/how-does-nait-evaluate-my-application",
+    "text": "Minimum entrance requirements: Applicants must complete English 30-1 and Mathematics 30-2 prior to admission. Applying to NAIT. Popular pages include Academic Upgrading Assessments and Placement Testing Services, Academic Upgrading Placement Test, IELTS Exams, portfolio tips, interview preparation, and campus services. Applicants should review the actual program requirements page before applying.",
+    "expected_exact": {
+      "requirement_type": "alberta_high_school_courses",
+      "math_assessment_flag": "No"
+    }
   }
 ]

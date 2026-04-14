@@ -1265,3 +1265,8 @@ Keep entries short and append-only.
 - Reverted the local auth/UI shell back to the known-working `@87` behavior and kept only the parser/eligibility diffs in `EligibilityEngine.gs`, `EligibilityProgramsData.gs`, and `EligibilitySubjects.gs`.
 - Shipped parser-only version `89` to the main staff deployment `AKfycbxmimxX1LfyBysb-IKMS-0iHrEQJg5ZQOQ0Mwz1ws1xnKSaL9zb5kDZvWc--eyFPR--BQ`, leaving login/auth behavior unchanged from `@87`.
 - Validation PASS before deploy: `node .\tools\check-science-requirement-parsing.js`, `node .\tools\check-placement-confidence.js`, `powershell .\tools\validate-webapp-surface.ps1`, and `powershell .\tools\validate-apps-script-structure.ps1`.
+## 2026-04-14 (structured refresh + QA honesty pass)
+- Reordered `tools/refresh-all.ps1` so the official path builds seeds/index, runs `pipeline/run.py --profile candidate`, rebuilds canonical from structured extraction, validates, and rebuilds the review queue before sync; legacy `avg_total_candidates.csv` apply is now opt-in/debug only.
+- Tightened structured extraction note promotion so broad how-to-apply/open-studies pages no longer promote accessory notes like interview/portfolio into every matching `Requirement_Type`; added fixture coverage for broad-page note leakage.
+- Added dataset QA for `placement_assessment` rows carrying `Avg_Total`, high-school rows with `Avg_Total` but blank `Min_Avg_Final`, and subject-requirement rows with no average context; canonical now has `0` placement rows with nonblank `Avg_Total`.
+- Removed stale `tools/check-web-auth-google-account-policy.js` because the local Apps Script source is back to the EIPS-domain auth policy.

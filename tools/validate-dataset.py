@@ -34,6 +34,12 @@ KEY_FIELDS = ["Institution", "Program", "Credential_Type", "Program_URL"]
 COLLISION_PAYLOAD_FIELDS = ["Requirement_Type", "Min_Avg_Final", "Elective_Qty", "Status"]
 KEY_REQUIREMENT_FIELDS = ["Requirement_Type", "Min_Avg_Final", "Math_Req", "English_Req"]
 BLANKISH_TOKENS = {"", "unknown", "none", "null", "nan"}
+ACCESSORY_NOTE_TOKENS = (
+    "interview required",
+    "portfolio required",
+    "audition required",
+    "casper required",
+)
 
 
 @dataclass
@@ -70,6 +76,13 @@ def is_blankish(value: str | None) -> bool:
     return normalize_text(value).lower() in BLANKISH_TOKENS
 
 
+def has_subject_requirements(row: dict[str, str]) -> bool:
+    return any(
+        not is_blankish(row.get(field))
+        for field in ("English_Req", "Math_Req", "Social_Req", "Science_Req")
+    )
+
+
 def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResult:
     errors: list[str] = []
     warnings: list[str] = []
@@ -95,12 +108,16 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
     numeric_range_failures: list[tuple[int, str, str]] = []
     suspicious_avg_total_rows: list[tuple[int, str, str]] = []
     assessment_type_mismatch_rows: list[tuple[int, str, str, str]] = []
+    placement_avg_total_rows: list[tuple[int, str, str, str]] = []
+    avg_total_without_min_rows: list[tuple[int, str, str, str]] = []
+    subject_requirements_without_average_context_rows: list[tuple[int, str, str]] = []
     incomplete_key_rows: list[int] = []
     key_payload_groups: dict[tuple[str, ...], set[tuple[str, ...]]] = defaultdict(set)
     exact_duplicate_counter: Counter[tuple[str, ...]] = Counter()
     institution_rows: Counter[str] = Counter()
     institution_blank_counts: dict[str, Counter[str]] = defaultdict(Counter)
     shell_rows_by_institution: Counter[str] = Counter()
+    note_token_counts: dict[str, Counter[str]] = defaultdict(Counter)
 
     for i, row in enumerate(rows, start=2):
         institution = normalize_text(row.get("Institution")) or "<blank>"
@@ -155,6 +172,44 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
                 )
             )
 
+        if requirement_type.startswith("placement_assessment") and not is_blankish(row.get("Avg_Total")):
+            placement_avg_total_rows.append(
+                (
+                    i,
+                    institution,
+                    normalize_text(row.get("Program")),
+                    normalize_text(row.get("Avg_Total")),
+                )
+            )
+
+        if (
+            requirement_type.startswith("alberta_high_school_courses")
+            and not is_blankish(row.get("Avg_Total"))
+            and is_blankish(row.get("Min_Avg_Final"))
+        ):
+            avg_total_without_min_rows.append(
+                (
+                    i,
+                    institution,
+                    normalize_text(row.get("Program")),
+                    normalize_text(row.get("Avg_Total")),
+                )
+            )
+
+        if (
+            requirement_type.startswith(("alberta_high_school_courses", "course_min_only"))
+            and has_subject_requirements(row)
+            and is_blankish(row.get("Min_Avg_Final"))
+            and is_blankish(row.get("Avg_Total"))
+        ):
+            subject_requirements_without_average_context_rows.append(
+                (i, institution, normalize_text(row.get("Program")))
+            )
+
+        for note_token in ACCESSORY_NOTE_TOKENS:
+            if note_token in requirement_type:
+                note_token_counts[institution][note_token] += 1
+
         if url and is_blankish(row.get("Requirement_Type")) and all(
             is_blankish(row.get(field))
             for field in ("Min_Avg_Final", "Competitive_Final", "English_Req", "Math_Req", "Social_Req", "Science_Req", "Elective_Qty")
@@ -195,6 +250,16 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
         errors.append(
             "Math_Assessment_Flag=Yes requires Requirement_Type to start with placement_assessment "
             f"({len(assessment_type_mismatch_rows)} rows). Examples: {samples}"
+        )
+
+    if placement_avg_total_rows:
+        samples = "; ".join(
+            f"row {row} {institution} | {program} | Avg_Total='{avg_total}'"
+            for row, institution, program, avg_total in placement_avg_total_rows[:12]
+        )
+        errors.append(
+            "placement_assessment rows must not carry Avg_Total values "
+            f"({len(placement_avg_total_rows)} rows). Examples: {samples}"
         )
 
     if collision_groups:
@@ -253,6 +318,35 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
         warnings.append(
             f"Suspicious Avg_Total values above 5 found ({len(suspicious_avg_total_rows)}). Examples: {samples}"
         )
+
+    if avg_total_without_min_rows:
+        samples = "; ".join(
+            f"row {row} {institution} | {program} | Avg_Total='{avg_total}'"
+            for row, institution, program, avg_total in avg_total_without_min_rows[:12]
+        )
+        warnings.append(
+            "Avg_Total present without Min_Avg_Final on Alberta high-school rows "
+            f"({len(avg_total_without_min_rows)}). Examples: {samples}"
+        )
+
+    if subject_requirements_without_average_context_rows:
+        samples = "; ".join(
+            f"row {row} {institution} | {program}"
+            for row, institution, program in subject_requirements_without_average_context_rows[:12]
+        )
+        warnings.append(
+            "Structured subject requirements without Min_Avg_Final or Avg_Total need average-context review "
+            f"({len(subject_requirements_without_average_context_rows)}). Examples: {samples}"
+        )
+
+    for institution, token_counts in sorted(note_token_counts.items()):
+        institution_count = institution_rows[institution]
+        for token, count in sorted(token_counts.items(), key=lambda item: (-item[1], item[0])):
+            rate = count / institution_count if institution_count else 0.0
+            if count >= 10 and rate >= 0.15:
+                warnings.append(
+                    f"{institution}: Requirement_Type note spike '{token}' on {count}/{institution_count} rows ({rate * 100:.1f}%)"
+                )
 
     if errors:
         print("\nValidation failures:")

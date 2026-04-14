@@ -412,20 +412,33 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
   $lower = $text.ToLowerInvariant()
 
   $hasSubjectSignal = @(
-    $row.English_Req,
-    $row.Math_Req,
-    $row.Social_Req,
-    $row.Science_Req,
-    $row.Min_Avg_Final,
-    $row.Elective_Qty
+    (Get-PropValue -row $row -names @("English_Req")),
+    (Get-PropValue -row $row -names @("Math_Req")),
+    (Get-PropValue -row $row -names @("Social_Req")),
+    (Get-PropValue -row $row -names @("Science_Req")),
+    (Get-PropValue -row $row -names @("Min_Avg_Final")),
+    (Get-PropValue -row $row -names @("Elective_Qty"))
   ) | Where-Object { -not (Is-Blank $_) }
   $hasSubjectSignal = @($hasSubjectSignal)
+  $hasCourseMinimumSignal = @(
+    (Get-PropValue -row $row -names @("English_Min")),
+    (Get-PropValue -row $row -names @("Math_Min")),
+    (Get-PropValue -row $row -names @("Social_Min")),
+    (Get-PropValue -row $row -names @("Science_Min"))
+  ) | Where-Object { -not (Is-Blank $_) }
+  $hasCourseMinimumSignal = @($hasCourseMinimumSignal)
+  $hasOverallAverageSignal = (-not (Is-Blank (Get-PropValue -row $row -names @("Min_Avg_Final")))) -or (-not (Is-Blank (Get-PropValue -row $row -names @("Avg_Total"))))
 
   $mathAssessment = (Normalize-Text $row.Math_Assessment_Flag).ToLowerInvariant()
 
   if (-not $text -or $lower -eq "unknown") {
     if ($mathAssessment -eq "yes") { return "placement_assessment" }
-    if ($hasSubjectSignal.Count -gt 0) { return "alberta_high_school_courses" }
+    if ($hasSubjectSignal.Count -gt 0) {
+      if ((-not $hasOverallAverageSignal) -and $hasCourseMinimumSignal.Count -gt 0) {
+        return "course_min_only"
+      }
+      return "alberta_high_school_courses"
+    }
     return $text
   }
 
@@ -441,7 +454,7 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
     return "placement_assessment"
   }
 
-  if ($lower -match "^(alberta_high_school_courses|placement_assessment|regular_admission|first_year_admission)(;|$)") {
+  if ($lower -match "^(alberta_high_school_courses|course_min_only|placement_assessment|post_secondary_pathway|regular_admission|first_year_admission)(;|$)") {
     return $text
   }
 
@@ -1774,7 +1787,44 @@ foreach ($row in @($canonical)) {
   }
 
   $reqTypeLower = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+  $notesIndex = $reqTypeLower.IndexOf("; notes:")
+  $notesSuffix = ""
+  if ($notesIndex -ge 0) {
+    $notesSuffix = (Normalize-Text $row.Requirement_Type).Substring($notesIndex)
+  }
+
+  if ($reqTypeLower.StartsWith("placement_assessment")) {
+    $row.Avg_Total = ""
+  }
+
+  $hasSubjectRequirements = @(
+    $row.English_Req,
+    $row.Math_Req,
+    $row.Social_Req,
+    $row.Science_Req
+  ) | Where-Object { -not (Is-Blank $_) }
+  $hasSubjectRequirements = @($hasSubjectRequirements)
+  $hasCourseMinimums = @(
+    $row.English_Min,
+    $row.Math_Min,
+    $row.Social_Min,
+    $row.Science_Min
+  ) | Where-Object { -not (Is-Blank $_) }
+  $hasCourseMinimums = @($hasCourseMinimums)
+
+  if (
+    $reqTypeLower.StartsWith("alberta_high_school_courses") `
+    -and (Is-Blank $row.Min_Avg_Final) `
+    -and (Is-Blank $row.Avg_Total) `
+    -and $hasSubjectRequirements.Count -gt 0 `
+    -and $hasCourseMinimums.Count -gt 0
+  ) {
+    $row.Requirement_Type = "course_min_only$notesSuffix"
+    $reqTypeLower = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+  }
+
   if ($reqTypeLower.StartsWith("regular_admission") -and $reqTypeLower.Contains("post-secondary pathway")) {
+    $row.Requirement_Type = "post_secondary_pathway$notesSuffix"
     $row.HS_Diploma_Req = "No"
     $row.Math_Assessment_Flag = "No"
   }

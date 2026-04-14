@@ -26,13 +26,14 @@ def evaluate_case(case: dict[str, object]) -> tuple[bool, str]:
     case_id = normalize_text(case.get("id")) or "<no-id>"
     institution = normalize_text(case.get("institution"))
     text = normalize_text(case.get("text"))
+    source_url = normalize_text(case.get("source_url"))
     if not institution:
         return False, f"FAIL {case_id}: institution is required"
     if not text:
         return False, f"FAIL {case_id}: text is required"
 
     adapter = adapter_for_institution(institution)
-    extraction = adapter.extract_program_fields(text)
+    extraction = adapter.extract_program_fields(text, source_url=source_url or None)
 
     expected_exact = case.get("expected_exact") or {}
     expected_contains = case.get("expected_contains") or {}

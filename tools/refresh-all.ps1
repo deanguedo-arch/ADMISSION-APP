@@ -8,6 +8,7 @@ param(
   [switch]$SkipFixtures,
   [switch]$SkipScrape,
   [switch]$SkipAvgApply,
+  [switch]$ApplyLegacyAvgCandidates,
   [switch]$SkipProgramUrlApply,
   [switch]$SkipElectivePrefill,
   [switch]$AllowStaleNorquestSeed,
@@ -71,13 +72,7 @@ $canonicalFallbackPath = ".\\data\\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv.new"
 $activeCanonicalPath = ""
 
 Write-Host ""
-Write-Host "Step 1/9: Rebuild canonical dataset"
-& .\\tools\\clean-master.ps1 | Out-Host
-$activeCanonicalPath = Resolve-CanonicalPath -canonicalPath $canonicalPrimaryPath -fallbackPath $canonicalFallbackPath
-Write-Host "Active canonical path: $activeCanonicalPath"
-
-Write-Host ""
-Write-Host "Step 2/9: Refresh NorQuest + MacEwan + UAlberta seeds + build cleaned program index"
+Write-Host "Step 1/10: Refresh NorQuest + MacEwan + UAlberta seeds + build cleaned program index"
 $norquestSeedPath = ".\\pipeline\\norquest_program_seed.csv"
 if ($AllowStaleNorquestSeed) {
   try {
@@ -104,7 +99,7 @@ Invoke-PythonChecked $buildArgs
 
 if (-not $SkipFixtures) {
   Write-Host ""
-  Write-Host "Step 3/9: Run extractor/link fixture checks"
+  Write-Host "Step 2/10: Run extractor/link fixture checks"
   Invoke-PythonChecked @(".\\pipeline\\check_avg_total_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_program_field_fixtures.py")
   Invoke-PythonChecked @(".\\pipeline\\check_enrichment_link_fixtures.py")
@@ -113,13 +108,13 @@ if (-not $SkipFixtures) {
   Invoke-PythonChecked @(".\\pipeline\\check_ualberta_url_map_fixtures.py")
 } else {
   Write-Host ""
-  Write-Host "Step 3/9: Skipped fixture checks (-SkipFixtures)"
+  Write-Host "Step 2/10: Skipped fixture checks (-SkipFixtures)"
 }
 
 if (-not $SkipScrape) {
   Write-Host ""
-  Write-Host "Step 4/9: Run scrape/enrichment extraction"
-  $runArgs = @(".\\pipeline\\run.py", "--index", $CleanIndexPath, "--out", $ArtifactsOut)
+  Write-Host "Step 3/10: Run structured scrape/enrichment extraction (candidate profile)"
+  $runArgs = @(".\\pipeline\\run.py", "--profile", "candidate", "--index", $CleanIndexPath, "--out", $ArtifactsOut)
   if ($Limit -gt 0) {
     $runArgs += @("--limit", [string]$Limit)
   }
@@ -130,13 +125,19 @@ if (-not $SkipScrape) {
   Invoke-PythonChecked $runArgs
 } else {
   Write-Host ""
-  Write-Host "Step 4/9: Skipped scrape/enrichment extraction (-SkipScrape)"
+  Write-Host "Step 3/10: Skipped scrape/enrichment extraction (-SkipScrape)"
 }
 
+Write-Host ""
+Write-Host "Step 4/10: Rebuild canonical dataset from structured extraction artifacts"
+& .\\tools\\clean-master.ps1 | Out-Host
+$activeCanonicalPath = Resolve-CanonicalPath -canonicalPath $canonicalPrimaryPath -fallbackPath $canonicalFallbackPath
+Write-Host "Active canonical path: $activeCanonicalPath"
+
 $candidatesPath = Join-Path $ArtifactsOut "extract\\avg_total_candidates.csv"
-if (-not $SkipAvgApply) {
+if ($ApplyLegacyAvgCandidates -and -not $SkipAvgApply) {
   Write-Host ""
-  Write-Host "Step 5/9: Apply Avg_Total candidates into canonical CSV"
+  Write-Host "Step 5/10: Apply legacy Avg_Total candidates into canonical CSV"
   if (-not (Test-Path $candidatesPath)) {
     if ($SkipScrape) {
       Write-Host "Avg_Total candidates file not found after -SkipScrape; skipping Avg_Total apply."
@@ -163,12 +164,16 @@ if (-not $SkipAvgApply) {
   }
 } else {
   Write-Host ""
-  Write-Host "Step 5/9: Skipped Avg_Total apply (-SkipAvgApply)"
+  if ($SkipAvgApply) {
+    Write-Host "Step 5/10: Skipped legacy Avg_Total apply (-SkipAvgApply)"
+  } else {
+    Write-Host "Step 5/10: Skipped legacy Avg_Total apply (structured extraction is authoritative; use -ApplyLegacyAvgCandidates only for debugging)"
+  }
 }
 
 if (-not $SkipProgramUrlApply) {
   Write-Host ""
-  Write-Host "Step 6/9: Apply Program_URL mappings into canonical CSV"
+  Write-Host "Step 6/10: Apply Program_URL mappings into canonical CSV"
   if (-not (Test-Path $CleanIndexPath)) {
     throw "Clean index file not found: $CleanIndexPath"
   } elseif ($DryRun) {
@@ -191,34 +196,44 @@ if (-not $SkipProgramUrlApply) {
   }
 } else {
   Write-Host ""
-  Write-Host "Step 6/9: Skipped Program_URL apply (-SkipProgramUrlApply)"
+  Write-Host "Step 6/10: Skipped Program_URL apply (-SkipProgramUrlApply)"
 }
 
 Write-Host ""
-Write-Host "Step 7/9: Regenerate ElectiveRules todo template"
+Write-Host "Step 7/10: Regenerate ElectiveRules todo template"
 & .\\tools\\generate-elective-rules-template.ps1 | Out-Host
 
 if (-not $SkipElectivePrefill) {
   Write-Host ""
-  Write-Host "Step 8/9: Prefill ElectiveRules suggestions"
+  Write-Host "Step 8/10: Prefill ElectiveRules suggestions"
   Invoke-PythonChecked @(".\\tools\\prefill-elective-rules.py")
 } else {
   Write-Host ""
-  Write-Host "Step 8/9: Skipped ElectiveRules prefill (-SkipElectivePrefill)"
+  Write-Host "Step 8/10: Skipped ElectiveRules prefill (-SkipElectivePrefill)"
+}
+
+if (-not $SkipValidation) {
+  Write-Host ""
+  Write-Host "Step 9/10: Validate canonical dataset + rebuild review queue"
+  Invoke-PythonChecked @(".\\tools\\validate-dataset.py", "--input", $activeCanonicalPath)
+  Invoke-PythonChecked @(".\\tools\\build-review-queue.py", "--input", $activeCanonicalPath)
+} else {
+  Write-Host ""
+  Write-Host "Step 9/10: Skipped validation/review queue (-SkipValidation)"
 }
 
 if (-not $SkipSync) {
   Write-Host ""
-  Write-Host "Step 9/9: Sync Programs + ElectiveRules to Google Sheets"
+  Write-Host "Step 10/10: Sync Programs + ElectiveRules to Google Sheets"
   if ($SkipValidation) {
     & .\\tools\\sync-programs.ps1 -ConfigPath $ConfigPath -SkipRebuild -SkipValidation | Out-Host
   } else {
-    & .\\tools\\sync-programs.ps1 -ConfigPath $ConfigPath -SkipRebuild | Out-Host
+    & .\\tools\\sync-programs.ps1 -ConfigPath $ConfigPath -SkipRebuild -SkipValidation | Out-Host
   }
   & .\\tools\\sync-elective-rules.ps1 -ConfigPath $ConfigPath | Out-Host
 } else {
   Write-Host ""
-  Write-Host "Step 9/9: Skipped Google Sheets sync (-SkipSync)"
+  Write-Host "Step 10/10: Skipped Google Sheets sync (-SkipSync)"
 }
 
 Write-Host ""

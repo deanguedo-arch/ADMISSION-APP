@@ -10,11 +10,15 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 REASON_AVG_TOTAL_SUSPICIOUS = "AVG_TOTAL_SUSPICIOUS_RANGE"
+REASON_AVG_TOTAL_WITHOUT_MIN = "AVG_TOTAL_WITHOUT_MIN_AVG"
+REASON_COURSE_AVG_CONTEXT = "STRUCTURED_COURSES_WITHOUT_AVERAGE_CONTEXT"
 REASON_EMPTY_SHELL = "EMPTY_ADMISSIONS_SHELL_ROW"
 REASON_INHERITANCE = "INHERITANCE_PLACEHOLDER"
 REASON_MISSING_SUBJECTS = "MISSING_SUBJECT_REQUIREMENTS"
 REASON_NORQUEST_CREDENTIAL = "NORQUEST_BACKFILL_MISSING_CREDENTIAL"
 REASON_PLACEMENT = "PLACEMENT_OR_ASSESSMENT_FLAG"
+REASON_PLACEMENT_AVG_CONFLICT = "PLACEMENT_AVG_TOTAL_CONFLICT"
+REASON_POST_SECONDARY_MIXED = "POST_SECONDARY_PATHWAY_MIXED_SIGNALS"
 REASON_UNKNOWN_REQUIREMENT = "UNKNOWN_REQUIREMENT_TYPE_WITH_URL"
 REASON_UALBERTA_NOTE_DUMP = "UALBERTA_NOTE_DUMP_NEEDS_NORMALIZATION"
 
@@ -38,7 +42,9 @@ OUTPUT_COLUMNS = [
 BLANKISH = {"", "unknown", "none", "null", "nan"}
 NORMALIZED_REQUIREMENT_PREFIXES = (
     "alberta_high_school_courses",
+    "course_min_only",
     "placement_assessment",
+    "post_secondary_pathway",
     "regular_admission",
     "first_year_admission",
 )
@@ -164,11 +170,40 @@ def needs_placement_review(row: dict[str, str]) -> bool:
     )
 
 
+def needs_placement_avg_total_conflict(row: dict[str, str]) -> bool:
+    req_type = normalize_text(row.get("Requirement_Type")).lower()
+    return req_type.startswith("placement_assessment") and not is_blankish(row.get("Avg_Total"))
+
+
 def needs_avg_total_review(row: dict[str, str]) -> bool:
     avg_total = parse_float_or_none(row.get("Avg_Total"))
     if avg_total is None:
         return False
     return avg_total > 5
+
+
+def needs_avg_total_without_min_review(row: dict[str, str]) -> bool:
+    req_type = normalize_text(row.get("Requirement_Type")).lower()
+    return (
+        req_type.startswith("alberta_high_school_courses")
+        and not is_blankish(row.get("Avg_Total"))
+        and is_blankish(row.get("Min_Avg_Final"))
+    )
+
+
+def needs_structured_course_average_context_review(row: dict[str, str]) -> bool:
+    req_type = normalize_text(row.get("Requirement_Type")).lower()
+    return (
+        req_type.startswith("course_min_only")
+        and has_subject_requirements(row)
+        and is_blankish(row.get("Min_Avg_Final"))
+        and is_blankish(row.get("Avg_Total"))
+    )
+
+
+def needs_post_secondary_mixed_signal_review(row: dict[str, str]) -> bool:
+    req_type = normalize_text(row.get("Requirement_Type")).lower()
+    return req_type.startswith("post_secondary_pathway") and has_subject_requirements(row)
 
 
 def needs_norquest_credential_backfill(row: dict[str, str]) -> bool:
@@ -205,6 +240,9 @@ def build_review_rows(rows: list[dict[str, str]]) -> list[ReviewRow]:
         if needs_placement_review(row):
             reasons.append(REASON_PLACEMENT)
 
+        if needs_placement_avg_total_conflict(row):
+            reasons.append(REASON_PLACEMENT_AVG_CONFLICT)
+
         if is_inheritance_placeholder(row.get("Requirement_Type")):
             reasons.append(REASON_INHERITANCE)
 
@@ -216,6 +254,15 @@ def build_review_rows(rows: list[dict[str, str]]) -> list[ReviewRow]:
 
         if needs_avg_total_review(row):
             reasons.append(REASON_AVG_TOTAL_SUSPICIOUS)
+
+        if needs_avg_total_without_min_review(row):
+            reasons.append(REASON_AVG_TOTAL_WITHOUT_MIN)
+
+        if needs_structured_course_average_context_review(row):
+            reasons.append(REASON_COURSE_AVG_CONTEXT)
+
+        if needs_post_secondary_mixed_signal_review(row):
+            reasons.append(REASON_POST_SECONDARY_MIXED)
 
         if reasons:
             out.append(ReviewRow(reason_codes=sorted(set(reasons)), source=row))

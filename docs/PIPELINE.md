@@ -123,10 +123,18 @@ Each extracted field now carries:
 Repeatable rerun path:
 
 ```powershell
-python .\pipeline\run.py --profile candidate --extract-only --fetch-dir .\pipeline_artifacts
+python .\pipeline\run.py --extract-only --fetch-dir .\pipeline_artifacts
 ```
 
 Use this after extraction-rule changes when the cached fetch corpus is still valid.
+
+End-to-end operator path:
+
+```powershell
+.\tools\refresh-all.ps1 -SkipSync
+```
+
+The refresh flow is ordered as seed/index build, candidate structured extraction, canonical rebuild/merge, validation/review queue, then optional sync.
 
 ### Canonical merge precedence
 `tools/clean-master.ps1` now merges admissions data in this order:
@@ -141,7 +149,9 @@ Notes:
 
 - explicit overrides still win last
 - `Requirement_Type` is normalized to a machine-readable leading token when possible
+- `course_min_only` distinguishes subject-minimum/pass-style rows from rows where an overall average may have been missed
 - `Avg_Total` is kept auditable in pipeline artifacts, but canonical may still apply conservative defaults when structured evidence is missing
+- `placement_assessment` rows must not carry `Avg_Total`; validator treats that as a hard failure
 
 ## 5) QA gates (fail fast)
 Before publishing, run QA checks like:
@@ -159,7 +169,7 @@ Current QA surface:
 - `python .\tools\validate-dataset.py`
 - `python .\tools\build-review-queue.py`
 
-The validator now warns on institution-level blank/Unknown spikes, shell rows, and suspicious `Avg_Total` ranges.
+The validator now fails on placement rows with nonblank `Avg_Total`, warns on high-school-course rows with `Avg_Total` but blank `Min_Avg_Final`, warns on subject-requirement rows with no average context, and flags institution-level note spikes that suggest broad-page note contamination.
 The review queue intentionally stays smaller than the full warning set; it is meant to highlight the remaining manual-review rows, not every known weak spot.
 
 For NAIT index filtering, run:

@@ -50,11 +50,11 @@ Network scraping isnâ€™t run from here (and programs change), but the pipel
 Institution nuance scaffold:
 - `pipeline/adapters/` contains NAIT, MacEwan, NorQuest, UAlberta, and generic adapters.
 - `pipeline/enrichment_links.py` applies institution-aware link ranking so enrichment focuses on admissions pages.
-- `pipeline/run.py` now records `avg_total_confidence`, `avg_total_rule`, and `avg_total_adapter`.
+- `pipeline/run.py` now defaults to the structured `candidate` profile and records field-level evidence for extracted requirements.
 - adapter regression fixtures: `python .\pipeline\check_avg_total_fixtures.py`
 - enrichment-link fixtures: `python .\pipeline\check_enrichment_link_fixtures.py`
 - NAIT filter fixtures: `python .\pipeline\check_nait_program_filter_fixtures.py`
-- apply extracted averages into canonical: `.\tools\apply-avg-total-candidates.ps1 -CandidatesPath .\pipeline_artifacts\extract\avg_total_candidates.csv` (use `-DryRun` first)
+- main refresh path: `.\tools\refresh-all.ps1 -SkipSync` builds seeds/index, runs structured extraction, rebuilds canonical, validates, and rebuilds the review queue before sync.
 
 NAIT seed-first index filtering:
 - build seed from card-capture file: `python .\pipeline\build_nait_seed_from_element.py`

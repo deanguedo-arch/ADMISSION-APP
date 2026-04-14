@@ -1239,7 +1239,7 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--index", default="pipeline/program_index.cleaned.csv", help="Program index CSV")
     ap.add_argument("--out", default="pipeline_artifacts", help="Artifacts output folder")
-    ap.add_argument("--profile", default=PROFILE_BASELINE, help="Extraction profile: baseline or candidate")
+    ap.add_argument("--profile", default=PROFILE_CANDIDATE, help="Extraction profile: baseline or candidate")
     ap.add_argument("--fetch-dir", default="", help="Optional fetch/enrich artifact root. Defaults to --out.")
     ap.add_argument("--extract-only", action="store_true", help="Skip HTTP fetch and extract from cached artifacts.")
     ap.add_argument("--limit", type=int, default=0, help="Limit number of programs")
