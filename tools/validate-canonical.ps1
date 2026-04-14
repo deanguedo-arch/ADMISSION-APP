@@ -508,6 +508,8 @@ foreach ($r in $macewanRows) {
   $hasStructuredSignals = $false
   foreach ($value in @(
       (Normalize-Text $r.Min_Avg_Final),
+      (Normalize-Text $r.Competitive_Final),
+      (Normalize-Text $r.Avg_Total),
       (Normalize-Text $r.English_Req),
       (Normalize-Text $r.Math_Req),
       (Normalize-Text $r.Social_Req),
@@ -522,7 +524,12 @@ foreach ($r in $macewanRows) {
 
   if (-not $hasStructuredSignals) {
     $reqType = Normalize-Text $r.Requirement_Type
-    if ($reqType -ne "See Degree") {
+    $reqTypeLower = $reqType.ToLowerInvariant()
+    $hasAcceptedPlaceholder = (
+      ($reqType -eq "See Degree") -or
+      ($reqTypeLower -match "^(alberta_high_school_courses|course_min_only|placement_assessment|post_secondary_pathway|regular_admission|first_year_admission)(;|$)")
+    )
+    if (-not $hasAcceptedPlaceholder) {
       $macewanUnresolvedMissingSeeDegree += $program
     }
   }
@@ -540,7 +547,7 @@ if ($macewanOutOfSeed.Count -gt 0) {
 
 if ($macewanUnresolvedMissingSeeDegree.Count -gt 0) {
   $examples = @($macewanUnresolvedMissingSeeDegree | Select-Object -First 25) -join "; "
-  throw "Validation failed: MacEwan unresolved rows missing Requirement_Type=See Degree ($($macewanUnresolvedMissingSeeDegree.Count)). Examples: $examples"
+  throw "Validation failed: MacEwan unresolved rows missing normalized Requirement_Type/See Degree placeholder ($($macewanUnresolvedMissingSeeDegree.Count)). Examples: $examples"
 }
 
 $ualbertaRows = @($rows | Where-Object { $_.Institution -eq "UAlberta" })

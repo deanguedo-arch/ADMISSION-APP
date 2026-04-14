@@ -1270,3 +1270,7 @@ Keep entries short and append-only.
 - Tightened structured extraction note promotion so broad how-to-apply/open-studies pages no longer promote accessory notes like interview/portfolio into every matching `Requirement_Type`; added fixture coverage for broad-page note leakage.
 - Added dataset QA for `placement_assessment` rows carrying `Avg_Total`, high-school rows with `Avg_Total` but blank `Min_Avg_Final`, and subject-requirement rows with no average context; canonical now has `0` placement rows with nonblank `Avg_Total`.
 - Removed stale `tools/check-web-auth-google-account-policy.js` because the local Apps Script source is back to the EIPS-domain auth policy.
+## 2026-04-14 (Step 2 canonical validator compatibility)
+- Updated `tools/validate-canonical.ps1` so the MacEwan unresolved-row gate accepts the current normalized `Requirement_Type` leading-token format instead of requiring only the legacy literal `See Degree` value.
+- Counted `Competitive_Final` and `Avg_Total` as structured MacEwan signals in the same gate, matching the richer canonical schema now produced by the structured pipeline.
+- Changed the Step 2 GitHub workflow default so fresh Actions runs do not skip structured scraping by default; `tools/refresh-all.ps1` now fails clearly if `-SkipScrape` is used without existing `programs_structured.csv` artifacts.

@@ -126,6 +126,10 @@ if (-not $SkipScrape) {
 } else {
   Write-Host ""
   Write-Host "Step 3/10: Skipped scrape/enrichment extraction (-SkipScrape)"
+  $structuredPath = Join-Path $ArtifactsOut "extract\\programs_structured.csv"
+  if (-not (Test-Path $structuredPath)) {
+    throw "Cannot use -SkipScrape because structured extraction artifacts are missing at $structuredPath. Run without -SkipScrape on fresh runners."
+  }
 }
 
 Write-Host ""

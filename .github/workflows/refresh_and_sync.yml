@@ -12,10 +12,10 @@ on:
         required: false
         default: ""
       skip_scrape:
-        description: "Skip scraping/enrichment (faster publish; recommended for routine updates)."
+        description: "Skip scraping/enrichment only when this runner already has pipeline_artifacts. Fresh GitHub runs should leave this false."
         type: boolean
         required: false
-        default: true
+        default: false
   # Optional schedule (disabled by default to avoid unexpected quota/scrape load).
   # schedule:
   #   - cron: "0 13 * * *"
