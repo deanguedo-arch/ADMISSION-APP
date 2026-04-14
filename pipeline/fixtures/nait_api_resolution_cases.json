@@ -1,0 +1,116 @@
+[
+  {
+    "id": "candidate_ids_current_spring_window",
+    "selector": {
+      "programCode": "BBA"
+    },
+    "today": "2026-04-13",
+    "expected_program_ids": [
+      "BBA-2025",
+      "BBA-2026"
+    ]
+  },
+  {
+    "id": "bba_general_shared_family_plan_match",
+    "program_name": "Bachelor of Business Administration - General",
+    "selector": {
+      "programCode": "BBA",
+      "ProgramPlan": "BBA",
+      "ProgramSubplan": "GENERAL"
+    },
+    "graphql_payload": {
+      "plans": [
+        {
+          "name": "Bachelor of Business Administration - Accounting and Analytics",
+          "planCode": "ACA",
+          "subPlans": [
+            {
+              "subPlanType": "Default",
+              "subPlanCode": "ACA-Q1"
+            }
+          ]
+        },
+        {
+          "name": "Bachelor of Business Administration",
+          "planCode": "BBA",
+          "subPlans": [
+            {
+              "subPlanType": "Concentration",
+              "subPlanCode": "ENTR"
+            },
+            {
+              "subPlanType": "Default",
+              "subPlanCode": "BBA-Q1"
+            }
+          ],
+          "admissions": {
+            "minimumEntranceRequirements": "Grade 12 Language Arts (English 30-2), Grade 12 Mathematics (Math 30-2 or Applied Math 30), three additional Grade 12 courses, and an overall minimum average of 65% in the five required high school courses."
+          }
+        }
+      ]
+    },
+    "expected_plan_code": "BBA",
+    "expected_program_name_contains": "Bachelor of Business Administration"
+  },
+  {
+    "id": "baist_exact_plan_code_match",
+    "program_name": "Bachelor of Applied Information Systems Technology - Information Systems",
+    "selector": {
+      "programCode": "BAI",
+      "ProgramPlan": "IST",
+      "ProgramSubplan": ""
+    },
+    "graphql_payload": {
+      "plans": [
+        {
+          "name": "Bachelor of Applied Information Systems Technology - Information Systems",
+          "planCode": "IST",
+          "subPlans": []
+        },
+        {
+          "name": "Bachelor of Applied Information Systems Technology - Network Management",
+          "planCode": "NMT",
+          "subPlans": []
+        }
+      ]
+    },
+    "expected_plan_code": "IST",
+    "expected_program_name_contains": "Information Systems"
+  },
+  {
+    "id": "btech_concentration_subplan_match",
+    "program_name": "Bachelor of Technology in Management - Operations Management",
+    "selector": {
+      "programCode": "BTM",
+      "ProgramPlan": "BTMA",
+      "ProgramSubplan": "BTMA-C2"
+    },
+    "graphql_payload": {
+      "plans": [
+        {
+          "name": "Bachelor of Technology in Management",
+          "planCode": "BTMA",
+          "subPlans": [
+            {
+              "subPlanType": "Concentration",
+              "subPlanCode": "BTMA-C1"
+            },
+            {
+              "subPlanType": "Concentration",
+              "subPlanCode": "BTMA-C2"
+            },
+            {
+              "subPlanType": "Concentration",
+              "subPlanCode": "BTMA-C3"
+            }
+          ],
+          "admissions": {
+            "minimumEntranceRequirements": "English 30-2, Math 30-2, three additional Grade 12 subjects, and a minimum average of 65%."
+          }
+        }
+      ]
+    },
+    "expected_plan_code": "BTMA",
+    "expected_program_name_contains": "Technology in Management"
+  }
+]

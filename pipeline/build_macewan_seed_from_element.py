@@ -7,8 +7,12 @@ import sys
 from html import unescape
 from pathlib import Path
 from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.request import Request, urlopen
 
-import requests
+try:
+    import requests  # type: ignore
+except ImportError:  # pragma: no cover - stdlib fallback is exercised in this repo
+    requests = None
 
 
 BASE_URL = "https://www.macewan.ca"
@@ -106,8 +110,10 @@ class HtmlFetcher:
         self.max_fetches = max_fetches
         self.fetch_count = 0
         self._cache: dict[str, str] = {}
-        self._session = requests.Session()
-        self._session.headers.update({"User-Agent": "AdmissionsCheckerBot/1.0"})
+        self._session = None
+        if requests is not None:
+            self._session = requests.Session()
+            self._session.headers.update({"User-Agent": "AdmissionsCheckerBot/1.0"})
 
     def __call__(self, url: str) -> str:
         key = normalize_space(url)
@@ -122,10 +128,16 @@ class HtmlFetcher:
         self.fetch_count += 1
         html = ""
         try:
-            resp = self._session.get(key, timeout=self.timeout)
-            if resp.status_code < 400:
-                html = resp.text or ""
-        except requests.RequestException:
+            if self._session is not None:
+                resp = self._session.get(key, timeout=self.timeout)
+                if resp.status_code < 400:
+                    html = resp.text or ""
+            else:
+                req = Request(key, headers={"User-Agent": "AdmissionsCheckerBot/1.0"})
+                with urlopen(req, timeout=self.timeout) as resp:
+                    if getattr(resp, "status", 200) < 400:
+                        html = resp.read().decode("utf-8", errors="ignore")
+        except Exception:
             html = ""
 
         self._cache[key] = html

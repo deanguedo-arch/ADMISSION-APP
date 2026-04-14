@@ -1,0 +1,52 @@
+{
+  "required_program_field_keys": [
+    "bio_30_req",
+    "chem_30_req",
+    "phys_30_req",
+    "sci_30_req",
+    "social_req",
+    "social_min",
+    "science_req",
+    "science_min",
+    "elective_qty",
+    "elective_pool",
+    "requirement_type",
+    "hs_diploma_req",
+    "math_assessment_flag",
+    "elp_tests_mentioned"
+  ],
+  "required_program_structured_columns": [
+    "index_row_id",
+    "institution",
+    "program_name",
+    "credential",
+    "source_url",
+    "program_id",
+    "adapter",
+    "error",
+    "avg_total",
+    "avg_total_confidence",
+    "avg_total_rule",
+    "avg_total_snippet",
+    "avg_total_source_url",
+    "english_req",
+    "english_req_confidence",
+    "math_req",
+    "math_req_confidence",
+    "requirement_type",
+    "requirement_type_confidence"
+  ],
+  "required_field_evidence_columns": [
+    "index_row_id",
+    "institution",
+    "program_name",
+    "credential",
+    "program_id",
+    "field_name",
+    "extracted_value",
+    "confidence",
+    "rule_id",
+    "snippet",
+    "source_url"
+  ]
+}

@@ -51,4 +51,3 @@ Use this as a short go/no-go checklist before you treat the current deployment a
 ## Ownership + Next Step
 - Who owns the Google account + Cloud project long-term (personal vs org)?
 - What is the next planned change after release (one seam only)?
-

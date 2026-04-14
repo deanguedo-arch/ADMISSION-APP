@@ -464,6 +464,29 @@
         color: #375b4d;
       }
 
+      .snapshot-banner.fresh {
+        border-color: #cfe0d8;
+        background: #f6fbf8;
+      }
+
+      .snapshot-banner.aging {
+        border-color: #d8d7c7;
+        background: #fcfbf5;
+      }
+
+      .snapshot-banner.aging .snapshot-banner-date {
+        color: #6d6542;
+      }
+
+      .snapshot-banner.stale {
+        border-color: #e0cec9;
+        background: #fdf7f6;
+      }
+
+      .snapshot-banner.stale .snapshot-banner-date {
+        color: #7a5149;
+      }
+
       .stat {
         border-radius: var(--radius-sm);
         padding: var(--space-2) var(--space-3);
@@ -4789,12 +4812,16 @@
           }
 
           #resultsPanel #resultSearch {
-            grid-column: span 5;
+            grid-column: span 4;
             min-width: 0;
           }
 
           #resultsPanel #institutionFilter,
-          #resultsPanel #credentialFilter,
+          #resultsPanel #credentialFilter {
+            grid-column: span 3;
+            min-width: 0;
+          }
+
           #resultsPanel #requirementTypeFilter {
             grid-column: span 2;
             min-width: 0;
@@ -5031,6 +5058,7 @@
               </div>
               <div class="actions" id="pinnedComparisonActions">
                 <button class="btn btn-subtle" id="pinnedComparisonBtn" type="button">Generate Program Comparison Sheet (Pinned)</button>
+                <button class="btn btn-subtle" id="pinnedSemesterPlanBtn" type="button">Generate Next Semester Plan (Pinned)</button>
               </div>
 
               <div class="compare-results is-empty" id="compareResults">
@@ -5097,7 +5125,6 @@
 
     <datalist id="namedCourses"></datalist>
     <datalist id="electiveCourses"></datalist>
-
 
     ﻿<script>
 
@@ -5199,6 +5226,7 @@
         compareStrip: document.getElementById("compareStrip"),
         pinnedComparisonActions: document.getElementById("pinnedComparisonActions"),
         pinnedComparisonBtn: document.getElementById("pinnedComparisonBtn"),
+        pinnedSemesterPlanBtn: document.getElementById("pinnedSemesterPlanBtn"),
         compareResults: document.getElementById("compareResults"),
         mobileHeadPrintBtn: document.getElementById("mobileHeadPrintBtn"),
         bottomNav: document.getElementById("bottomNav"),
@@ -6926,10 +6954,55 @@ function boot() {
         return "";
       }
 
+      function parseDatasetDateDaysOld_(datasetDateStr) {
+        const ymd = toYmdDate_(datasetDateStr || "");
+        if (!ymd) return null;
+        const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return null;
+
+        const year = Number(m[1]);
+        const month = Number(m[2]);
+        const day = Number(m[3]);
+        if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+
+        const targetUtcMs = Date.UTC(year, month - 1, day);
+        if (!Number.isFinite(targetUtcMs)) return null;
+
+        const now = new Date();
+        const todayUtcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        const diffDays = Math.floor((todayUtcMs - targetUtcMs) / 86400000);
+        if (!Number.isFinite(diffDays)) return null;
+        return Math.max(0, diffDays);
+      }
+
+      function isDatasetStale_(daysOld) {
+        const days = Number(daysOld);
+        if (!Number.isFinite(days) || days < 0) {
+          return { bucket: "stale", okToFeature: false };
+        }
+        if (days <= 21) return { bucket: "fresh", okToFeature: true };
+        if (days <= 60) return { bucket: "aging", okToFeature: true };
+        return { bucket: "stale", okToFeature: false };
+      }
+
       function updateSnapshotBannerDate_(datasetDate) {
         if (!ui.snapshotDataDate) return;
         const ymd = toYmdDate_(datasetDate || "");
-        ui.snapshotDataDate.textContent = `Data date: ${ymd || "n/a"}`;
+        if (ui.snapshotBanner) ui.snapshotBanner.classList.remove("fresh", "aging", "stale");
+        if (!ymd) {
+          ui.snapshotDataDate.textContent = "Data date: n/a";
+          return;
+        }
+
+        const daysOld = parseDatasetDateDaysOld_(ymd);
+        if (daysOld === null) {
+          ui.snapshotDataDate.textContent = `Data date: ${ymd}`;
+          return;
+        }
+
+        const stale = isDatasetStale_(daysOld);
+        ui.snapshotDataDate.textContent = `Data date: ${ymd} (${daysOld} day${daysOld === 1 ? "" : "s"} old)`;
+        if (ui.snapshotBanner) ui.snapshotBanner.classList.add(stale.bucket);
       }
 
       function updateSnapshotBannerFromBoot_(bootData) {
@@ -7081,9 +7154,7 @@ function boot() {
       function onSummaryFilterClick_(e) {
         const btn = e.target && e.target.closest("button[data-view-target]");
         if (!btn) return;
-        if (!isMobileAppShell_()) return;
         if (normalizePrimaryMode_(state.primaryMode) !== "results") return;
-        if (normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT) !== "results") return;
         const nextView = String(btn.getAttribute("data-view-target") || "").trim();
         if (RESULT_VIEWS.indexOf(nextView) < 0) return;
         if (state.view === nextView) return;
@@ -7203,6 +7274,23 @@ function boot() {
         if (ui.sumMissing) ui.sumMissing.textContent = String(ineligible);
         if (ui.sumUncheckable) ui.sumUncheckable.textContent = String(uncheckable);
         updateModeCounts_();
+        syncPinnedExportButtons_();
+      }
+
+      function syncPinnedExportButtons_() {
+        const hasModel = !!(state.resultModel && state.resultModel.rowsByKey);
+        const pinnedCount = hasModel ? getRowsForPinned_().length : 0;
+        const disabled = !hasModel || pinnedCount <= 0;
+        const reason = !hasModel
+          ? "Run Check Eligibility first."
+          : "Pin at least one program to enable this report.";
+        const buttons = [ui.pinnedComparisonBtn, ui.pinnedSemesterPlanBtn];
+        buttons.forEach((btn) => {
+          if (!btn) return;
+          btn.disabled = disabled;
+          btn.setAttribute("aria-disabled", disabled ? "true" : "false");
+          btn.title = disabled ? reason : "";
+        });
       }
 
       function populateResultFilterOptions() {
@@ -7319,6 +7407,7 @@ function boot() {
           if (!key) return;
           toggleShortlistKey(key);
           updateFilterCounts();
+          setStatus(`Pinned programs: ${countShortlistRows()}.`);
           renderResults();
           renderCompareStrip();
           renderCompareResults();
@@ -7491,6 +7580,7 @@ function boot() {
           if (!key) return;
           toggleShortlistKey(key);
           updateFilterCounts();
+          setStatus(`Pinned programs: ${countShortlistRows()}.`);
           renderResults();
           renderCompareStrip();
           renderCompareResults();
@@ -7922,12 +8012,32 @@ function boot() {
         return advisories[0] || "Meets marks-based checks.";
       }
 
+      function canFeatureRow_(row, detail, daysOld) {
+        const rowStatus = rowStatusForDisplay_(row);
+        if (rowStatus.css !== "eligible") return false;
+
+        const confidence = normalizeConfidence_((detail && detail.confidence) || (row && row.confidence));
+        if (confidence !== "High") return false;
+
+        const sourceUrl = normalizeHttpUrl_((detail && detail.programUrl) || (row && row.sourceUrl));
+        if (!sourceUrl) return false;
+
+        return !!isDatasetStale_(daysOld).okToFeature;
+      }
+
       function pickFeaturedRecommendationKey_(rows) {
         const list = Array.isArray(rows) ? rows : [];
         if (!list.length) return "";
-        const topEligible = list.find((row) => rowStatusForDisplay_(row).css === "eligible");
-        if (topEligible && topEligible.key) return topEligible.key;
-        return String((list[0] && list[0].key) || "").trim();
+        for (let i = 0; i < list.length; i++) {
+          const row = list[i];
+          if (!row || !row.key) continue;
+          const detail = getProgramDetailsForRow(row);
+          const datasetDate = toYmdDate_((detail && detail.datasetDate) || row.datasetDate || "");
+          const daysOld = parseDatasetDateDaysOld_(datasetDate);
+          if (daysOld === null) continue;
+          if (canFeatureRow_(row, detail, daysOld)) return row.key;
+        }
+        return "";
       }
 
       function featuredPresentationForStatus_(status) {
@@ -8381,6 +8491,146 @@ function boot() {
         return state.compareKeys.map((k) => model.rowsByKey[k]).filter(Boolean);
       }
 
+      function extractCourseTokensFromRequirement_(text) {
+        const source = String(text || "");
+        if (!source) return [];
+
+        const rules = [
+          { pattern: /\bEnglish(?: Language Arts)?\s*30-(1|2)\b/gi, map: (m) => `English 30-${m[1]}` },
+          { pattern: /\bELA\s*30-(1|2)\b/gi, map: (m) => `English 30-${m[1]}` },
+          { pattern: /\bMath(?:ematics)?\s*30-(1|2)\b/gi, map: (m) => `Math 30-${m[1]}` },
+          { pattern: /\bMath(?:ematics)?\s*31\b/gi, map: () => "Math 31" },
+          { pattern: /\bBiology\s*30\b/gi, map: () => "Biology 30" },
+          { pattern: /\bChemistry\s*30\b/gi, map: () => "Chemistry 30" },
+          { pattern: /\bPhysics\s*30\b/gi, map: () => "Physics 30" },
+          { pattern: /\bScience\s*30\b/gi, map: () => "Science 30" },
+          { pattern: /\bSocial(?: Studies)?\s*30-(1|2)\b/gi, map: (m) => `Social 30-${m[1]}` },
+          { pattern: /\bAboriginal Studies\s*30\b/gi, map: () => "Aboriginal Studies 30" },
+        ];
+
+        const out = [];
+        const seen = {};
+        for (let i = 0; i < rules.length; i++) {
+          const rule = rules[i];
+          let match = null;
+          while ((match = rule.pattern.exec(source))) {
+            const token = String(rule.map(match) || "").replace(/\s+/g, " ").trim();
+            const key = token.toLowerCase();
+            if (!token || seen[key]) continue;
+            seen[key] = true;
+            out.push(token);
+          }
+        }
+        return out;
+      }
+
+      function parseAvgUsedCourses_(avgUsedCell) {
+        const text = String(avgUsedCell || "");
+        if (!text) return [];
+
+        const byCourse = {};
+        const rx = /([A-Za-z][A-Za-z0-9 .&/-]*?)\s*[:=]\s*(\d{1,3}(?:\.\d+)?)/g;
+        let match = null;
+        while ((match = rx.exec(text))) {
+          const rawCourse = String(match[1] || "").replace(/\s+/g, " ").trim();
+          const mark = Number(match[2]);
+          if (!rawCourse || !Number.isFinite(mark)) continue;
+          const mapped = extractCourseTokensFromRequirement_(rawCourse);
+          const course = mapped[0] || rawCourse;
+          const key = course.toLowerCase();
+          if (!byCourse[key] || mark < byCourse[key].mark) {
+            byCourse[key] = { course, mark };
+          }
+        }
+
+        return Object.keys(byCourse)
+          .map((k) => byCourse[k])
+          .sort((a, b) => (a.mark === b.mark ? a.course.localeCompare(b.course) : a.mark - b.mark));
+      }
+
+      function buildNextSemesterPlan_(row, detail) {
+        const safeRow = row && typeof row === "object" ? row : {};
+        const safeDetail = detail && typeof detail === "object" ? detail : {};
+        const take = [];
+        const upgrade = [];
+        const notes = [];
+        const takeSeen = {};
+        const upgradeSeen = {};
+        const notesSeen = {};
+
+        function addUnique_(arr, seen, value) {
+          const text = String(value || "").replace(/\s+/g, " ").trim();
+          if (!text) return;
+          const key = text.toLowerCase();
+          if (seen[key]) return;
+          seen[key] = true;
+          arr.push(text);
+        }
+
+        const requirements = Array.isArray(safeDetail.requirements) ? safeDetail.requirements : [];
+        requirements.forEach((req) => {
+          const status = normalizeReqStatus(req && req.status);
+          const reqText = [
+            String((req && req.label) || ""),
+            String((req && req.requirement) || ""),
+            String((req && req.matched) || ""),
+            Array.isArray(req && req.issues) ? req.issues.join(" ") : "",
+          ]
+            .join(" ")
+            .trim();
+          const tokens = extractCourseTokensFromRequirement_(reqText);
+          if (status === "missing") {
+            tokens.forEach((token) => addUnique_(take, takeSeen, token));
+          }
+          if (status === "low_mark") {
+            tokens.forEach((token) => addUnique_(upgrade, upgradeSeen, token));
+          }
+        });
+
+        const avg = safeDetail.average && typeof safeDetail.average === "object" ? safeDetail.average : {};
+        const avgGapFromDetail =
+          Number.isFinite(toFiniteNumber(avg.min)) && Number.isFinite(toFiniteNumber(avg.student))
+            ? Math.max(0, toFiniteNumber(avg.min) - toFiniteNumber(avg.student))
+            : 0;
+        const avgGap = Math.max(avgGapFromDetail, Number(safeRow.avgGap) || 0);
+        if (avgGap > 0) {
+          const avgUsedCell = Array.isArray(safeRow.cells) ? safeRow.cells[6] : "";
+          const avgUsedCourses = parseAvgUsedCourses_(avgUsedCell);
+          const targetCount = avgGap >= 5 ? 2 : 1;
+          avgUsedCourses.slice(0, Math.min(avgUsedCourses.length, targetCount)).forEach((entry) => {
+            addUnique_(upgrade, upgradeSeen, entry.course);
+          });
+          addUnique_(
+            notes,
+            notesSeen,
+            `Average is short by ${formatMarkDisplay(avgGap)} points; prioritize lowest Avg Used courses.`
+          );
+        }
+
+        const keywordText = [
+          ...(Array.isArray(safeDetail.advisories) ? safeDetail.advisories : []),
+          ...(Array.isArray(safeDetail.notes) ? safeDetail.notes : []),
+          ...(Array.isArray(safeDetail.missingReasons) ? safeDetail.missingReasons : []),
+          ...(Array.isArray(safeDetail.requirements) ? safeDetail.requirements.map((x) => `${x.label || ""} ${x.requirement || ""}`) : []),
+          String(safeDetail.uncheckableReason || ""),
+          String(safeDetail.nextStep || ""),
+        ]
+          .join(" | ")
+          .toLowerCase();
+
+        if (/(placement|assessment|casper|test required|entrance test)/i.test(keywordText)) {
+          addUnique_(notes, notesSeen, "Placement/assessment is mentioned; confirm required tests and timelines.");
+        }
+        if (/(portfolio|audition)/i.test(keywordText)) {
+          addUnique_(notes, notesSeen, "Portfolio/audition is mentioned; confirm submission requirements and deadlines.");
+        }
+        if (/interview/i.test(keywordText)) {
+          addUnique_(notes, notesSeen, "Interview is mentioned; confirm interview process and dates.");
+        }
+
+        return { take, upgrade, notes };
+      }
+
       function renderSingleProgramDetails_(row) {
         const detail = getProgramDetailsForRow(row);
         const confidence = normalizeConfidence_(detail.confidence || row.confidence);
@@ -8432,9 +8682,16 @@ function boot() {
             ? "N/A"
             : escapeHtml(formatCell(avg.totalCourses));
         const avgUsedText = escapeHtml(formatCell(avg.usedCourses || 0));
+        const avgUsedRawText = Array.isArray(row && row.cells) ? row.cells[6] : "";
+        const avgUsedParsed = parseAvgUsedCourses_(avgUsedRawText);
+        const avgUsedParsedText = avgUsedParsed.length
+          ? avgUsedParsed.map((x) => `${x.course}=${formatCell(x.mark)}`).join(", ")
+          : "Not available";
         const avgNeedsAttention = avg.complete === false || avg.meetsMinimum === false;
         const allowedGroups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups : [];
         const selectedElectives = Array.isArray(electives.selected) ? electives.selected : [];
+        const nextSemesterPlan = buildNextSemesterPlan_(row, detail);
+        const hasNextPlanItems = !!(nextSemesterPlan.take.length || nextSemesterPlan.upgrade.length || nextSemesterPlan.notes.length);
 
         const requirementsSectionHtml = requirementLines
           ? `<details class="collapsible" open><summary>Requirements</summary><ul class="detail-list">${requirementLines}</ul></details>`
@@ -8453,12 +8710,8 @@ function boot() {
               programUrl
             )}" target="_blank" rel="noopener noreferrer">Program Website</a></div>`
           : `<div class="detail-link-row"><span class="source-link-missing">Source link missing</span></div>`;
-        const detailActionLinkHtml = programUrl
-          ? `<a class="btn btn-subtle" href="${escapeAttr(programUrl)}" target="_blank" rel="noopener noreferrer">Program Link</a>`
-          : `<span class="btn btn-subtle is-disabled" aria-disabled="true">Program Link</span>`;
         const detailActionsHtml = `
           <div class="detail-actions-row">
-            ${detailActionLinkHtml}
             <button class="btn btn-subtle ${isPinned ? "active" : ""}" type="button" data-detail-pin-key="${escapeAttr(
               row.key
             )}">${escapeHtml(pinLabel)}</button>
@@ -8486,10 +8739,43 @@ function boot() {
               <li>Min Avg: ${avgMinText}</li>
               <li>Student Avg: ${avgStudentText}</li>
               <li>Courses used: ${avgUsedText}/${avgTotalText}</li>
+              <li>Avg Used detail: ${escapeHtml(avgUsedParsedText)}</li>
               <li>Complete: ${avg.complete ? "Yes" : "No"}</li>
               <li>Meets minimum: ${avg.meetsMinimum === null ? "N/A" : avg.meetsMinimum ? "Yes" : "No"}</li>
               <li>Electives needed for avg: ${escapeHtml(formatCell(avg.neededElectivesForAverage || 0))}</li>
             </ul>
+          </details>
+        `;
+        const nextSemesterPlanHtml = `
+          <details class="collapsible"${hasNextPlanItems ? " open" : ""}>
+            <summary>Next Semester Plan</summary>
+            ${
+              hasNextPlanItems
+                ? `<div class="detail-block">
+                    ${
+                      nextSemesterPlan.take.length
+                        ? `<h4>Courses to take</h4><ul class="detail-list">${nextSemesterPlan.take
+                            .map((item) => `<li>${escapeHtml(item)}</li>`)
+                            .join("")}</ul>`
+                        : ""
+                    }
+                    ${
+                      nextSemesterPlan.upgrade.length
+                        ? `<h4>Courses to upgrade</h4><ul class="detail-list">${nextSemesterPlan.upgrade
+                            .map((item) => `<li>${escapeHtml(item)}</li>`)
+                            .join("")}</ul>`
+                        : ""
+                    }
+                    ${
+                      nextSemesterPlan.notes.length
+                        ? `<h4>Notes</h4><ul class="detail-list">${nextSemesterPlan.notes
+                            .map((item) => `<li>${escapeHtml(item)}</li>`)
+                            .join("")}</ul>`
+                        : ""
+                    }
+                  </div>`
+                : '<p class="ghost">No immediate semester actions identified from this snapshot.</p>'
+            }
           </details>
         `;
         const advisoriesSectionHtml = `
@@ -8533,6 +8819,7 @@ function boot() {
             ${explainabilityHtml}
           </div>
           ${averageSectionHtml}
+          ${nextSemesterPlanHtml}
           ${advisoriesSectionHtml}
           ${meetingNoteHtml}
           ${requirementsSectionHtml}
@@ -8862,6 +9149,205 @@ function boot() {
         return notes.length ? notes.slice(0, 2) : ["Verify details on the official program page."];
       }
 
+      function sortCourseImpactItems_(impactMap) {
+        return Object.keys(impactMap || {})
+          .map((key) => {
+            const item = impactMap[key] || {};
+            const programs = Array.isArray(item.programs) ? item.programs.slice().sort((a, b) => a.localeCompare(b)) : [];
+            return {
+              course: String(item.course || "").trim(),
+              programs,
+              count: programs.length,
+            };
+          })
+          .filter((item) => !!item.course)
+          .sort((a, b) => {
+            if (b.count !== a.count) return b.count - a.count;
+            return a.course.localeCompare(b.course);
+          });
+      }
+
+      function generatePinnedSemesterPlan() {
+        if (!state.result || !state.resultModel) {
+          setStatus("Run Check Eligibility first.", true);
+          return;
+        }
+
+        const pinnedRows = getPinnedRowsForComparison_();
+        if (!pinnedRows.length) {
+          setStatus("No pinned programs selected. Pin programs, then generate semester plan.", true);
+          return;
+        }
+
+        const takeImpact = {};
+        const upgradeImpact = {};
+        const combinedImpact = {};
+
+        function addImpact_(bucket, course, row) {
+          const text = String(course || "").replace(/\s+/g, " ").trim();
+          if (!text) return;
+          const key = text.toLowerCase();
+          const label = `${String(row.program || "Program").trim()} (${String(row.institution || "Institution").trim()})`;
+          if (!bucket[key]) {
+            bucket[key] = { course: text, programs: [], programSet: {} };
+          }
+          if (!bucket[key].programSet[label]) {
+            bucket[key].programSet[label] = true;
+            bucket[key].programs.push(label);
+          }
+        }
+
+        pinnedRows.forEach((row) => {
+          const detail = getProgramDetailsForRow(row);
+          const plan = buildNextSemesterPlan_(row, detail);
+          plan.take.forEach((course) => addImpact_(takeImpact, course, row));
+          plan.upgrade.forEach((course) => addImpact_(upgradeImpact, course, row));
+        });
+
+        const takeItems = sortCourseImpactItems_(takeImpact);
+        const upgradeItems = sortCourseImpactItems_(upgradeImpact);
+        takeItems.forEach((item) => {
+          const key = item.course.toLowerCase();
+          if (!combinedImpact[key]) {
+            combinedImpact[key] = {
+              course: item.course,
+              takeCount: 0,
+              upgradeCount: 0,
+              programs: [],
+              programSet: {},
+            };
+          }
+          combinedImpact[key].takeCount = item.count;
+          item.programs.forEach((label) => {
+            if (combinedImpact[key].programSet[label]) return;
+            combinedImpact[key].programSet[label] = true;
+            combinedImpact[key].programs.push(label);
+          });
+        });
+        upgradeItems.forEach((item) => {
+          const key = item.course.toLowerCase();
+          if (!combinedImpact[key]) {
+            combinedImpact[key] = {
+              course: item.course,
+              takeCount: 0,
+              upgradeCount: 0,
+              programs: [],
+              programSet: {},
+            };
+          }
+          combinedImpact[key].upgradeCount = item.count;
+          item.programs.forEach((label) => {
+            if (combinedImpact[key].programSet[label]) return;
+            combinedImpact[key].programSet[label] = true;
+            combinedImpact[key].programs.push(label);
+          });
+        });
+
+        const mappingItems = Object.keys(combinedImpact)
+          .map((key) => {
+            const item = combinedImpact[key];
+            const programs = item.programs.slice().sort((a, b) => a.localeCompare(b));
+            return {
+              course: item.course,
+              takeCount: item.takeCount,
+              upgradeCount: item.upgradeCount,
+              totalCount: Math.max(item.takeCount, item.upgradeCount),
+              programs,
+            };
+          })
+          .sort((a, b) => {
+            if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount;
+            return a.course.localeCompare(b.course);
+          });
+
+        const datasetDate = getResultDatasetDate() || "n/a";
+        const generated = formatUtcStamp(new Date().toISOString()) || "n/a";
+
+        function renderRankedList_(items, emptyLabel) {
+          if (!items.length) return `<p>${escapeHtml(emptyLabel)}</p>`;
+          return `<ol>${items
+            .map(
+              (item) =>
+                `<li><strong>${escapeHtml(item.course)}</strong> - impacts ${escapeHtml(String(item.count))} program(s)</li>`
+            )
+            .join("")}</ol>`;
+        }
+
+        function renderMappingTable_(items) {
+          if (!items.length) return "<p>No course-to-program mapping available.</p>";
+          return `
+            <table>
+              <thead>
+                <tr>
+                  <th>Course</th>
+                  <th>Take Count</th>
+                  <th>Upgrade Count</th>
+                  <th>Impacted Programs</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items
+                  .map(
+                    (item) =>
+                      `<tr>
+                        <td>${escapeHtml(item.course)}</td>
+                        <td>${escapeHtml(String(item.takeCount))}</td>
+                        <td>${escapeHtml(String(item.upgradeCount))}</td>
+                        <td>${escapeHtml(item.programs.join("; "))}</td>
+                      </tr>`
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `;
+        }
+
+        const html = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Next Semester Plan (Pinned)</title>
+    <style>
+      body { font-family: "Open Sans", sans-serif; margin: 18px; color: #2c3f38; }
+      h1 { margin: 0 0 6px; font-family: "Rubik", sans-serif; color: #14553f; font-size: 22px; }
+      h2 { margin: 16px 0 6px; font-size: 16px; color: #14553f; }
+      .meta { margin: 0 0 6px; }
+      .disc { margin: 0 0 12px; color: #6b5400; font-weight: 700; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      th, td { border: 1px solid #d0ddd7; padding: 6px; text-align: left; vertical-align: top; }
+      th { background: #f1f7f4; color: #14553f; }
+      ol { margin: 0; padding-left: 18px; }
+      .actions { margin: 0 0 10px; }
+      @media print { .actions { display: none; } body { margin: 8mm; } }
+    </style>
+  </head>
+  <body>
+    <div class="actions"><button onclick="window.print()">Print</button></div>
+    <h1>Next Semester Plan (Pinned)</h1>
+    <p class="meta">Snapshot date: ${escapeHtml(datasetDate)} | Generated timestamp: ${escapeHtml(generated)}</p>
+    <p class="disc">Snapshot tool. Confirm details on institution sites for final decisions.</p>
+
+    <h2>Top courses to take (most programs unlocked)</h2>
+    ${renderRankedList_(takeItems, "No shared take-course actions identified from pinned programs.")}
+
+    <h2>Top courses to upgrade</h2>
+    ${renderRankedList_(upgradeItems, "No shared upgrade-course actions identified from pinned programs.")}
+
+    <h2>Course impact mapping</h2>
+    ${renderMappingTable_(mappingItems)}
+  </body>
+</html>`;
+
+        printHtmlDocument_(html, "Could not open semester plan print view in this browser.");
+        setStatus(`Generated Next Semester Plan for ${pinnedRows.length} pinned program(s).`);
+        trackUiEvent_("semester_plan_export", {
+          programs: pinnedRows.length,
+          takeCourses: takeItems.length,
+          upgradeCourses: upgradeItems.length,
+        });
+      }
+
       function generatePinnedComparisonSheet() {
         if (!state.result || !state.resultModel) {
           setStatus("Run Check Eligibility first.", true);
@@ -8952,14 +9438,7 @@ function boot() {
   </body>
 </html>`;
 
-        const win = window.open("", "_blank", "noopener,noreferrer");
-        if (!win) {
-          setStatus("Could not open comparison sheet window. Allow pop-ups and try again.", true);
-          return;
-        }
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+        printHtmlDocument_(html, "Could not open comparison sheet print view in this browser.");
         setStatus(`Generated Program Comparison Sheet for ${pinnedRows.length} pinned program(s).`);
         trackUiEvent_("compare_sheet_export", { programs: pinnedRows.length });
       }
@@ -9791,7 +10270,16 @@ function boot() {
 
       function isMockMode() {
         const params = new URLSearchParams(window.location.search || "");
-        return params.get("mock") === "1";
+        const explicit = String(params.get("mock") || "").trim();
+        if (explicit === "1") return true;
+        if (explicit === "0") return false;
+
+        // On GitHub Pages, use mock only when no offline bridge/runtime is present.
+        const host = String(window.location.hostname || "").toLowerCase();
+        if (host.endsWith(".github.io") || host === "github.io") {
+          return !isAppsScriptContext();
+        }
+        return false;
       }
 
       function isAppsScriptContext() {
@@ -9945,6 +10433,7 @@ function boot() {
       ui.compareStrip.addEventListener("click", onCompareStripClick);
       if (ui.compareResults) ui.compareResults.addEventListener("click", onCompareResultsClick);
       if (ui.pinnedComparisonBtn) ui.pinnedComparisonBtn.addEventListener("click", generatePinnedComparisonSheet);
+      if (ui.pinnedSemesterPlanBtn) ui.pinnedSemesterPlanBtn.addEventListener("click", generatePinnedSemesterPlan);
       if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("input", onDetailsDrawerInput);
       if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("change", onDetailsDrawerInput);
       if (ui.detailsDrawer) ui.detailsDrawer.addEventListener("click", onDetailsDrawerClick);

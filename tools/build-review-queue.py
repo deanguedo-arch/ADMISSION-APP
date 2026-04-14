@@ -9,11 +9,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
-REASON_MISSING_OR_BAD_URL = "MISSING_OR_BAD_PROGRAM_URL"
-REASON_AVG_TOTAL_AMBIGUOUS = "AVG_TOTAL_AMBIGUOUS_OR_MISSING"
+REASON_AVG_TOTAL_SUSPICIOUS = "AVG_TOTAL_SUSPICIOUS_RANGE"
+REASON_EMPTY_SHELL = "EMPTY_ADMISSIONS_SHELL_ROW"
 REASON_INHERITANCE = "INHERITANCE_PLACEHOLDER"
+REASON_MISSING_SUBJECTS = "MISSING_SUBJECT_REQUIREMENTS"
+REASON_NORQUEST_CREDENTIAL = "NORQUEST_BACKFILL_MISSING_CREDENTIAL"
 REASON_PLACEMENT = "PLACEMENT_OR_ASSESSMENT_FLAG"
-REASON_INCOMPLETE = "INCOMPLETE_KEY_FIELDS"
+REASON_UNKNOWN_REQUIREMENT = "UNKNOWN_REQUIREMENT_TYPE_WITH_URL"
+REASON_UALBERTA_NOTE_DUMP = "UALBERTA_NOTE_DUMP_NEEDS_NORMALIZATION"
 
 DEFAULT_INPUT = Path("data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv")
 DEFAULT_OUT_CSV = Path("out/review_queue.csv")
@@ -24,12 +27,21 @@ OUTPUT_COLUMNS = [
     "Institution",
     "Program",
     "Credential_Type",
+    "Status",
     "Program_URL",
     "Min_Avg_Final",
     "Avg_Total",
     "Elective_Qty",
     "Requirement_Type",
 ]
+
+BLANKISH = {"", "unknown", "none", "null", "nan"}
+NORMALIZED_REQUIREMENT_PREFIXES = (
+    "alberta_high_school_courses",
+    "placement_assessment",
+    "regular_admission",
+    "first_year_admission",
+)
 
 
 @dataclass
@@ -40,6 +52,10 @@ class ReviewRow:
 
 def normalize_text(value: str | None) -> str:
     return " ".join(str(value or "").split()).strip()
+
+
+def is_blankish(value: str | None) -> bool:
+    return normalize_text(value).lower() in BLANKISH
 
 
 def is_http_url(value: str | None) -> bool:
@@ -67,24 +83,6 @@ def truthy_flag(value: str | None) -> bool:
     return text not in {"no", "n", "false", "0", "none", "unknown"}
 
 
-def suggests_ambiguity(text: str) -> bool:
-    low = normalize_text(text).lower()
-    if not low:
-        return False
-    tokens = (
-        "one of",
-        "equivalent",
-        "group",
-        "subject from",
-        "see degree",
-        "refer to degree",
-        "check notes",
-        "requirements vary",
-        "or",
-    )
-    return any(token in low for token in tokens)
-
-
 def is_inheritance_placeholder(requirement_type: str | None) -> bool:
     low = normalize_text(requirement_type).lower()
     if not low:
@@ -99,31 +97,95 @@ def is_inheritance_placeholder(requirement_type: str | None) -> bool:
     return any(token in low for token in tokens)
 
 
-def has_incomplete_key_fields(row: dict[str, str]) -> bool:
-    required_keys = ("Institution", "Program", "Credential_Type")
-    return any(not normalize_text(row.get(key)) for key in required_keys)
+def has_subject_requirements(row: dict[str, str]) -> bool:
+    return any(
+        not is_blankish(row.get(field))
+        for field in ("English_Req", "Math_Req", "Social_Req", "Science_Req")
+    )
 
 
-def needs_avg_total_review(row: dict[str, str]) -> bool:
-    min_avg = parse_float_or_none(row.get("Min_Avg_Final"))
-    avg_total = normalize_text(row.get("Avg_Total"))
-    elective_qty = normalize_text(row.get("Elective_Qty"))
-    requirement_type = normalize_text(row.get("Requirement_Type"))
+def has_any_requirement_signal(row: dict[str, str]) -> bool:
+    return any(
+        not is_blankish(row.get(field))
+        for field in (
+            "Min_Avg_Final",
+            "Competitive_Final",
+            "Avg_Total",
+            "English_Req",
+            "Math_Req",
+            "Social_Req",
+            "Science_Req",
+            "Elective_Qty",
+            "Requirement_Type",
+            "HS_Diploma_Req",
+        )
+    )
 
-    if min_avg is None:
+
+def is_direct_admission_shell_candidate(row: dict[str, str]) -> bool:
+    credential = normalize_text(row.get("Credential_Type"))
+    if credential not in {"Degree", "Diploma", "Certificate"}:
         return False
-    if avg_total:
+    if not is_http_url(row.get("Program_URL")):
         return False
-    if elective_qty:
+    if not is_blankish(row.get("Requirement_Type")):
         return False
-    return suggests_ambiguity(requirement_type)
+    return not has_any_requirement_signal(row)
+
+
+def needs_missing_subject_requirements(row: dict[str, str]) -> bool:
+    req_type = normalize_text(row.get("Requirement_Type")).lower()
+    if not req_type.startswith("alberta_high_school_courses"):
+        return False
+    if has_subject_requirements(row):
+        return False
+    return not is_blankish(row.get("Min_Avg_Final")) or not is_blankish(row.get("Avg_Total"))
+
+
+def needs_unknown_requirement_type(row: dict[str, str]) -> bool:
+    if not is_http_url(row.get("Program_URL")):
+        return False
+    if not is_blankish(row.get("Requirement_Type")):
+        return False
+    return has_any_requirement_signal(row)
 
 
 def needs_placement_review(row: dict[str, str]) -> bool:
-    if truthy_flag(row.get("Math_Assessment_Flag")):
+    req_type = normalize_text(row.get("Requirement_Type")).lower()
+    has_placement = truthy_flag(row.get("Math_Assessment_Flag")) or req_type.startswith("placement_assessment")
+    if not has_placement:
+        return False
+    if not has_subject_requirements(row):
         return True
-    requirement_type = normalize_text(row.get("Requirement_Type")).lower()
-    return any(token in requirement_type for token in ("placement", "assessment", "casper"))
+    return (
+        is_blankish(row.get("Min_Avg_Final"))
+        and is_blankish(row.get("English_Req"))
+        and is_blankish(row.get("Math_Req"))
+    )
+
+
+def needs_avg_total_review(row: dict[str, str]) -> bool:
+    avg_total = parse_float_or_none(row.get("Avg_Total"))
+    if avg_total is None:
+        return False
+    return avg_total > 5
+
+
+def needs_norquest_credential_backfill(row: dict[str, str]) -> bool:
+    if normalize_text(row.get("Institution")) != "NorQuest":
+        return False
+    return is_blankish(row.get("Credential_Type")) or is_blankish(row.get("Status"))
+
+
+def needs_ualberta_note_normalization(row: dict[str, str]) -> bool:
+    if normalize_text(row.get("Institution")) != "UAlberta":
+        return False
+    req_type = normalize_text(row.get("Requirement_Type")).lower()
+    if not req_type:
+        return False
+    if "notes: notes:" in req_type:
+        return True
+    return "notes:" in req_type and not req_type.startswith(NORMALIZED_REQUIREMENT_PREFIXES)
 
 
 def build_review_rows(rows: list[dict[str, str]]) -> list[ReviewRow]:
@@ -131,24 +193,32 @@ def build_review_rows(rows: list[dict[str, str]]) -> list[ReviewRow]:
     for row in rows:
         reasons: list[str] = []
 
-        url = normalize_text(row.get("Program_URL"))
-        if not is_http_url(url):
-            reasons.append(REASON_MISSING_OR_BAD_URL)
+        if is_direct_admission_shell_candidate(row):
+            reasons.append(REASON_EMPTY_SHELL)
 
-        if needs_avg_total_review(row):
-            reasons.append(REASON_AVG_TOTAL_AMBIGUOUS)
+        if needs_unknown_requirement_type(row):
+            reasons.append(REASON_UNKNOWN_REQUIREMENT)
 
-        if is_inheritance_placeholder(row.get("Requirement_Type")):
-            reasons.append(REASON_INHERITANCE)
+        if needs_missing_subject_requirements(row):
+            reasons.append(REASON_MISSING_SUBJECTS)
 
         if needs_placement_review(row):
             reasons.append(REASON_PLACEMENT)
 
-        if has_incomplete_key_fields(row):
-            reasons.append(REASON_INCOMPLETE)
+        if is_inheritance_placeholder(row.get("Requirement_Type")):
+            reasons.append(REASON_INHERITANCE)
+
+        if needs_norquest_credential_backfill(row):
+            reasons.append(REASON_NORQUEST_CREDENTIAL)
+
+        if needs_ualberta_note_normalization(row):
+            reasons.append(REASON_UALBERTA_NOTE_DUMP)
+
+        if needs_avg_total_review(row):
+            reasons.append(REASON_AVG_TOTAL_SUSPICIOUS)
 
         if reasons:
-            out.append(ReviewRow(reason_codes=reasons, source=row))
+            out.append(ReviewRow(reason_codes=sorted(set(reasons)), source=row))
     return out
 
 
@@ -194,16 +264,17 @@ def write_review_md(path: Path, total_rows: int, review_rows: list[ReviewRow]) -
     if not review_rows:
         lines.append("No queued rows.")
     else:
-        lines.append("| Reasons | Institution | Program | Credential | Program URL |")
-        lines.append("| --- | --- | --- | --- | --- |")
+        lines.append("| Reasons | Institution | Program | Credential | Status | Program URL |")
+        lines.append("| --- | --- | --- | --- | --- | --- |")
         for item in review_rows[:25]:
             src = item.source
             lines.append(
-                "| {reasons} | {inst} | {program} | {cred} | {url} |".format(
+                "| {reasons} | {inst} | {program} | {cred} | {status} | {url} |".format(
                     reasons="<br>".join(item.reason_codes),
                     inst=normalize_text(src.get("Institution")),
                     program=normalize_text(src.get("Program")),
                     cred=normalize_text(src.get("Credential_Type")),
+                    status=normalize_text(src.get("Status")),
                     url=normalize_text(src.get("Program_URL")),
                 )
             )

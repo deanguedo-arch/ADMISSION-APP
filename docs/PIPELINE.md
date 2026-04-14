@@ -97,6 +97,52 @@ Keep two outputs:
 
 Audit fields are what makes "why did it extract this?" answerable.
 
+Current extractor contract:
+
+- `pipeline_artifacts/extract/programs_structured.csv`
+- `pipeline_artifacts/extract/field_evidence.csv`
+- `pipeline_artifacts/extract/errors.csv`
+- `pipeline_artifacts/extract/avg_total_candidates.csv` (compatibility shim)
+- `pipeline_artifacts/qa/coverage_summary.md`
+
+Each extracted field now carries:
+
+- `field_name`
+- `extracted_value`
+- `confidence`
+- `rule_id`
+- `snippet`
+- `source_url`
+
+`pipeline/run.py` also saves deterministic fetch artifacts:
+
+- `pipeline_artifacts/fetch/<program_id>/base.html` + `base.txt`
+- `pipeline_artifacts/enrich/<program_id>/pages/*.html|*.txt`
+- `pipeline_artifacts/enrich/<program_id>/links.csv`
+
+Repeatable rerun path:
+
+```powershell
+python .\pipeline\run.py --profile candidate --extract-only --fetch-dir .\pipeline_artifacts
+```
+
+Use this after extraction-rule changes when the cached fetch corpus is still valid.
+
+### Canonical merge precedence
+`tools/clean-master.ps1` now merges admissions data in this order:
+
+1. raw source row fields
+2. structured extraction artifacts
+3. deterministic row-level inference from the merged subject/elective fields
+4. `RULESETS.csv` defaults
+5. `PROGRAM_OVERRIDES.csv` explicit overrides
+
+Notes:
+
+- explicit overrides still win last
+- `Requirement_Type` is normalized to a machine-readable leading token when possible
+- `Avg_Total` is kept auditable in pipeline artifacts, but canonical may still apply conservative defaults when structured evidence is missing
+
 ## 5) QA gates (fail fast)
 Before publishing, run QA checks like:
 
@@ -107,6 +153,14 @@ Before publishing, run QA checks like:
 - Requirements outside expected domain (e.g. grades > 100)
 
 If a gate fails, the pipeline should stop and produce a report.
+
+Current QA surface:
+
+- `python .\tools\validate-dataset.py`
+- `python .\tools\build-review-queue.py`
+
+The validator now warns on institution-level blank/Unknown spikes, shell rows, and suspicious `Avg_Total` ranges.
+The review queue intentionally stays smaller than the full warning set; it is meant to highlight the remaining manual-review rows, not every known weak spot.
 
 For NAIT index filtering, run:
 

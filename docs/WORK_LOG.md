@@ -1210,3 +1210,58 @@ Keep entries short and append-only.
 - Hardened generic extractor conservatively for NAIT/NorQuest subject requirements without forced percentages and tighter competitive/elective parsing; updated fixtures in `pipeline/fixtures/program_field_cases.json`.
 - Updated lab runner behavior so gate failures do not abort artifact generation (Step 6 still runs; gate status is reported per scope).
 - Validation: `check_avg_total_fixtures.py` PASS, `check_program_field_fixtures.py` PASS, py_compile PASS (changed Python files), smoke cycles PASS for `canonical334`, `filtered220`, and `both` scope modes; apply dry-run PASS with row-id matching.
+## 2026-04-13 (structured admissions extraction rebuild)
+- Rebuilt `pipeline/build_index.py` as a stdlib-only cleaner with deterministic coverage summaries, restored full NAIT seed-backed coverage, and added regression checks for index counts/coverage.
+- Expanded the adapter contract from `Avg_Total`-only matches to structured per-field extraction with evidence (`programs_structured.csv`, `field_evidence.csv`, `errors.csv`, `coverage_summary.md`) and kept `avg_total_candidates.csv` as a compatibility artifact.
+- Added conservative `Avg_Total` inference for five-subject high-school patterns, normalized `Requirement_Type` tokens, and wired `PROGRAM_OVERRIDES.csv` + `RULESETS.csv` into both extraction and canonical merge.
+- Updated `tools/clean-master.ps1` to stop dropping extracted `Avg_Total`, merge structured artifacts deterministically, backfill NorQuest credential/status to zero blanks, and rebuild the canonical CSV from pipeline output instead of manual row edits.
+- Hardened QA by expanding `tools/validate-dataset.py`, replacing the review-queue heuristics with normalized reason codes (`EMPTY_ADMISSIONS_SHELL_ROW`, `UNKNOWN_REQUIREMENT_TYPE_WITH_URL`, `UALBERTA_NOTE_DUMP_NEEDS_NORMALIZATION`, etc.), and reducing the current review queue from 71 legacy rows to 38 targeted rows.
+- Remaining gap: NAIT still has 130 shell rows with blank/Unknown requirement fields; they are now surfaced explicitly as warnings/review cases instead of being force-filled with speculative admissions data.
+## 2026-04-13 (NAIT pathway shell follow-up)
+- Added NAIT-specific program-text trimming in `pipeline/adapters/nait.py` so sitewide placement-testing / IELTS boilerplate and `Content is loading...` shells do not override pathway rows with false assessment signals.
+- Added regression coverage for polluted NAIT base text and trades-pathway proof text in `pipeline/fixtures/program_field_cases.json`, plus the existing NAIT API resolution fixture pass for seeded program-plan fetches.
+- Added explicit `PROGRAM_OVERRIDES.csv` rows for the remaining NAIT pathway-only targets (`Business for Journeyperson...`, `Trades to Degrees...`) and limited those rows to seeded evidence links so unrelated `/admissions/how-to-apply` pages no longer pollute extraction.
+- Rebuilt `pipeline_artifacts/`, canonical CSV, and review queue. Current rebuilt stats: `Avg_Total` filled `145`, `Requirement_Type` blank/Unknown `23`, `Math_Req` blank `135`, NAIT shell rows `13`, review queue `41`.
+- Remaining gaps are now concentrated in true shell/inheritance/placement-review cases instead of the two pathway rows that were previously unresolved.
+## 2026-04-13 (assessment-token normalization follow-up)
+- Added a validator guardrail in `tools/validate-dataset.py` requiring rows with `Math_Assessment_Flag=Yes` to lead `Requirement_Type` with `placement_assessment`, preventing silent drift back to course-based tokens.
+- Updated `pipeline/run.py` and `tools/clean-master.ps1` so high-school rows with assessment alternatives normalize to `placement_assessment`, while NAIT post-secondary pathway rows stay `regular_admission; notes: post-secondary pathway` and force `HS_Diploma_Req=No` / `Math_Assessment_Flag=No`.
+- Added explicit `PROGRAM_OVERRIDES.csv` coverage for the remaining NAIT BAIST/BTech pathway rows so generic NAIT admissions boilerplate does not create false placement-assessment signals.
+- Rebuilt structured artifacts, canonical CSV, and review queue. Current rebuilt review queue: `56` rows; assessment-token mismatches: `0`.
+## 2026-04-13 (placement assessment downstream safety)
+- Updated Apps Script confidence handling so `placement_assessment` rows and subject-level assessment advisories route to existing `Uncheckable` output instead of appearing as confidently `Likely eligible`.
+- Added `tools/check-placement-confidence.js` as a local regression harness for `evaluateConfidenceForProgram_()`; verified RED before implementation and PASS after implementation.
+- Impact check on the rebuilt canonical dataset: `175` current `placement_assessment` rows, `175` now evaluate as `Uncheckable`, `0` placement rows remain eligible-confidence candidates.
+- Validation PASS: `node .\tools\check-placement-confidence.js`, `powershell .\tools\validate-webapp-surface.ps1`, `powershell .\tools\validate-apps-script-structure.ps1`, `python .\tools\validate-dataset.py`, `python .\tools\build-review-queue.py`.
+## 2026-04-13 (science alternative parser fix)
+- Fixed Apps Script science parsing so `Biology 30 or Chemistry 30 or Physics 30` is treated as alternatives, not one literal course string.
+- Adjusted science flag handling so Bio/Chem/Phys/Sci flags do not become extra all-required courses when the same courses are already listed in `Science_Req`; extra flags still remain required for combined rules like Biology 30 plus one of Chemistry 30/Science 30.
+- Added `tools/check-science-requirement-parsing.js` regression coverage and verified the screenshot scenario: MacEwan `Psychology`, `Educational Assistant`, and `Acupuncture` no longer show false science gaps with strong Bio/Chem/Phys marks.
+- Rebuilt `offline_snapshot/site` from the current canonical dataset. Validation PASS: science parser check, placement confidence check, Apps Script surface/structure checks, dataset validator, and review queue builder.
+## 2026-04-13 (Apps Script source push checkpoint)
+- Installed local clasp tooling, created ignored local `.clasp.json`, and pushed the current `apps_script/` source to the accessible Apps Script project (`Pushed 16 files`).
+- Existing deployment is a read-only `@HEAD` deployment, so `clasp deploy --deploymentId ...` could not mutate it; clasp reports the web app URL as `https://script.google.com/macros/s/AKfycbxb9mKLIfefAWzDfC5Xn8KN5jgBcMa-MYe3ZsT8ChQ/exec`.
+- Local `config/sheets_sync.json` is absent, so the rebuilt canonical CSV has not been uploaded to the live `Programs` tab from this machine.
+- Remote `clasp run-function` is unavailable because the project is not deployed as API executable; browser smoke remains the required production-facing verification path.
+## 2026-04-13 (web auth bootstrap fix)
+- Fixed the web app auth-required bootstrap path so it renders the Google Identity Services sign-in button instead of clearing the sign-in container and returning with zero programs visible.
+- Added `tools/check-web-auth-bootstrap.js` regression coverage for both the `requiresAuth` sign-in call and the shell-level GIS client script include; verified RED before implementation and PASS after.
+- Validation PASS: `node .\tools\check-web-auth-bootstrap.js`, `node .\tools\check-science-requirement-parsing.js`, `node .\tools\check-placement-confidence.js`, `powershell .\tools\validate-webapp-surface.ps1`, and `powershell .\tools\validate-apps-script-structure.ps1`.
+- Pushed the updated Apps Script source with `npx clasp push --force`; browser smoke is still required because terminal fetches return the Google-hosted wrapper, not a reliable app-source snapshot.
+## 2026-04-13 (web auth account chooser fallback)
+- Added a visible `Choose @eips.ca account` fallback link in the auth strip so users are not left at an empty `Awaiting sign-in` state when the GIS button is blocked, missing, or not configured.
+- The auth strip now also explains that users without an EIPS account need the script owner to temporarily enable `WEBAPP_DEV_OPEN_ACCESS`; this keeps the production domain gate explicit instead of silently loading data.
+- Validation PASS: `node .\tools\check-web-auth-bootstrap.js`, Apps Script surface/structure validators, science parser check, and placement-confidence check. Pushed updated Apps Script source with `npx clasp push --force`.
+## 2026-04-13 (Google-account web access policy)
+- Changed the web app's internal auth policy to match the Apps Script deployment setting: any verified Google account is allowed; the extra `@eips.ca` hosted-domain gate is removed.
+- Kept Google ID token audience/verified-email validation when GIS tokens are provided, and added `Session.getTemporaryActiveUserKey()` fallback for Apps Script deployments where Google login is enforced but the user email is not exposed.
+- Updated auth UI copy, fallback account chooser text, release docs, and `tools/validate-webapp-surface.ps1` so guardrails now expect Google-account access rather than EIPS-domain access.
+- Added `tools/check-web-auth-google-account-policy.js` regression coverage for non-domain Google tokens, non-domain session email, and temporary active-user-key auth. Validation PASS and Apps Script source pushed with `npx clasp push --force`.
+## 2026-04-13 (main Apps Script deployment retarget)
+- Corrected local `.clasp.json` from the old secondary script (`1DpPygc...`) to the main spreadsheet-bound script (`1qDNsy2Agk3SwnuzAcjpUos69wfYfQJvfp_7SfqTDiG2X-5tKW93mTSlM`).
+- Confirmed the main staff deployment ID is `AKfycbxmimxX1LfyBysb-IKMS-0iHrEQJg5ZQOQ0Mwz1ws1xnKSaL9zb5kDZvWc--eyFPR--BQ`, pushed the current `apps_script/` source there, created version `88`, and redeployed that deployment to `@88`.
+- Updated `docs/USER_MANUAL.md` so the staff URL points to the current main deployment instead of the older `AKfycbzWY...` URL.
+## 2026-04-14 (parser-only Apps Script redeploy)
+- Reverted the local auth/UI shell back to the known-working `@87` behavior and kept only the parser/eligibility diffs in `EligibilityEngine.gs`, `EligibilityProgramsData.gs`, and `EligibilitySubjects.gs`.
+- Shipped parser-only version `89` to the main staff deployment `AKfycbxmimxX1LfyBysb-IKMS-0iHrEQJg5ZQOQ0Mwz1ws1xnKSaL9zb5kDZvWc--eyFPR--BQ`, leaving login/auth behavior unchanged from `@87`.
+- Validation PASS before deploy: `node .\tools\check-science-requirement-parsing.js`, `node .\tools\check-placement-confidence.js`, `powershell .\tools\validate-webapp-surface.ps1`, and `powershell .\tools\validate-apps-script-structure.ps1`.

@@ -486,8 +486,12 @@ function parseScienceRequirementText_(rawText) {
     t = t.replace(/^\s*(Two|2)\s+of\b/i, "").trim();
   }
 
-  // Normalize separators.
-  t = t.replace(/;/g, ",").replace(/\s+/g, " ");
+  // Normalize separators. Science requirements commonly use either commas or
+  // "or" for alternatives, and both should produce separate course candidates.
+  t = t
+    .replace(/;/g, ",")
+    .replace(/\s+or\s+/gi, ",")
+    .replace(/\s+/g, " ");
 
   const parts = t
     .split(",")
@@ -497,6 +501,10 @@ function parseScienceRequirementText_(rawText) {
   const courses = unique_(
     parts.map((p) => {
       const q = p.replace(/\s+/g, " ");
+      if (/^Biology\s*30$/i.test(q)) return "Biology 30";
+      if (/^Chemistry\s*30$/i.test(q)) return "Chemistry 30";
+      if (/^Physics\s*30$/i.test(q)) return "Physics 30";
+      if (/^Science\s*30$/i.test(q)) return "Science 30";
       if (/^Bio\s*30$/i.test(q)) return "Biology 30";
       if (/^Chem\s*30$/i.test(q)) return "Chemistry 30";
       if (/^Phys\s*30$/i.test(q)) return "Physics 30";
@@ -880,8 +888,17 @@ function buildScienceReq_(row, idx) {
 
   const parsed = parseScienceRequirementText_(t);
   if (flagCourses.length && parsed.kind === "any" && parsed.courses && parsed.courses.length) {
+    const parsedCourseKeys = {};
+    parsed.courses.forEach((c) => {
+      const key = canonKey_(c);
+      if (key) parsedCourseKeys[key] = true;
+    });
+    const requiredFlagCourses = flagCourses.filter((c) => !parsedCourseKeys[canonKey_(c)]);
+    if (!requiredFlagCourses.length) {
+      return parsed;
+    }
     // Used for patterns like: Bio 30 required + (Chem 30 OR Sci 30).
-    return { kind: "all_plus_any", allCourses: flagCourses, anyCourses: parsed.courses };
+    return { kind: "all_plus_any", allCourses: requiredFlagCourses, anyCourses: parsed.courses };
   }
   if (flagCourses.length) return { kind: "all", courses: flagCourses };
   return parsed;
@@ -2310,6 +2327,21 @@ function evaluateConfidenceForProgram_(opts) {
   const electiveQty = String((opts && opts.electiveQty) || "").trim();
   const datasetDate = normalizeDateYmd_((opts && opts.datasetDate) || "");
   const staleDaysCap = Math.max(1, Math.round(toNumber_(opts && opts.staleDaysCap) || 60));
+  const hasPlacementAssessmentSignal =
+    /^placement_assessment(?:\b|;)/i.test(requirementTypeText) ||
+    /\b(?:placement\s+(?:assessment|test)|assessment\/placement|accuplacer)\b/i.test(requirementTypeText) ||
+    advisories.some((x) => /\b(?:placement|assessment)\b/i.test(String(x || "")));
+
+  if (hasPlacementAssessmentSignal) {
+    return {
+      confidence: "Uncheckable",
+      why: [],
+      whyText: "",
+      uncheckableReason:
+        "Program requires placement or assessment confirmation before eligibility can be determined from the snapshot.",
+      nextStep: defaultUncheckableNextStep_(sourceUrl),
+    };
+  }
 
   const hasAnyStructuredRequirement = (
     isFinite(toNumber_(opts && opts.avgMin)) ||

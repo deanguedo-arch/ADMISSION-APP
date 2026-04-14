@@ -17,11 +17,14 @@ Apps Script will automatically prefer `Avg_Total` from the dataset and only fall
 ## Suggested pipeline artifacts (repeatable rescrape)
 Keep these outputs so you can rerun anytime and debug quickly:
 
-1. `pipeline_artifacts/index/programs.csv` (stable program list + URLs)
-2. `pipeline_artifacts/fetch/{program_id}/base.html` + `base.txt`
-3. `pipeline_artifacts/enrich/{program_id}/links.csv` + merged `enriched.txt`
-4. `pipeline_artifacts/extract/programs_structured.csv` (includes `Avg_Total`)
-5. `pipeline_artifacts/qa/report.md` (coverage + unknown rates + duplicates)
+1. `pipeline_artifacts/fetch/{program_id}/base.html` + `base.txt`
+2. `pipeline_artifacts/enrich/{program_id}/pages/*.html|*.txt`
+3. `pipeline_artifacts/enrich/{program_id}/links.csv`
+4. `pipeline_artifacts/extract/programs_structured.csv`
+5. `pipeline_artifacts/extract/field_evidence.csv`
+6. `pipeline_artifacts/extract/errors.csv`
+7. `pipeline_artifacts/extract/avg_total_candidates.csv` (compatibility output)
+8. `pipeline_artifacts/qa/coverage_summary.md`
 
 ## Why this is necessary
 Different institutions put “average based on X courses” in different places (often not on the base program page). Without enrichment + audit fields, you’ll keep guessing and maintaining `AvgRules` forever.
@@ -94,7 +97,7 @@ python .\pipeline\check_macewan_seed_fixtures.py
 
 Default behavior keeps MacEwan rows at 114 in `pipeline/program_index.cleaned.csv` with non-empty `source_url`.
 
-## Institution adapters (scaffold)
+## Institution adapters
 `pipeline/adapters/` now provides adapter classes for:
 - `NAIT`
 - `MacEwan`
@@ -103,10 +106,9 @@ Default behavior keeps MacEwan rows at 114 in `pipeline/program_index.cleaned.cs
 - fallback `generic`
 
 `pipeline/run.py` routes each program by institution and writes:
-- `avg_total_confidence`
-- `avg_total_rule`
-- `avg_total_adapter`
-- enrichment links are now ranked with institution-aware profiles in `pipeline/enrichment_links.py`
+- structured field columns for `Min_Avg_Final`, `Competitive_Final`, `Avg_Total`, subject requirements, science flags, elective fields, `Requirement_Type`, `HS_Diploma_Req`, `Math_Assessment_Flag`, and `ELP_Tests_Mentioned`
+- per-field confidence/rule/snippet/source-url audit columns
+- enrichment links ranked with institution-aware profiles from `pipeline/enrichment_links.py`
 
 These fields make extraction behavior auditable before fully automated publishing.
 
@@ -133,9 +135,28 @@ Fixture cases live in:
 
 Outputs now include:
 - `extract/avg_total_candidates.csv` (legacy compatibility)
-- `extract/program_field_candidates.csv` (multi-field extraction candidates)
+- `extract/program_field_candidates.csv` (multi-field compatibility output)
+- `extract/programs_structured.csv`
+- `extract/field_evidence.csv`
+- `extract/errors.csv`
+- `qa/coverage_summary.md`
 
 This enables deterministic baseline-vs-candidate comparison against the same frozen fetch corpus.
+
+Canonical rebuild command:
+
+```powershell
+powershell .\tools\clean-master.ps1
+```
+
+Current merge order in `clean-master.ps1` is:
+- structured extraction over raw row values when confidence is sufficient
+- deterministic `Avg_Total` inference from merged subject/elective fields when the row resolves to a conservative five-subject high-school pattern
+- `RULESETS.csv` defaults for institution-level fallbacks
+- `PROGRAM_OVERRIDES.csv` last, for explicit row overrides
+
+Known limitation:
+- NAIT still produces a small set of shell degree rows with valid program URLs but no extracted admissions fields; those remain review-queue cases rather than being force-filled with speculative values.
 
 Operator workflow is routed through:
 - `.\scraper_lab\run.ps1`

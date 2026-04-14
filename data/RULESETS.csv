@@ -1,5 +1,5 @@
 ruleset_key,institution,faculty_scope,credential_scope,requirement_type_pattern,default_avg_total,placement_required,notes,source_url,last_updated
 nait_general_hs_diploma,NAIT,Any,Certificate|Diploma,alberta_high_school_courses,5,no,Starter Tier 1 rule for NAIT HS admissions patterns.,,2026-02-25
 norquest_general_hs_diploma,NorQuest,Any,Certificate|Diploma,alberta_high_school_courses,5,yes,Starter Tier 1 rule for NorQuest HS admissions patterns.,,2026-02-25
-macewan_degree_general,MacEwan,Any,Degree,regular_admission,5,no,Starter Tier 1 rule for MacEwan degree pathways.,,2026-02-25
-ualberta_first_year_general,UAlberta,Any,Degree,first_year_admission,5,no,Starter Tier 1 rule for UAlberta first-year pathways.,,2026-02-25
+macewan_degree_general,MacEwan,Any,Any,alberta_high_school_courses,5,no,Starter Tier 1 rule for MacEwan high-school admission pathways.,,2026-02-25
+ualberta_first_year_general,UAlberta,Any,Any,alberta_high_school_courses,5,no,Starter Tier 1 rule for UAlberta first-year high-school pathways.,,2026-02-25

@@ -31,12 +31,14 @@
     "institution": "MacEwan",
     "text": "Applicants must have a minimum overall average of 65 percent in the following high school courses: English 30-1 and Mathematics 30-2 and Three subjects from Group A, B, C or D.",
     "expected_exact": {
+      "avg_total": "5",
       "min_avg_final": "65",
       "elective_qty": "3",
       "elective_pool": "A,B,C,D",
       "requirement_type": "alberta_high_school_courses"
     },
     "min_confidence": {
+      "avg_total": "medium",
       "elective_qty": "medium",
       "elective_pool": "medium"
     }
@@ -86,6 +88,82 @@
     ]
   },
   {
+    "id": "nait-high-school-pathway-markdown",
+    "institution": "NAIT",
+    "text": "Minimum entrance requirements: **High School Course Pathway:** - Grade 12 Language Arts (English 30-2) - Grade 12 Mathematics (Math 30-2 or Applied Math 30) - Three additional Grade 12 courses (at the 30-1, 30-2, 30, or 35 level (5-credit only)) - An overall minimum average of 65% in the five required high school courses. - Proof of English Language Proficiency.",
+    "expected_exact": {
+      "min_avg_final": "65",
+      "avg_total": "5",
+      "english_req": "English 30-2",
+      "math_req": "Math 30-2",
+      "elective_qty": "3"
+    },
+    "expected_contains": {
+      "requirement_type": "alberta_high_school_courses; notes:"
+    },
+    "min_confidence": {
+      "min_avg_final": "high",
+      "avg_total": "medium",
+      "elective_qty": "medium"
+    }
+  },
+  {
+    "id": "nait-post-secondary-pathway-not-direct-entry",
+    "institution": "NAIT",
+    "text": "Minimum entrance requirements: A two-year diploma in an IT program related to the selected major, an overall minimum GPA of 2.3, and coursework completed within five years of the application date. Applicants who do not have a two-year diploma may be eligible if 60 post-secondary credits have been completed. Proof of English Language Proficiency is required.",
+    "expected_exact": {
+      "hs_diploma_req": "No"
+    },
+    "expected_contains": {
+      "requirement_type": "regular_admission; notes:"
+    },
+    "expected_missing": [
+      "english_req",
+      "math_req",
+      "avg_total"
+    ]
+  },
+  {
+    "id": "nait-assessment-word-not-placement-signal",
+    "institution": "NAIT",
+    "text": "Minimum entrance requirements: Successful completion of a diploma or degree in an accredited engineering technology, information technology, applied science or health science program with a minimum GPA of 2.7. Proof of English Language Proficiency is required. Admission considerations include acceptable programs such as Environmental Monitoring and Assessment, Mechanical Engineering Technology, and Software Development.",
+    "expected_exact": {
+      "hs_diploma_req": "No"
+    },
+    "expected_contains": {
+      "requirement_type": "regular_admission; notes:"
+    },
+    "expected_missing": [
+      "math_assessment_flag"
+    ]
+  },
+  {
+    "id": "nait-base-boilerplate-does-not-force-placement",
+    "institution": "NAIT",
+    "text": "Popular Pages: Parking Locations & Maps How to Apply Library Academic Upgrading Assessments and Placement Testing Services for Non-NAIT Students IELTS Exams Academic Upgrading Placement Test English Language Proficiency Exam Programs Business for Journeyperson Pathway to a Business Administration - Management Diploma About the program The Business for Journeyperson Pathway to a Business Administration - Management Diploma is designed for individuals with a background in a Red Seal trade who are ready to take on leadership roles within their industry. This program allows you to fast-track your career by building on your technical skills and experience. Not ready to apply yet? Contact us Work at NAIT Emergency Library Services Parking Protective Services Technical Support.",
+    "expected_exact": {
+      "hs_diploma_req": "No",
+      "requirement_type": "regular_admission"
+    },
+    "expected_missing": [
+      "math_assessment_flag"
+    ]
+  },
+  {
+    "id": "nait-trades-pathway-proof-text",
+    "institution": "NAIT",
+    "text": "Trades to Degrees gives certified trades professionals a direct route into the third year of the Bachelor of Business Administration program. Applicants build on their trade background to move into management and leadership roles.",
+    "expected_exact": {
+      "hs_diploma_req": "No",
+      "requirement_type": "regular_admission"
+    },
+    "expected_missing": [
+      "math_assessment_flag",
+      "english_req",
+      "math_req"
+    ]
+  },
+  {
     "id": "competitive-without-average-not-set",
     "institution": "NAIT",
     "text": "Applicants may be waitlisted because the program is competitive and seats are limited.",
@@ -102,5 +180,89 @@
       "elective_qty",
       "elective_pool"
     ]
+  },
+  {
+    "id": "norquest-practical-nurse-structured-fields",
+    "institution": "NorQuest",
+    "text": "Applicants must have English Language Arts 30-1 at 60 percent or English Language Arts 30-2 at 70 percent, Mathematics 20-1 at 60 percent or Mathematics 20-2 at 70 percent or Mathematics 30-1 at 50 percent or Mathematics 30-2 at 60 percent, and Biology 30 at 60 percent. Applicants may also meet academic requirements through a free academic assessment. English language proficiency requirements such as IELTS, TOEFL, Duolingo, CAEL, and Pearson may also apply.",
+    "expected_exact": {
+      "english_min": "60",
+      "math_assessment_flag": "Yes",
+      "bio_30_req": "Yes",
+      "elp_tests_mentioned": "IELTS; TOEFL; Duolingo; CAEL; Pearson"
+    },
+    "expected_contains": {
+      "english_req": "English 30-1",
+      "math_req": "Math 20-1",
+      "requirement_type": "placement_assessment; notes:"
+    },
+    "min_confidence": {
+      "math_assessment_flag": "high",
+      "bio_30_req": "high",
+      "elp_tests_mentioned": "medium"
+    }
+  },
+  {
+    "id": "macewan-normalized-requirement-type-with-notes",
+    "institution": "MacEwan",
+    "text": "Applicants must have a minimum overall average of 65 percent in the following high school courses: English 30-1 or English 30-2, Mathematics 30-1 or Mathematics 30-2, and Three subjects from Group A, B, C or D. Notes: A maximum of two Group B subjects may be presented and a maximum of one Group D subject may be presented.",
+    "expected_exact": {
+      "min_avg_final": "65",
+      "elective_qty": "3",
+      "elective_pool": "A,B,C,D"
+    },
+    "expected_contains": {
+      "requirement_type": "alberta_high_school_courses; notes:"
+    },
+    "min_confidence": {
+      "requirement_type": "high"
+    }
+  },
+  {
+    "id": "ualberta-group-rules-and-casper",
+    "institution": "University of Alberta",
+    "text": "Admission average uses five required Grade 12 subjects: English Language Arts 30-1 and four subjects from Group A, Group B, or Group C, with a maximum of one Group B subject. Mathematics 30-2 may be used. Applicants to Nursing must also complete the CASPer test.",
+    "expected_exact": {
+      "avg_total": "5"
+    },
+    "expected_contains": {
+      "elective_pool": "A,B,C",
+      "requirement_type": "alberta_high_school_courses; notes:",
+      "competitive_final": ""
+    },
+    "min_confidence": {
+      "avg_total": "high"
+    }
+  },
+  {
+    "id": "ualberta-field-count-infers-five",
+    "institution": "University of Alberta",
+    "text": "Applicants must present English Language Arts 30-1 and four subjects from Group A, Group B or Group C. A maximum of one Group B subject may be presented.",
+    "expected_exact": {
+      "avg_total": "5",
+      "elective_qty": "4",
+      "elective_pool": "A,B,C"
+    },
+    "expected_contains": {
+      "requirement_type": "alberta_high_school_courses; notes:"
+    },
+    "min_confidence": {
+      "avg_total": "medium"
+    }
+  },
+  {
+    "id": "science-count-inference-two-of-plus-elective",
+    "institution": "University of Alberta",
+    "text": "Applicants must present English Language Arts 30-1, Mathematics 30-1, two of Biology 30, Chemistry 30, Mathematics 31 or Physics 30, and one subject from Group C.",
+    "expected_exact": {
+      "avg_total": "5",
+      "elective_qty": "1"
+    },
+    "expected_contains": {
+      "science_req": "Biology 30"
+    },
+    "min_confidence": {
+      "avg_total": "medium"
+    }
   }
 ]

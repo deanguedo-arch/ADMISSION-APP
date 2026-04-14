@@ -745,6 +745,21 @@ function evaluateConfidenceForProgram_(opts) {
   const electiveQty = String((opts && opts.electiveQty) || "").trim();
   const datasetDate = normalizeDateYmd_((opts && opts.datasetDate) || "");
   const staleDaysCap = Math.max(1, Math.round(toNumber_(opts && opts.staleDaysCap) || 60));
+  const hasPlacementAssessmentSignal =
+    /^placement_assessment(?:\b|;)/i.test(requirementTypeText) ||
+    /\b(?:placement\s+(?:assessment|test)|assessment\/placement|accuplacer)\b/i.test(requirementTypeText) ||
+    advisories.some((x) => /\b(?:placement|assessment)\b/i.test(String(x || "")));
+
+  if (hasPlacementAssessmentSignal) {
+    return {
+      confidence: "Uncheckable",
+      why: [],
+      whyText: "",
+      uncheckableReason:
+        "Program requires placement or assessment confirmation before eligibility can be determined from the snapshot.",
+      nextStep: defaultUncheckableNextStep_(sourceUrl),
+    };
+  }
 
   const hasAnyStructuredRequirement = (
     isFinite(toNumber_(opts && opts.avgMin)) ||

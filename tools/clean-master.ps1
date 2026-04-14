@@ -14,6 +14,7 @@ param(
   [string]$NorquestSeedPath = ".\\pipeline\\norquest_program_seed.csv",
   [string]$NaitLegacyAllowlistPath = ".\\config\\nait_legacy_allowlist.csv",
   [string]$ProgramOverridesPath = ".\\data\\PROGRAM_OVERRIDES.csv",
+  [string]$StructuredExtractionPath = ".\\pipeline_artifacts\\extract\\programs_structured.csv",
   [string]$RulesetsPath = ".\\data\\RULESETS.csv",
   [switch]$DropNaitNonPrograms = $true,
   [switch]$DropNorQuestNonPrograms = $true,
@@ -317,6 +318,227 @@ function Add-ProgramOverrideUrlKeys([hashtable]$bucket, [object]$overrideRecord)
   }
 }
 
+function Get-StructuredConfidenceRank([object]$value) {
+  $token = (Normalize-Text $value).ToLowerInvariant()
+  switch ($token) {
+    "high" { return 3 }
+    "medium" { return 2 }
+    "low" { return 1 }
+    default { return 0 }
+  }
+}
+
+function New-StructuredExtractionRecord(
+  [string]$institution,
+  [string]$program,
+  [string]$credential,
+  [string]$sourceUrl,
+  [hashtable]$fieldPayloads
+) {
+  $programKey = Normalize-ProgramKey $program
+  return [pscustomobject]@{
+    Institution = $institution
+    Program = $program
+    Program_Key = $programKey
+    Credential = $credential
+    Credential_Key = Normalize-CredentialKey $credential
+    Source_Url = $sourceUrl
+    Source_Url_Key = Normalize-UrlKey $sourceUrl
+    Field_Payloads = $fieldPayloads
+  }
+}
+
+function Add-StructuredExtractionUrlKey([hashtable]$bucket, [object]$record) {
+  if ($null -eq $bucket -or $null -eq $record) { return }
+  $instKey = (Normalize-Text $record.Institution).ToLowerInvariant()
+  $urlKey = Normalize-UrlKey $record.Source_Url
+  if (-not $instKey -or -not $urlKey) { return }
+  $bucket["$instKey||$urlKey"] = $record
+}
+
+function Resolve-StructuredExtraction(
+  [hashtable]$recordsByKey,
+  [hashtable]$recordsByUrl,
+  [string]$institution,
+  [string]$program,
+  [string]$credential,
+  [string]$sourceUrl = ""
+) {
+  $instKey = (Normalize-Text $institution).ToLowerInvariant()
+  if (-not $instKey) { return $null }
+
+  $sourceUrlKey = Normalize-UrlKey $sourceUrl
+  if ($sourceUrlKey -and $recordsByUrl.ContainsKey("$instKey||$sourceUrlKey")) {
+    return $recordsByUrl["$instKey||$sourceUrlKey"]
+  }
+
+  $exactKey = Build-ProgramOverrideKey -institution $institution -program $program -credential $credential
+  if ($exactKey -and $recordsByKey.ContainsKey($exactKey)) {
+    return $recordsByKey[$exactKey]
+  }
+
+  $fallbackKey = Build-ProgramOverrideKey -institution $institution -program $program -credential ""
+  if ($fallbackKey -and $recordsByKey.ContainsKey($fallbackKey)) {
+    return $recordsByKey[$fallbackKey]
+  }
+
+  return $null
+}
+
+function Should-ApplyStructuredField(
+  [string]$canonicalField,
+  [string]$candidateValue,
+  [string]$candidateConfidence,
+  [string]$existingValue
+) {
+  $candidate = Normalize-Text $candidateValue
+  if (-not $candidate) { return $false }
+
+  $rank = Get-StructuredConfidenceRank $candidateConfidence
+  if ($rank -ge 2) { return $true }
+  if ($rank -lt 1) { return $false }
+
+  $existing = (Normalize-Text $existingValue).ToLowerInvariant()
+  if ($canonicalField -in @("Requirement_Type", "HS_Diploma_Req", "Math_Assessment_Flag", "ELP_Tests_Mentioned")) {
+    return (-not $existing) -or ($existing -in @("unknown", "none", "null", "nan"))
+  }
+
+  return $false
+}
+
+function Normalize-RequirementTypeValue([string]$value, [object]$row) {
+  $text = Normalize-Text $value
+  $text = ($text -replace "(?i);\s*notes:\s*notes:\s*", "; notes: ").Trim()
+  $lower = $text.ToLowerInvariant()
+
+  $hasSubjectSignal = @(
+    $row.English_Req,
+    $row.Math_Req,
+    $row.Social_Req,
+    $row.Science_Req,
+    $row.Min_Avg_Final,
+    $row.Elective_Qty
+  ) | Where-Object { -not (Is-Blank $_) }
+  $hasSubjectSignal = @($hasSubjectSignal)
+
+  $mathAssessment = (Normalize-Text $row.Math_Assessment_Flag).ToLowerInvariant()
+
+  if (-not $text -or $lower -eq "unknown") {
+    if ($mathAssessment -eq "yes") { return "placement_assessment" }
+    if ($hasSubjectSignal.Count -gt 0) { return "alberta_high_school_courses" }
+    return $text
+  }
+
+  if (
+    $mathAssessment -eq "yes" `
+    -and -not $lower.StartsWith("placement_assessment") `
+    -and ($lower.StartsWith("alberta_high_school_courses") -or $lower.StartsWith("first_year_admission"))
+  ) {
+    $notesIndex = $lower.IndexOf("; notes:")
+    if ($notesIndex -ge 0) {
+      return "placement_assessment$($text.Substring($notesIndex))"
+    }
+    return "placement_assessment"
+  }
+
+  if ($lower -match "^(alberta_high_school_courses|placement_assessment|regular_admission|first_year_admission)(;|$)") {
+    return $text
+  }
+
+  if ($lower -match "placement|assessment|accuplacer|casper") {
+    return "placement_assessment; notes: $text"
+  }
+
+  if ($lower -match "regular admission") {
+    return "regular_admission; notes: $text"
+  }
+
+  if ($hasSubjectSignal.Count -gt 0 -or $lower -match "see degree|refer to degree|group [abcd]|english 30|mathematics 30|biology 30|chemistry 30|physics 30|science 30|social studies 30") {
+    return "alberta_high_school_courses; notes: $text"
+  }
+
+  return $text
+}
+
+function Convert-CountTokenToInt([object]$value) {
+  $text = (Normalize-Text $value).ToLowerInvariant()
+  if (-not $text) { return 0 }
+
+  if ($text -match "\b(\d+)\b") {
+    try { return [int][double]$Matches[1] } catch { return 0 }
+  }
+
+  switch ($text) {
+    "one" { return 1 }
+    "two" { return 2 }
+    "three" { return 3 }
+    "four" { return 4 }
+    "five" { return 5 }
+    "six" { return 6 }
+    "seven" { return 7 }
+    "eight" { return 8 }
+    "nine" { return 9 }
+    "ten" { return 10 }
+    default { return 0 }
+  }
+}
+
+function Get-RequirementUnitCount([object]$value) {
+  $text = Normalize-Text $value
+  if (-not $text) { return 0 }
+
+  if ($text -match "\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+of\b") {
+    return (Convert-CountTokenToInt $Matches[1])
+  }
+
+  if ($text -match "\bor\b") {
+    return 1
+  }
+
+  $parts = @(
+    [regex]::Split($text, "\s*,\s*|\s+and\s+") |
+      ForEach-Object { Normalize-Text $_ } |
+      Where-Object { -not (Is-Blank $_) }
+  )
+  $courseParts = @(
+    $parts |
+      Where-Object { $_ -match "\b(english|ela|math|mathematics|social|aboriginal|biology|chemistry|physics|science|physical education|recreation)\b" } |
+      Sort-Object -Unique
+  )
+  if ($courseParts.Count -gt 1 -and $courseParts.Count -le 6) {
+    return $courseParts.Count
+  }
+
+  return 1
+}
+
+function Get-InferredAvgTotal([object]$row) {
+  $reqType = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+  if ($reqType.Contains("placement_assessment")) {
+    return ""
+  }
+
+  $count = 0
+  if (-not (Is-Blank $row.English_Req)) { $count++ }
+  if (-not (Is-Blank $row.Math_Req)) { $count++ }
+  if (-not (Is-Blank $row.Social_Req)) { $count++ }
+  if (-not (Is-Blank $row.Science_Req)) { $count += (Get-RequirementUnitCount $row.Science_Req) }
+
+  $electiveRaw = Normalize-Text $row.Elective_Qty
+  if ($electiveRaw) {
+    $electiveValue = Convert-CountTokenToInt $electiveRaw
+    if ($electiveValue -gt 0) {
+      $count += $electiveValue
+    }
+  }
+
+  $hasAdmissionSignal = (-not (Is-Blank $row.Min_Avg_Final)) -or $reqType.StartsWith("alberta_high_school_courses")
+  if ($hasAdmissionSignal -and $count -eq 5) {
+    return [string]$count
+  }
+  return ""
+}
+
 function Is-ActiveOverrideStatus([object]$status) {
   $raw = (Normalize-Text $status).ToLowerInvariant()
   if (-not $raw) { return $true }
@@ -448,6 +670,14 @@ $programOverrideStats = @{
   row_excluded = 0
   field_overrides_applied = 0
   url_overrides_applied = 0
+}
+
+$structuredByKey = @{}
+$structuredByUrlKey = @{}
+$structuredStats = @{
+  rows_loaded = 0
+  rows_applied = 0
+  field_values_applied = 0
 }
 
 $rulesetsByInstitution = @{}
@@ -649,6 +879,64 @@ if (Test-Path $ProgramOverridesPath) {
     $programOverrideStats.rows_loaded++
     if ($includeOrExclude -eq "include") { $programOverrideStats.include_rows++ }
     if ($includeOrExclude -eq "exclude") { $programOverrideStats.exclude_rows++ }
+  }
+}
+
+$structuredFieldMap = [ordered]@{
+  min_avg_final = "Min_Avg_Final"
+  competitive_final = "Competitive_Final"
+  avg_total = "Avg_Total"
+  english_req = "English_Req"
+  english_min = "English_Min"
+  math_req = "Math_Req"
+  math_min = "Math_Min"
+  social_req = "Social_Req"
+  social_min = "Social_Min"
+  science_req = "Science_Req"
+  science_min = "Science_Min"
+  bio_30_req = "Bio_30_Req"
+  chem_30_req = "Chem_30_Req"
+  phys_30_req = "Phys_30_Req"
+  sci_30_req = "Sci_30_Req"
+  elective_qty = "Elective_Qty"
+  elective_pool = "Elective_Pool"
+  requirement_type = "Requirement_Type"
+  hs_diploma_req = "HS_Diploma_Req"
+  math_assessment_flag = "Math_Assessment_Flag"
+  elp_tests_mentioned = "ELP_Tests_Mentioned"
+}
+
+if (Test-Path $StructuredExtractionPath) {
+  foreach ($structuredRow in (Import-Csv $StructuredExtractionPath)) {
+    $institution = Normalize-Text (Get-PropValue -row $structuredRow -names @("institution", "Institution"))
+    $program = Normalize-Text (Get-PropValue -row $structuredRow -names @("program_name", "Program"))
+    if (-not $institution -or -not $program) { continue }
+
+    $credential = Normalize-Text (Get-PropValue -row $structuredRow -names @("credential", "Credential", "Credential_Type"))
+    $sourceUrl = Normalize-Text (Get-PropValue -row $structuredRow -names @("source_url", "Source_Url", "Program_URL"))
+    $fieldPayloads = @{}
+    foreach ($fieldKey in $structuredFieldMap.Keys) {
+      $fieldValue = Normalize-Text (Get-PropValue -row $structuredRow -names @($fieldKey))
+      $fieldConfidence = Normalize-Text (Get-PropValue -row $structuredRow -names @("${fieldKey}_confidence"))
+      $fieldPayloads[$fieldKey] = [pscustomobject]@{
+        Value = $fieldValue
+        Confidence = $fieldConfidence
+      }
+    }
+
+    $record = New-StructuredExtractionRecord `
+      -institution $institution `
+      -program $program `
+      -credential $credential `
+      -sourceUrl $sourceUrl `
+      -fieldPayloads $fieldPayloads
+
+    $key = Build-ProgramOverrideKey -institution $institution -program $program -credential $credential
+    if ($key) {
+      $structuredByKey[$key] = $record
+    }
+    Add-StructuredExtractionUrlKey -bucket $structuredByUrlKey -record $record
+    $structuredStats.rows_loaded++
   }
 }
 
@@ -874,7 +1162,7 @@ $canonical = foreach ($r in $rows) {
 
     Min_Avg_Final        = $r.Min_Avg_Final
     Competitive_Final    = $r.Competitive_Final
-    Avg_Total            = "" # to be populated by scrape/extract pipeline (or AvgRules sheet)
+    Avg_Total            = (Normalize-Text (Get-PropValue -row $r -names @("Avg_Total", "avg_total")))
 
     English_Req          = $englishReq
     English_Min          = $englishMin
@@ -1297,6 +1585,58 @@ if ($UalbertaRequireFullCoverage) {
   }
 }
 
+if ($structuredByKey.Count -gt 0 -or $structuredByUrlKey.Count -gt 0) {
+  foreach ($row in @($canonical)) {
+    $structured = Resolve-StructuredExtraction `
+      -recordsByKey $structuredByKey `
+      -recordsByUrl $structuredByUrlKey `
+      -institution (Normalize-Text $row.Institution) `
+      -program (Normalize-Text $row.Program) `
+      -credential (Normalize-Text $row.Credential_Type) `
+      -sourceUrl (Normalize-Text $row.Program_URL)
+    if ($null -eq $structured) { continue }
+
+    $rowTouched = $false
+    foreach ($fieldKey in $structuredFieldMap.Keys) {
+      if (-not $structured.Field_Payloads.ContainsKey($fieldKey)) { continue }
+      $payload = $structured.Field_Payloads[$fieldKey]
+      $candidateValue = Normalize-Text $payload.Value
+      $candidateConfidence = Normalize-Text $payload.Confidence
+      $canonicalField = [string]$structuredFieldMap[$fieldKey]
+      $existingValue = Normalize-Text $row.$canonicalField
+
+      if (-not (Should-ApplyStructuredField `
+        -canonicalField $canonicalField `
+        -candidateValue $candidateValue `
+        -candidateConfidence $candidateConfidence `
+        -existingValue $existingValue)) {
+        continue
+      }
+
+      $row.$canonicalField = $candidateValue
+      $structuredStats.field_values_applied++
+      $rowTouched = $true
+    }
+
+    if ($rowTouched) {
+      $structuredStats.rows_applied++
+    }
+  }
+}
+
+foreach ($row in @($canonical)) {
+  if (-not (Is-Blank $row.Requirement_Type)) {
+    $row.Requirement_Type = Normalize-RequirementTypeValue -value $row.Requirement_Type -row $row
+  }
+
+  if (Is-Blank $row.Avg_Total) {
+    $inferredAvgTotal = Get-InferredAvgTotal $row
+    if ($inferredAvgTotal) {
+      $row.Avg_Total = $inferredAvgTotal
+    }
+  }
+}
+
 if ($rulesetsByInstitution.Count -gt 0) {
   foreach ($row in @($canonical)) {
     $instKey = (Normalize-Text $row.Institution).ToLowerInvariant()
@@ -1307,12 +1647,24 @@ if ($rulesetsByInstitution.Count -gt 0) {
 
     $rowCredential = Normalize-Text $row.Credential_Type
     $rowReqType = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+    $hasRuleSignal = $false
+    foreach ($fieldName in @("Min_Avg_Final", "English_Req", "Math_Req", "Social_Req", "Science_Req", "Elective_Qty", "HS_Diploma_Req")) {
+      $fieldValue = (Normalize-Text $row.$fieldName).ToLowerInvariant()
+      if ($fieldValue -and $fieldValue -notin @("unknown", "none", "null", "nan", "no")) {
+        $hasRuleSignal = $true
+        break
+      }
+    }
     $matchedRule = $null
     foreach ($rule in $rulesForInst) {
       if (-not (Credential-MatchesScope -credentialType $rowCredential -scopeTokens @($rule.Credential_Tokens))) {
         continue
       }
-      if ($rule.Requirement_Type_Pattern -and (-not $rowReqType.Contains($rule.Requirement_Type_Pattern))) {
+      if ($rule.Requirement_Type_Pattern -and $rowReqType) {
+        if (-not $rowReqType.Contains($rule.Requirement_Type_Pattern)) {
+          continue
+        }
+      } elseif ($rule.Requirement_Type_Pattern -and -not $hasRuleSignal) {
         continue
       }
       $matchedRule = $rule
@@ -1325,6 +1677,11 @@ if ($rulesetsByInstitution.Count -gt 0) {
     if ($matchedRule.Default_Avg_Total -gt 0 -and -not $currentAvgTotal) {
       $row.Avg_Total = [string]$matchedRule.Default_Avg_Total
       $rulesetStats.avg_total_filled++
+      $rowApplied = $true
+    }
+
+    if (($rowReqType -in @("", "unknown")) -and $matchedRule.Requirement_Type_Pattern -and $hasRuleSignal) {
+      $row.Requirement_Type = Normalize-RequirementTypeValue -value $matchedRule.Requirement_Type_Pattern -row $row
       $rowApplied = $true
     }
 
@@ -1391,6 +1748,35 @@ if ($programOverridesByKey.Count -gt 0) {
     if ($rowTouched) {
       $programOverrideStats.field_overrides_applied++
     }
+  }
+}
+
+if ($norquestSeedRowsByKey.Count -gt 0) {
+  foreach ($row in @($canonical | Where-Object { $_.Institution -eq "NorQuest" })) {
+    $programKey = Normalize-ProgramKey $row.Program
+    if (-not $programKey -or -not $norquestSeedRowsByKey.ContainsKey($programKey)) { continue }
+    $seedRow = $norquestSeedRowsByKey[$programKey]
+
+    if (Is-Blank $row.Credential_Type) {
+      $row.Credential_Type = (Normalize-NorquestCredentialType $seedRow.Credential_Type)
+    }
+    if (Is-Blank $row.Status) {
+      $row.Status = "Active"
+    }
+  }
+}
+
+foreach ($row in @($canonical)) {
+  $normalizedRequirementType = Normalize-RequirementTypeValue -value (Normalize-Text $row.Requirement_Type) -row $row
+  $normalizedRequirementType = (Normalize-Text $normalizedRequirementType).Replace("notes: notes:", "notes: ")
+  if ($normalizedRequirementType) {
+    $row.Requirement_Type = $normalizedRequirementType
+  }
+
+  $reqTypeLower = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+  if ($reqTypeLower.StartsWith("regular_admission") -and $reqTypeLower.Contains("post-secondary pathway")) {
+    $row.HS_Diploma_Req = "No"
+    $row.Math_Assessment_Flag = "No"
   }
 }
 
@@ -1485,6 +1871,12 @@ if ((Test-Path $RulesetsPath) -or $rulesetStats.rows_loaded -gt 0) {
   Write-Host ("  canonical_rows_touched: {0}" -f $rulesetStats.rows_applied)
   Write-Host ("  avg_total_filled: {0}" -f $rulesetStats.avg_total_filled)
   Write-Host ("  placement_flags_set: {0}" -f $rulesetStats.placement_flags_set)
+}
+if ((Test-Path $StructuredExtractionPath) -or $structuredStats.rows_loaded -gt 0) {
+  Write-Host "Structured extraction summary:"
+  Write-Host ("  structured_rows_loaded: {0}" -f $structuredStats.rows_loaded)
+  Write-Host ("  canonical_rows_touched: {0}" -f $structuredStats.rows_applied)
+  Write-Host ("  field_values_applied: {0}" -f $structuredStats.field_values_applied)
 }
 if ((Test-Path $ProgramOverridesPath) -or $programOverrideStats.rows_loaded -gt 0) {
   Write-Host "Program overrides summary:"

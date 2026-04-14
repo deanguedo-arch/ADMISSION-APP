@@ -293,8 +293,17 @@ function buildScienceReq_(row, idx) {
 
   const parsed = parseScienceRequirementText_(t);
   if (flagCourses.length && parsed.kind === "any" && parsed.courses && parsed.courses.length) {
+    const parsedCourseKeys = {};
+    parsed.courses.forEach((c) => {
+      const key = canonKey_(c);
+      if (key) parsedCourseKeys[key] = true;
+    });
+    const requiredFlagCourses = flagCourses.filter((c) => !parsedCourseKeys[canonKey_(c)]);
+    if (!requiredFlagCourses.length) {
+      return parsed;
+    }
     // Used for patterns like: Bio 30 required + (Chem 30 OR Sci 30).
-    return { kind: "all_plus_any", allCourses: flagCourses, anyCourses: parsed.courses };
+    return { kind: "all_plus_any", allCourses: requiredFlagCourses, anyCourses: parsed.courses };
   }
   if (flagCourses.length) return { kind: "all", courses: flagCourses };
   return parsed;

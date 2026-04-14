@@ -457,8 +457,12 @@ function parseScienceRequirementText_(rawText) {
     t = t.replace(/^\s*(Two|2)\s+of\b/i, "").trim();
   }
 
-  // Normalize separators.
-  t = t.replace(/;/g, ",").replace(/\s+/g, " ");
+  // Normalize separators. Science requirements commonly use either commas or
+  // "or" for alternatives, and both should produce separate course candidates.
+  t = t
+    .replace(/;/g, ",")
+    .replace(/\s+or\s+/gi, ",")
+    .replace(/\s+/g, " ");
 
   const parts = t
     .split(",")
@@ -468,6 +472,10 @@ function parseScienceRequirementText_(rawText) {
   const courses = unique_(
     parts.map((p) => {
       const q = p.replace(/\s+/g, " ");
+      if (/^Biology\s*30$/i.test(q)) return "Biology 30";
+      if (/^Chemistry\s*30$/i.test(q)) return "Chemistry 30";
+      if (/^Physics\s*30$/i.test(q)) return "Physics 30";
+      if (/^Science\s*30$/i.test(q)) return "Science 30";
       if (/^Bio\s*30$/i.test(q)) return "Biology 30";
       if (/^Chem\s*30$/i.test(q)) return "Chemistry 30";
       if (/^Phys\s*30$/i.test(q)) return "Physics 30";

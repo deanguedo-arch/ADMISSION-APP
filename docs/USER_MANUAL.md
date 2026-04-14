@@ -14,7 +14,7 @@ This is the only guide a coworker should need.
 - Data maintainer (one person): runs local sync commands when program data changes.
 
 ## 2B) URL map (keep these separate)
-- Staff URL (Apps Script, authenticated/domain-gated): `https://script.google.com/macros/s/AKfycbzWYjdCeRHm5bTAh8oiThEZrPIqaS4SPHYn2x_KaTyaxsWEwiXEEjZozqn8is2dKzv1PQ/exec`
+- Staff URL (Apps Script, authenticated): `https://script.google.com/macros/s/AKfycbxmimxX1LfyBysb-IKMS-0iHrEQJg5ZQOQ0Mwz1ws1xnKSaL9zb5kDZvWc--eyFPR--BQ/exec`
 - Student/public URL (GitHub Pages snapshot): `https://deanguedo-arch.github.io/ADMISSION-APP/`
 - Student iPhone install guide: `docs/STUDENT_IPHONE_INSTALL.md`
 - iPhone release gate: `docs/RELEASE_GATE_IPHONE.md`

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 PROGRAM_FIELD_KEYS: tuple[str, ...] = (
@@ -17,10 +17,25 @@ PROGRAM_FIELD_KEYS: tuple[str, ...] = (
     "social_min",
     "science_req",
     "science_min",
+    "bio_30_req",
+    "chem_30_req",
+    "phys_30_req",
+    "sci_30_req",
     "elective_qty",
     "elective_pool",
     "requirement_type",
+    "hs_diploma_req",
+    "math_assessment_flag",
+    "elp_tests_mentioned",
 )
+
+
+CONFIDENCE_RANK = {
+    "none": 0,
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+}
 
 
 @dataclass(frozen=True)
@@ -43,10 +58,31 @@ class PatternRule:
 
 
 @dataclass(frozen=True)
+class SourceDocument:
+    url: str
+    text: str
+    kind: str = "base"
+
+
+@dataclass(frozen=True)
 class ExtractedField:
     value: str | None
     confidence: str = "none"
-    rule: str | None = None
+    rule_id: str | None = None
+    snippet: str | None = None
+    source_url: str | None = None
+
+    @property
+    def rule(self) -> str | None:
+        return self.rule_id
+
+
+@dataclass(frozen=True)
+class FieldEvidence:
+    field_name: str
+    extracted_value: str | None
+    confidence: str
+    rule_id: str | None = None
     snippet: str | None = None
     source_url: str | None = None
 
@@ -54,9 +90,45 @@ class ExtractedField:
 @dataclass(frozen=True)
 class ProgramFieldExtraction:
     fields: dict[str, ExtractedField]
+    evidence: list[FieldEvidence] = field(default_factory=list)
 
     def get(self, key: str) -> ExtractedField:
         return self.fields.get(key, ExtractedField(value=None, confidence="none"))
+
+
+ENGLISH_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\b(?:english\s+language\s+arts|english|ela)\s*30-1\b", "English 30-1"),
+    (r"\b(?:english\s+language\s+arts|english|ela)\s*30-2\b", "English 30-2"),
+)
+
+MATH_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\b(?:mathematics|math)\s*20-1\b", "Math 20-1"),
+    (r"\b(?:mathematics|math)\s*20-2\b", "Math 20-2"),
+    (r"\b(?:mathematics|math)\s*30-1\b", "Math 30-1"),
+    (r"\b(?:mathematics|math)\s*30-2\b", "Math 30-2"),
+    (r"\b(?:mathematics|math)\s*31\b", "Math 31"),
+)
+
+SOCIAL_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\bsocial\s+studies\s*30-1\b", "Social Studies 30-1"),
+    (r"\bsocial\s+studies\s*30-2\b", "Social Studies 30-2"),
+    (r"\baboriginal\s+studies\s*30\b", "Aboriginal Studies 30"),
+)
+
+SCIENCE_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\bbiology\s*30\b", "Biology 30"),
+    (r"\bchemistry\s*30\b", "Chemistry 30"),
+    (r"\bphysics\s*30\b", "Physics 30"),
+    (r"\bscience\s*30\b", "Science 30"),
+)
+
+ELP_TEST_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\bielts\b", "IELTS"),
+    (r"\btoefl\b", "TOEFL"),
+    (r"\bduolingo\b", "Duolingo"),
+    (r"\bcael\b", "CAEL"),
+    (r"\bpearson\b|\bpte\b", "Pearson"),
+)
 
 
 class InstitutionAdapter:
@@ -66,133 +138,132 @@ class InstitutionAdapter:
     def extract_avg_total(self, text: str) -> AvgTotalMatch:
         raise NotImplementedError
 
-    def extract_program_fields(self, text: str) -> ProgramFieldExtraction:
-        avg = self.extract_avg_total(text)
+    def extract_program_fields(
+        self,
+        text_or_documents: str | list[SourceDocument],
+        *,
+        source_url: str | None = None,
+    ) -> ProgramFieldExtraction:
+        documents = ensure_documents(text_or_documents, default_source_url=source_url)
         return extract_generic_program_fields(
-            text=text,
-            avg_match=avg,
+            documents=documents,
+            avg_match=self.extract_avg_total(combine_document_text(documents)),
             institution_name=self.name,
         )
 
 
-def normalize_text(text: str) -> str:
+def confidence_rank(value: str) -> int:
+    return CONFIDENCE_RANK.get(normalize_text(value).lower(), 0)
+
+
+def normalize_text(text: object) -> str:
     return " ".join(str(text or "").split())
 
 
-def excerpt_around(text: str, start: int, end: int, radius: int = 70) -> str:
+def excerpt_around(text: str, start: int, end: int, radius: int = 100) -> str:
     a = max(0, start - radius)
     b = min(len(text), end + radius)
-    return text[a:b]
+    return normalize_text(text[a:b])
+
+
+def normalize_field(value: object) -> str:
+    text = normalize_text(value)
+    if text.lower() in {"nan", "none", "null"}:
+        return ""
+    return text
+
+
+def ensure_documents(
+    text_or_documents: str | list[SourceDocument],
+    *,
+    default_source_url: str | None = None,
+) -> list[SourceDocument]:
+    if isinstance(text_or_documents, list):
+        out = [doc for doc in text_or_documents if normalize_text(doc.text)]
+        if out:
+            return out
+    text = normalize_text(text_or_documents)
+    if not text:
+        return []
+    return [SourceDocument(url=normalize_text(default_source_url), text=text, kind="merged")]
+
+
+def combine_document_text(documents: list[SourceDocument]) -> str:
+    return "\n".join(normalize_text(doc.text) for doc in documents if normalize_text(doc.text))
 
 
 def match_rules(text: str, rules: list[PatternRule]) -> AvgTotalMatch | None:
     for rule in rules:
-        m = rule.pattern.search(text)
-        if not m:
+        match = rule.pattern.search(text)
+        if not match:
             continue
-
         if rule.group_index is not None:
             try:
-                value = int(m.group(rule.group_index))
+                value = int(match.group(rule.group_index))
             except Exception:
                 continue
         else:
             value = rule.value
-
-        if value is None:
+        if value is None or value < rule.min_value or value > rule.max_value:
             continue
-        if value < rule.min_value or value > rule.max_value:
-            continue
-
-        snippet = excerpt_around(text, m.start(), m.end())
-        label = rule.rule or rule.pattern.pattern
-        return AvgTotalMatch(value=value, snippet=snippet, confidence=rule.confidence, rule=label)
+        return AvgTotalMatch(
+            value=value,
+            snippet=excerpt_around(text, match.start(), match.end()),
+            confidence=rule.confidence,
+            rule=rule.rule or rule.pattern.pattern,
+        )
     return None
 
 
-def _blank_program_fields() -> dict[str, ExtractedField]:
+def blank_program_fields() -> dict[str, ExtractedField]:
     return {key: ExtractedField(value=None, confidence="none") for key in PROGRAM_FIELD_KEYS}
 
 
-def _set_field(
+def record_field(
     fields: dict[str, ExtractedField],
+    evidence: list[FieldEvidence],
     key: str,
     value: str | None,
     *,
     confidence: str = "none",
-    rule: str | None = None,
+    rule_id: str | None = None,
     snippet: str | None = None,
     source_url: str | None = None,
 ) -> None:
     if key not in fields:
         return
-    cleaned = normalize_text(value or "")
-    if not cleaned:
-        fields[key] = ExtractedField(value=None, confidence="none")
+    clean_value = normalize_field(value)
+    clean_confidence = normalize_text(confidence).lower() or "none"
+    candidate = ExtractedField(
+        value=clean_value or None,
+        confidence=clean_confidence,
+        rule_id=normalize_field(rule_id) or None,
+        snippet=normalize_field(snippet) or None,
+        source_url=normalize_field(source_url) or None,
+    )
+    current = fields.get(key, ExtractedField(value=None, confidence="none"))
+    if confidence_rank(candidate.confidence) < confidence_rank(current.confidence):
         return
-    fields[key] = ExtractedField(
-        value=cleaned,
-        confidence=(confidence or "none").strip().lower() or "none",
-        rule=rule,
-        snippet=normalize_text(snippet or "") or None,
-        source_url=normalize_text(source_url or "") or None,
-    )
-
-
-def _first_percent(snippet: str) -> str | None:
-    m = re.search(r"\b(\d{2,3})(?:\.\d+)?\s*(?:%|percent)\b", snippet, flags=re.I)
-    if not m:
-        return None
-    try:
-        value = int(float(m.group(1)))
-    except Exception:
-        return None
-    if value < 0 or value > 100:
-        return None
-    return str(value)
-
-
-def _first_valid_percent(text: str) -> str | None:
-    for m in re.finditer(r"\b(\d{2,3})(?:\.\d+)?\s*(?:%|percent)\b", text, flags=re.I):
-        try:
-            value = int(float(m.group(1)))
-        except Exception:
-            continue
-        if 0 <= value <= 100:
-            return str(value)
-    return None
-
-
-def _extract_explicit_subject_min(text: str, subject_guard: str) -> str | None:
-    patterns = [
-        rf"\b(?:minimum|min\.?|at least)\s*(\d{{2,3}})(?:\.\d+)?\s*(?:%|percent)\s*(?:in|for)\s*(?:{subject_guard})\b",
-        rf"\b(?:{subject_guard})\b[^.:\n]{{0,48}}?\b(?:minimum|min\.?|at least|with|of)\s*(\d{{2,3}})(?:\.\d+)?\s*(?:%|percent)\b",
-        rf"\b(\d{{2,3}})(?:\.\d+)?\s*(?:%|percent)\s*(?:in|for)\s*(?:{subject_guard})\b",
-    ]
-    for pattern in patterns:
-        m = re.search(pattern, text, flags=re.I)
-        if not m:
-            continue
-        try:
-            value = int(float(m.group(1)))
-        except Exception:
-            continue
-        if 0 <= value <= 100:
-            return str(value)
-    return None
-
-
-def _has_requirement_cue(snippet: str) -> bool:
-    return bool(
-        re.search(
-            r"\b(required|requirement|must have|must complete|need|needed|prerequisite|admission requirement|entrance requirement)\b",
-            snippet,
-            flags=re.I,
+    if confidence_rank(candidate.confidence) == confidence_rank(current.confidence):
+        if current.value and not candidate.value:
+            return
+        if current.value and candidate.value and len(current.value) > len(candidate.value):
+            return
+    fields[key] = candidate
+    if clean_value:
+        evidence.append(
+            FieldEvidence(
+                field_name=key,
+                extracted_value=clean_value,
+                confidence=clean_confidence,
+                rule_id=normalize_field(rule_id) or None,
+                snippet=normalize_field(snippet) or None,
+                source_url=normalize_field(source_url) or None,
+            )
         )
-    )
 
 
-def _word_to_int(token: str) -> int | None:
+def word_to_int(token: str) -> int | None:
     normalized = normalize_text(token).lower()
     mapping = {
         "one": 1,
@@ -215,363 +286,565 @@ def _word_to_int(token: str) -> int | None:
     return None
 
 
-def _extract_subject_value(
-    text: str,
-    *,
-    subject_pattern: str,
-    subject_guard: str,
-    code_pattern: str,
-    prefix: str,
-    unspecified_value: str,
-    radius: int = 180,
-) -> tuple[str | None, str | None, str | None]:
-    match = re.search(subject_pattern, text, flags=re.I)
+def quantity_to_int(value: object) -> int | None:
+    text = normalize_text(value)
+    if not text:
+        return None
+    match = re.search(r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\b", text, flags=re.I)
     if not match:
-        return None, None, None
-    snippet = excerpt_around(text, match.start(), match.end(), radius=radius)
-    local_end = min(len(text), match.end() + 140)
-    local_segment = text[match.end():local_end]
-    next_subject = re.search(
-        r"\b(?:english(?:\s+language\s+arts)?|math(?:ematics)?|social(?:\s+studies)?|aboriginal studies|science|biology|chemistry|physics)\b",
-        local_segment,
-        flags=re.I,
-    )
-    if next_subject:
-        local_segment = local_segment[: next_subject.start()]
-    codes = []
-    for c in re.finditer(code_pattern, local_segment, flags=re.I):
-        code = normalize_text(c.group(1))
-        if not code:
+        return None
+    return word_to_int(match.group(1))
+
+
+def detect_courses(text: str, patterns: tuple[tuple[str, str], ...]) -> list[tuple[int, str]]:
+    hits: list[tuple[int, str]] = []
+    for pattern, label in patterns:
+        for match in re.finditer(pattern, text, flags=re.I):
+            hits.append((match.start(), label))
+    hits.sort(key=lambda item: item[0])
+    seen: set[str] = set()
+    ordered: list[tuple[int, str]] = []
+    for position, label in hits:
+        if label in seen:
             continue
-        token = f"{prefix} {code}"
-        if token not in codes:
-            codes.append(token)
-    requirement: str | None = None
-    if codes:
-        requirement = " or ".join(codes)
-    elif _has_requirement_cue(snippet):
-        requirement = unspecified_value
-    subject_min = _extract_explicit_subject_min(text, subject_guard)
-    return requirement, subject_min, snippet
+        seen.add(label)
+        ordered.append((position, label))
+    return ordered
 
 
-def _extract_science_value(text: str) -> tuple[str | None, str | None, str | None]:
-    match = re.search(r"\b(science|biology|chemistry|physics)\b", text, flags=re.I)
-    if not match:
-        return None, None, None
-    snippet = excerpt_around(text, match.start(), match.end(), radius=200)
-    raw_courses = re.findall(r"\b(Biology 30|Chemistry 30|Physics 30|Science 30)\b", snippet, flags=re.I)
-    courses: list[str] = []
-    for item in raw_courses:
-        token = normalize_text(item).title()
-        if token and token not in courses:
-            courses.append(token)
-    requirement = " or ".join(courses) if courses else None
-    science_min = _extract_explicit_subject_min(
-        text,
-        r"(?:science|biology|chemistry|physics)(?:\s*30(?:-[12])?)?",
-    )
-    return requirement, science_min, snippet
-
-
-def _extract_competitive(text: str) -> tuple[str | None, str | None, str | None]:
+def extract_course_minimums(text: str, course_pattern: str) -> list[int]:
     patterns = [
-        r"\bcompetitive\s+(?:admission\s+)?average\b[^.:\n]{0,140}",
-        r"\bcompetitive\b[^.:\n]{0,120}\b(?:average|averages|percent|%)\b[^.:\n]{0,80}",
+        rf"\b(\d{{2,3}})(?:\.\d+)?\s*(?:%|percent)\s*(?:in|for)\s*{course_pattern}\b",
+        rf"{course_pattern}\b[^.;\n]{{0,30}}?\b(?:at|with|minimum(?:\s+of)?|of)?\s*(\d{{2,3}})(?:\.\d+)?\s*(?:%|percent)\b",
     ]
-    match = None
+    values: list[int] = []
     for pattern in patterns:
-        m = re.search(pattern, text, flags=re.I)
-        if m:
-            match = m
-            break
-    if not match:
-        return None, None, None
-    snippet = excerpt_around(text, match.start(), match.end(), radius=120)
-    guidance = normalize_text(snippet)
-    if not guidance:
-        return None, None, None
-
-    numeric = _first_valid_percent(snippet)
-    if not numeric:
-        decade_match = re.search(r"\b(?:low|mid|high)\s*(\d{2})s\b", snippet, flags=re.I)
-        if decade_match:
-            numeric = decade_match.group(1)
-    return guidance, numeric, snippet
+        for match in re.finditer(pattern, text, flags=re.I):
+            try:
+                value = int(float(match.group(1)))
+            except Exception:
+                continue
+            if 0 <= value <= 100:
+                values.append(value)
+    return values
 
 
-def _extract_min_average(text: str) -> tuple[str | None, str | None]:
+def extract_group_constraint_notes(text: str) -> list[str]:
+    notes: list[str] = []
     patterns = [
-        r"\bminimum(?:\s+overall|\s+admission)?\s+average(?:\s+of)?\s+(\d{2,3})(?:\.\d+)?\s*(?:%|percent)\b",
-        r"\bapplicants?\s+must\s+have\s+a\s+minimum\s+overall\s+average\s+of\s+(\d{2,3})(?:\.\d+)?\s*(?:%|percent)\b",
-        r"\bminimum\s+admission\s+average\s+(?:is|of|:)\s*(\d{2,3})(?:\.\d+)?\s*(?:%|percent)\b",
+        (r"\bmaximum of one group b\b|\bmax(?:imum)?\s+1\s+group b\b", "max 1 Group B"),
+        (r"\bmaximum of two group b\b|\bmax(?:imum)?\s+2\s+group b\b", "max 2 Group B"),
+        (r"\bmaximum of three subjects? from groups? a/c\b|\b3 subjects? from groups? a/c\b", "max 3 from Groups A/C"),
+        (r"\bmaximum of one group d\b|\bmax(?:imum)?\s+1\s+group d\b", "max 1 Group D"),
+    ]
+    for pattern, label in patterns:
+        if re.search(pattern, text, flags=re.I) and label not in notes:
+            notes.append(label)
+    return notes
+
+
+def extract_note_tokens(text: str) -> list[str]:
+    notes = extract_group_constraint_notes(text)
+    if re.search(r"\bcasper\b", text, flags=re.I):
+        notes.append("CASPer required")
+    if re.search(r"\bportfolio\b", text, flags=re.I):
+        notes.append("portfolio required")
+    if re.search(r"\baudition\b", text, flags=re.I):
+        notes.append("audition required")
+    if re.search(r"\binterview\b", text, flags=re.I):
+        notes.append("interview required")
+    if re.search(r"\bregular admission\b", text, flags=re.I):
+        notes.append("regular admission")
+    if re.search(r"\benglish\s+language\s+proficiency\b|\bielts\b|\btoefl\b|\bduolingo\b|\bcael\b|\bpearson\b|\bpte\b", text, flags=re.I):
+        notes.append("ELP tests mentioned")
+    if re.search(r"\b(?:two-year diploma|post-secondary credits?|minimum gpa|graduation gpa|accredited or recognized institution)\b", text, flags=re.I):
+        notes.append("post-secondary pathway")
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for note in notes:
+        if note in seen:
+            continue
+        seen.add(note)
+        deduped.append(note)
+    return deduped
+
+
+def compose_requirement_type(base_token: str | None, notes: list[str]) -> str | None:
+    if not base_token:
+        return None
+    if not notes:
+        return base_token
+    return f"{base_token}; notes: {'; '.join(notes)}"
+
+
+def extract_avg_total_from_text(text: str, avg_match: AvgTotalMatch) -> tuple[str | None, str | None, str | None]:
+    if avg_match.value is None:
+        return None, None, None
+    return str(avg_match.value), avg_match.rule or "avg_total_match", avg_match.snippet
+
+
+def extract_min_average(text: str) -> tuple[str | None, str | None, str | None]:
+    patterns = [
+        r"\bminimum(?:\s+overall|\s+admission)?\s+average(?:\s+of)?\s+(\d{2,3})(?:\.\d+)?\s*(?:%|percent)(?!\w)",
+        r"\bminimum\s+admission\s+average\s+(?:is|of|:)\s*(\d{2,3})(?:\.\d+)?\s*(?:%|percent)(?!\w)",
+        r"\bminimum\s+overall\s+average\s+of\s+(\d{2,3})(?:\.\d+)?\s*(?:%|percent)(?!\w)",
+        r"\boverall\s+minimum\s+average\s+of\s+(\d{2,3})(?:\.\d+)?\s*(?:%|percent)(?!\w)",
+        r"\ban\s+overall\s+minimum\s+average\s+of\s+(\d{2,3})(?:\.\d+)?\s*(?:%|percent)(?!\w)",
     ]
     for idx, pattern in enumerate(patterns, start=1):
-        m = re.search(pattern, text, flags=re.I)
-        if not m:
+        match = re.search(pattern, text, flags=re.I)
+        if not match:
             continue
         try:
-            value = int(float(m.group(1)))
+            value = int(float(match.group(1)))
         except Exception:
             continue
-        if value < 0 or value > 100:
-            continue
-        snippet = excerpt_around(text, m.start(), m.end(), radius=120)
-        return str(value), f"min_avg_pattern_{idx}", snippet
+        if 0 <= value <= 100:
+            return str(value), f"min_avg_pattern_{idx}", excerpt_around(text, match.start(), match.end())
     return None, None, None
 
 
-def _extract_elective_qty_pool(text: str) -> tuple[str | None, str | None, str | None]:
-    match = re.search(
-        r"\b(?:must|required|requires|need|select|choose|present)\b[^.:\n]{0,140}\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:elective|subjects?|courses?)\b[^.:\n]{0,140}\bfrom\s+group[s]?\s+([A-D,\sorand]+)\b",
+def extract_competitive(text: str) -> tuple[str | None, str | None, str | None]:
+    patterns = [
+        r"\bcompetitive\s+(?:admission\s+)?average\b[^.:\n]{0,180}",
+        r"\bcompetitive\b[^.:\n]{0,160}\b(?:average|averages|percent|%)\b[^.:\n]{0,80}",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.I)
+        if not match:
+            continue
+        snippet = excerpt_around(text, match.start(), match.end(), radius=130)
+        numeric = None
+        value_match = re.search(r"\b(\d{2,3})(?:\.\d+)?\s*(?:%|percent)\b", snippet, flags=re.I)
+        if value_match:
+            numeric = str(int(float(value_match.group(1))))
+        else:
+            decade_match = re.search(r"\b(?:low|mid|high)\s*(\d{2})s\b", snippet, flags=re.I)
+            if decade_match:
+                numeric = decade_match.group(1)
+        return normalize_text(snippet), numeric, snippet
+    return None, None, None
+
+
+def extract_courses_and_min(
+    text: str,
+    patterns: tuple[tuple[str, str], ...],
+    *,
+    fallback_label: str,
+    rule_prefix: str,
+) -> tuple[str | None, str | None, str | None]:
+    hits = detect_courses(text, patterns)
+    if not hits:
+        return None, None, None
+    labels = [label for _, label in hits]
+    if "English 30-1" in labels and "English 30-2" not in labels:
+        if re.search(r"\b(?:english\s+language\s+arts|english|ela)\s*30-1\b[^.;\n]{0,24}\bor\b[^.;\n]{0,12}\b30-2\b", text, flags=re.I):
+            labels.append("English 30-2")
+    if "English 30-2" in labels and "English 30-1" not in labels:
+        if re.search(r"\b(?:english\s+language\s+arts|english|ela)\s*30-2\b[^.;\n]{0,24}\bor\b[^.;\n]{0,12}\b30-1\b", text, flags=re.I):
+            labels.insert(0, "English 30-1")
+    if any(label.startswith("Math ") for label in labels):
+        shorthand_pairs = [
+            (r"\b(?:mathematics|math)\s*20-1\b[^.;\n]{0,24}\bor\b[^.;\n]{0,12}\b20-2\b", "Math 20-2"),
+            (r"\b(?:mathematics|math)\s*20-2\b[^.;\n]{0,24}\bor\b[^.;\n]{0,12}\b20-1\b", "Math 20-1"),
+            (r"\b(?:mathematics|math)\s*30-1\b[^.;\n]{0,24}\bor\b[^.;\n]{0,12}\b30-2\b", "Math 30-2"),
+            (r"\b(?:mathematics|math)\s*30-2\b[^.;\n]{0,24}\bor\b[^.;\n]{0,12}\b30-1\b", "Math 30-1"),
+        ]
+        for pattern, label in shorthand_pairs:
+            if label in labels:
+                continue
+            if re.search(pattern, text, flags=re.I):
+                labels.append(label)
+    first_pos = hits[0][0]
+    last_pos = hits[-1][0]
+    snippet = excerpt_around(text, first_pos, last_pos, radius=120)
+    minimums: list[int] = []
+    for course_pattern, _ in patterns:
+        minimums.extend(extract_course_minimums(text, course_pattern))
+    requirement = " or ".join(labels) if labels else fallback_label
+    minimum = str(min(minimums)) if minimums else None
+    return requirement, minimum, snippet
+
+
+def extract_science_details(text: str) -> tuple[str | None, str | None, str | None, dict[str, str]]:
+    requirement, minimum, snippet = extract_courses_and_min(
+        text,
+        SCIENCE_PATTERNS,
+        fallback_label="Science 30",
+        rule_prefix="science",
+    )
+    flags = {
+        "bio_30_req": "Yes" if "Biology 30" in (requirement or "") else "",
+        "chem_30_req": "Yes" if "Chemistry 30" in (requirement or "") else "",
+        "phys_30_req": "Yes" if "Physics 30" in (requirement or "") else "",
+        "sci_30_req": "Yes" if "Science 30" in (requirement or "") else "",
+    }
+    return requirement, minimum, snippet, flags
+
+
+def extract_elective_details(text: str) -> tuple[str | None, str | None, str | None]:
+    patterns = [
+        r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:additional\s+)?subjects?\s+from\s+(group[s]?\s+[A-D][^.;\n]*)",
+        r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:additional\s+)?courses?\s+from\s+(group[s]?\s+[A-D][^.;\n]*)",
+        r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+subjects?\s+from\s+(group[s]?\s+[A-D][^.;\n]*)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.I)
+        if not match:
+            continue
+        qty = word_to_int(match.group(1))
+        pool_tokens = re.findall(r"\b([ABCD])\b", match.group(2), flags=re.I)
+        pool_ordered: list[str] = []
+        for token in [item.upper() for item in pool_tokens]:
+            if token not in pool_ordered:
+                pool_ordered.append(token)
+        snippet = excerpt_around(text, match.start(), match.end())
+        return (str(qty) if qty else None), (",".join(pool_ordered) if pool_ordered else None), snippet
+    grade_12_match = re.search(
+        r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+additional\s+grade\s+12\s+courses?\b([^.;\n]{0,160})",
         text,
         flags=re.I,
     )
-    if not match:
-        match = re.search(
-            r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+subjects?\s+from\s+group[s]?\s+([A-D,\sorand]+)\b",
+    if grade_12_match:
+        qty = word_to_int(grade_12_match.group(1))
+        raw_pool = grade_12_match.group(2)
+        pool_tokens = []
+        for token in re.findall(r"\b(?:30-1|30-2|30|35)\b", raw_pool, flags=re.I):
+            normalized = normalize_text(token).upper()
+            if normalized and normalized not in pool_tokens:
+                pool_tokens.append(normalized)
+        snippet = excerpt_around(text, grade_12_match.start(), grade_12_match.end())
+        return (str(qty) if qty else None), (",".join(pool_tokens) if pool_tokens else None), snippet
+    return None, None, None
+
+
+def has_assessment_pathway_signal(text: str) -> bool:
+    patterns = [
+        r"\bacademic assessment\b",
+        r"\bplacement assessment\b",
+        r"\bplacement test\b",
+        r"\baccuplacer\b",
+        r"\bmath assessment\b",
+        r"\bmeet(?:ing)?(?: their)? academic requirements? with (?:a|an|free )?(?:academic )?assessment\b",
+        r"\bacademic requirements? (?:can|may) be met with (?:a|an|free )?(?:academic )?assessment\b",
+    ]
+    return any(re.search(pattern, text, flags=re.I) for pattern in patterns)
+
+
+def has_post_secondary_pathway_signal(text: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:two-year diploma|related diploma|business related-diploma|post-secondary credits?|minimum gpa|graduation gpa|accredited or recognized institution|accredited it program|open studies courses|red seal trade|certified trades professionals|journeypersons?|direct route into (?:the )?third year|third year of the bachelor of business administration|background in a red seal trade)\b",
             text,
             flags=re.I,
         )
+    )
+
+
+def infer_requirement_unit_count(requirement_value: str | None, snippet: str | None = None) -> int:
+    value_text = normalize_field(requirement_value)
+    snippet_text = normalize_field(snippet)
+    if not value_text and not snippet_text:
+        return 0
+
+    search_text = snippet_text or value_text
+    explicit_count = quantity_to_int(re.search(r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+of\b", search_text, flags=re.I).group(1)) if re.search(r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+of\b", search_text, flags=re.I) else None
+    if explicit_count:
+        return explicit_count
+
+    if re.search(r"\bor\b", value_text, flags=re.I):
+        return 1
+
+    parts = [
+        normalize_text(part)
+        for part in re.split(r"\s*,\s*|\s+and\s+", value_text)
+        if normalize_text(part)
+    ]
+    course_like: list[str] = []
+    for part in parts:
+        if not re.search(
+            r"\b(?:english|ela|math|mathematics|social|aboriginal|biology|chemistry|physics|science|physical education|recreation)\b",
+            part,
+            flags=re.I,
+        ):
+            continue
+        if part not in course_like:
+            course_like.append(part)
+    if 1 < len(course_like) <= 6:
+        return len(course_like)
+
+    return 1
+
+
+def infer_avg_total_from_fields(
+    fields: dict[str, ExtractedField],
+) -> tuple[str | None, str | None, str | None, str | None, str | None]:
+    if normalize_field(fields["avg_total"].value):
+        return None, None, None, None, None
+
+    total = 0
+    snippet_parts: list[str] = []
+    source_url = ""
+
+    for key in ("english_req", "math_req", "social_req"):
+        field = fields[key]
+        value = normalize_field(field.value)
+        if not value:
+            continue
+        total += 1
+        snippet_parts.append(f"{key}={value}")
+        if not source_url:
+            source_url = normalize_field(field.source_url)
+
+    science_field = fields["science_req"]
+    science_value = normalize_field(science_field.value)
+    if science_value:
+        science_units = infer_requirement_unit_count(science_value, science_field.snippet)
+        total += science_units
+        snippet_parts.append(f"science_req={science_value}")
+        if not source_url:
+            source_url = normalize_field(science_field.source_url)
+
+    elective_field = fields["elective_qty"]
+    elective_value = normalize_field(elective_field.value)
+    elective_units = quantity_to_int(elective_value) if elective_value else None
+    if elective_units:
+        total += elective_units
+        snippet_parts.append(f"elective_qty={elective_value}")
+        if not source_url:
+            source_url = normalize_field(elective_field.source_url)
+
+    has_requirement_signal = any(
+        normalize_field(fields[key].value)
+        for key in ("min_avg_final", "english_req", "math_req", "social_req", "science_req", "elective_qty")
+    )
+    requirement_type = normalize_field(fields["requirement_type"].value).lower()
+    if "placement_assessment" in requirement_type:
+        return None, None, None, None, None
+    if not has_requirement_signal or total != 5:
+        return None, None, None, None, None
+    if not (normalize_field(fields["min_avg_final"].value) or requirement_type.startswith("alberta_high_school_courses")):
+        return None, None, None, None, None
+
+    confidence = "medium"
+    snippet = "; ".join(snippet_parts)
+    return str(total), confidence, "subject_count_inference", snippet, source_url or None
+
+
+def extract_elp_tests(text: str) -> tuple[str | None, str | None]:
+    tests: list[str] = []
+    first_match: re.Match[str] | None = None
+    for pattern, label in ELP_TEST_PATTERNS:
+        match = re.search(pattern, text, flags=re.I)
+        if not match:
+            continue
+        if first_match is None or match.start() < first_match.start():
+            first_match = match
+        if label not in tests:
+            tests.append(label)
+    if not tests:
+        return None, None
+    snippet = excerpt_around(text, first_match.start(), first_match.end(), radius=140) if first_match else None
+    return "; ".join(tests), snippet
+
+
+def detect_math_assessment(text: str) -> tuple[str | None, str | None]:
+    patterns = [
+        r"\bacademic assessment\b",
+        r"\bplacement assessment\b",
+        r"\bplacement test\b",
+        r"\baccuplacer\b",
+        r"\bmath assessment\b",
+    ]
+    match = None
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.I)
+        if match:
+            break
     if not match:
-        return None, None, None
-    qty = _word_to_int(match.group(1))
-    pool_tokens = re.findall(r"\b([ABCD])\b", match.group(2), flags=re.I)
-    pool_ordered: list[str] = []
-    for token in [t.upper() for t in pool_tokens]:
-        if token not in pool_ordered:
-            pool_ordered.append(token)
-    pool = ",".join(pool_ordered) if pool_ordered else None
-    snippet = excerpt_around(text, match.start(), match.end(), radius=120)
-    return str(qty) if qty else None, pool, snippet
+        return None, None
+    return "Yes", excerpt_around(text, match.start(), match.end(), radius=120)
 
 
-def _derive_requirement_type(
+def derive_requirement_type(
     text: str,
     *,
     has_subject_requirements: bool,
     has_min_average: bool,
-    institution_name: str = "",
-) -> tuple[str | None, str]:
-    if re.search(r"\bplacement\b|\bassessment\b", text, flags=re.I):
-        return "placement_assessment", "high"
-    if re.search(r"\benglish\s+language\s+proficiency\b", text, flags=re.I):
-        if institution_name in {"norquest", "nait"}:
-            return "placement_assessment", "medium"
-        if not has_subject_requirements and not has_min_average:
-            return "placement_assessment", "low"
-    if re.search(r"\bsee degree\b|\brefer to degree\b", text, flags=re.I):
-        return "See Degree", "high"
+) -> tuple[str | None, list[str], str]:
+    notes = extract_note_tokens(text)
+    if has_assessment_pathway_signal(text):
+        return "placement_assessment", notes, "high"
     if has_subject_requirements or has_min_average:
-        return "alberta_high_school_courses", "medium"
-    return None, "none"
+        return "alberta_high_school_courses", notes, ("high" if notes else "medium")
+    if has_post_secondary_pathway_signal(text):
+        return "regular_admission", notes, "medium"
+    if re.search(r"\bregular admission\b", text, flags=re.I):
+        return "regular_admission", notes, "medium"
+    return None, notes, "none"
+
+
+def has_high_school_requirement_signal(text: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:grade 12|high school|english language arts 30|mathematics 30|social studies 30|biology 30|chemistry 30|physics 30|science 30)\b",
+            text,
+            flags=re.I,
+        )
+    )
+
+
+def has_requirement_context(text: str, source_url: str) -> bool:
+    lowered_url = normalize_text(source_url).lower()
+    return any(
+        token in lowered_url
+        for token in [
+            "admission-requirements",
+            "program-requirements",
+            "competitive-requirements",
+            "subject-requirements",
+        ]
+    )
 
 
 def extract_generic_program_fields(
     *,
-    text: str,
+    documents: list[SourceDocument],
     avg_match: AvgTotalMatch,
-    source_url: str | None = None,
     institution_name: str = "",
 ) -> ProgramFieldExtraction:
-    normalized = normalize_text(text or "")
-    fields = _blank_program_fields()
+    fields = blank_program_fields()
+    evidence: list[FieldEvidence] = []
+    combined = combine_document_text(documents)
 
-    if avg_match.value is not None:
-        _set_field(
+    avg_value, avg_rule, avg_snippet = extract_avg_total_from_text(combined, avg_match)
+    if avg_value:
+        record_field(
             fields,
+            evidence,
             "avg_total",
-            str(avg_match.value),
+            avg_value,
             confidence=avg_match.confidence,
-            rule=avg_match.rule or "avg_total_match",
-            snippet=avg_match.snippet,
-            source_url=source_url,
+            rule_id=avg_rule,
+            snippet=avg_snippet,
+            source_url=documents[0].url if documents else "",
         )
 
-    min_avg, min_rule, min_snippet = _extract_min_average(normalized)
-    if min_avg:
-        _set_field(
-            fields,
-            "min_avg_final",
-            min_avg,
-            confidence="high",
-            rule=min_rule,
-            snippet=min_snippet,
-            source_url=source_url,
+    for document in documents:
+        text = normalize_text(document.text)
+        if not text:
+            continue
+
+        min_avg, min_rule, min_snippet = extract_min_average(text)
+        if min_avg:
+            record_field(fields, evidence, "min_avg_final", min_avg, confidence="high", rule_id=min_rule, snippet=min_snippet, source_url=document.url)
+
+        competitive_text, competitive_floor, competitive_snippet = extract_competitive(text)
+        if competitive_text:
+            record_field(fields, evidence, "competitive_final", competitive_text, confidence="medium", rule_id="competitive_context", snippet=competitive_snippet, source_url=document.url)
+        if competitive_floor:
+            record_field(fields, evidence, "competitive_floor_numeric", competitive_floor, confidence="low", rule_id="competitive_floor", snippet=competitive_snippet, source_url=document.url)
+
+        english_req, english_min, english_snippet = extract_courses_and_min(text, ENGLISH_PATTERNS, fallback_label="English Language Arts", rule_prefix="english")
+        if english_req:
+            record_field(fields, evidence, "english_req", english_req, confidence="high", rule_id="english_course_parse", snippet=english_snippet, source_url=document.url)
+        if english_min:
+            record_field(fields, evidence, "english_min", english_min, confidence="high", rule_id="english_min_parse", snippet=english_snippet, source_url=document.url)
+
+        math_req, math_min, math_snippet = extract_courses_and_min(text, MATH_PATTERNS, fallback_label="Mathematics", rule_prefix="math")
+        if math_req:
+            record_field(fields, evidence, "math_req", math_req, confidence="high", rule_id="math_course_parse", snippet=math_snippet, source_url=document.url)
+        if math_min:
+            record_field(fields, evidence, "math_min", math_min, confidence="high", rule_id="math_min_parse", snippet=math_snippet, source_url=document.url)
+
+        social_req, social_min, social_snippet = extract_courses_and_min(text, SOCIAL_PATTERNS, fallback_label="Social Studies", rule_prefix="social")
+        if social_req:
+            record_field(fields, evidence, "social_req", social_req, confidence="medium", rule_id="social_course_parse", snippet=social_snippet, source_url=document.url)
+        if social_min:
+            record_field(fields, evidence, "social_min", social_min, confidence="medium", rule_id="social_min_parse", snippet=social_snippet, source_url=document.url)
+
+        science_req, science_min, science_snippet, science_flags = extract_science_details(text)
+        if science_req:
+            record_field(fields, evidence, "science_req", science_req, confidence="high", rule_id="science_course_parse", snippet=science_snippet, source_url=document.url)
+        if science_min:
+            record_field(fields, evidence, "science_min", science_min, confidence="high", rule_id="science_min_parse", snippet=science_snippet, source_url=document.url)
+        for flag_name, flag_value in science_flags.items():
+            if flag_value:
+                record_field(fields, evidence, flag_name, flag_value, confidence="high", rule_id="science_flag_parse", snippet=science_snippet, source_url=document.url)
+
+        elective_qty, elective_pool, elective_snippet = extract_elective_details(text)
+        if elective_qty:
+            record_field(fields, evidence, "elective_qty", elective_qty, confidence="medium", rule_id="elective_qty_parse", snippet=elective_snippet, source_url=document.url)
+        if elective_pool:
+            record_field(fields, evidence, "elective_pool", elective_pool, confidence="medium", rule_id="elective_pool_parse", snippet=elective_snippet, source_url=document.url)
+
+        doc_has_core_requirement_signal = bool(
+            english_req
+            or math_req
+            or social_req
+            or science_req
+            or elective_qty
+            or min_avg
+            or competitive_text
+            or has_post_secondary_pathway_signal(text)
+            or has_requirement_context(text, document.url)
+            or re.search(r"\b(?:meet|satisfy)\s+(?:their\s+)?academic requirements\b", text, flags=re.I)
         )
 
-    competitive_text, competitive_floor, competitive_snippet = _extract_competitive(normalized)
-    if competitive_text:
-        _set_field(
+        if doc_has_core_requirement_signal:
+            math_assessment_flag, assessment_snippet = detect_math_assessment(text)
+            if math_assessment_flag:
+                record_field(fields, evidence, "math_assessment_flag", math_assessment_flag, confidence="high", rule_id="math_assessment_detect", snippet=assessment_snippet, source_url=document.url)
+
+            elp_tests, elp_snippet = extract_elp_tests(text)
+            if elp_tests:
+                record_field(fields, evidence, "elp_tests_mentioned", elp_tests, confidence="medium", rule_id="elp_test_detect", snippet=elp_snippet, source_url=document.url)
+
+            if has_high_school_requirement_signal(text):
+                record_field(fields, evidence, "hs_diploma_req", "Yes", confidence="medium", rule_id="hs_diploma_signal", snippet=text[:220], source_url=document.url)
+
+            req_base, req_notes, req_conf = derive_requirement_type(
+                text,
+                has_subject_requirements=bool(english_req or math_req or social_req or science_req),
+                has_min_average=bool(min_avg),
+            )
+            req_value = compose_requirement_type(req_base, req_notes)
+            if req_value:
+                record_field(fields, evidence, "requirement_type", req_value, confidence=req_conf, rule_id="requirement_type_normalize", snippet=text[:240], source_url=document.url)
+
+    if not normalize_field(fields["math_assessment_flag"].value):
+        if normalize_field(fields["math_req"].value):
+            record_field(fields, evidence, "math_assessment_flag", "No", confidence="low", rule_id="math_assessment_default_no", snippet=fields["math_req"].snippet, source_url=fields["math_req"].source_url)
+
+    if not normalize_field(fields["hs_diploma_req"].value):
+        if any(normalize_field(fields[key].value) for key in ("english_req", "math_req", "science_req", "social_req")):
+            record_field(fields, evidence, "hs_diploma_req", "Yes", confidence="low", rule_id="hs_diploma_subject_default", snippet=fields["requirement_type"].snippet, source_url=fields["requirement_type"].source_url)
+    if not normalize_field(fields["hs_diploma_req"].value):
+        if has_post_secondary_pathway_signal(combined) and not any(
+            normalize_field(fields[key].value) for key in ("english_req", "math_req", "science_req", "social_req")
+        ):
+            record_field(
+                fields,
+                evidence,
+                "hs_diploma_req",
+                "No",
+                confidence="medium",
+                rule_id="hs_diploma_post_secondary_pathway",
+                snippet=combined[:220],
+                source_url=documents[0].url if documents else None,
+            )
+
+    inferred_avg_total, inferred_confidence, inferred_rule, inferred_snippet, inferred_source = infer_avg_total_from_fields(fields)
+    if inferred_avg_total:
+        record_field(
             fields,
-            "competitive_final",
-            competitive_text,
-            confidence="medium",
-            rule="competitive_keyword_context",
-            snippet=competitive_snippet,
-            source_url=source_url,
-        )
-    if competitive_floor:
-        _set_field(
-            fields,
-            "competitive_floor_numeric",
-            competitive_floor,
-            confidence="low",
-            rule="competitive_floor_parse",
-            snippet=competitive_snippet,
-            source_url=source_url,
+            evidence,
+            "avg_total",
+            inferred_avg_total,
+            confidence=inferred_confidence or "medium",
+            rule_id=inferred_rule,
+            snippet=inferred_snippet,
+            source_url=inferred_source,
         )
 
-    english_req, english_min, english_snippet = _extract_subject_value(
-        normalized,
-        subject_pattern=r"\benglish(?:\s+language\s+arts)?\b",
-        subject_guard=r"english(?:\s+language\s+arts)?(?:\s*30(?:-[12])?)?",
-        code_pattern=r"\b((?:20|30)-[12])\b",
-        prefix="English",
-        unspecified_value="English (unspecified)",
-    )
-    if english_req:
-        _set_field(
-            fields,
-            "english_req",
-            english_req,
-            confidence="medium",
-            rule="english_subject_code_parse",
-            snippet=english_snippet,
-            source_url=source_url,
-        )
-    if english_min:
-        _set_field(
-            fields,
-            "english_min",
-            english_min,
-            confidence="medium",
-            rule="english_min_percent_parse",
-            snippet=english_snippet,
-            source_url=source_url,
-        )
-
-    math_req, math_min, math_snippet = _extract_subject_value(
-        normalized,
-        subject_pattern=r"\bmath(?:ematics)?\b",
-        subject_guard=r"math(?:ematics)?(?:\s*(?:20|30)-[12]|\s*31)?",
-        code_pattern=r"\b((?:20|30)-[12]|31)\b",
-        prefix="Math",
-        unspecified_value="Math (unspecified)",
-    )
-    if math_req:
-        _set_field(
-            fields,
-            "math_req",
-            math_req,
-            confidence="medium",
-            rule="math_subject_code_parse",
-            snippet=math_snippet,
-            source_url=source_url,
-        )
-    if math_min:
-        _set_field(
-            fields,
-            "math_min",
-            math_min,
-            confidence="medium",
-            rule="math_min_percent_parse",
-            snippet=math_snippet,
-            source_url=source_url,
-        )
-
-    social_req, social_min, social_snippet = _extract_subject_value(
-        normalized,
-        subject_pattern=r"\b(social(?:\s+studies)?|aboriginal studies)\b",
-        subject_guard=r"(?:social(?:\s+studies)?|aboriginal studies)(?:\s*30(?:-[12])?)?",
-        code_pattern=r"\b((?:20|30)-[12]|30)\b",
-        prefix="Social Studies",
-        unspecified_value="Social Studies (unspecified)",
-    )
-    if social_req:
-        _set_field(
-            fields,
-            "social_req",
-            social_req,
-            confidence="low",
-            rule="social_subject_code_parse",
-            snippet=social_snippet,
-            source_url=source_url,
-        )
-    if social_min:
-        _set_field(
-            fields,
-            "social_min",
-            social_min,
-            confidence="low",
-            rule="social_min_percent_parse",
-            snippet=social_snippet,
-            source_url=source_url,
-        )
-
-    science_req, science_min, science_snippet = _extract_science_value(normalized)
-    if science_req:
-        _set_field(
-            fields,
-            "science_req",
-            science_req,
-            confidence="medium",
-            rule="science_subject_parse",
-            snippet=science_snippet,
-            source_url=source_url,
-        )
-    if science_min:
-        _set_field(
-            fields,
-            "science_min",
-            science_min,
-            confidence="medium",
-            rule="science_min_percent_parse",
-            snippet=science_snippet,
-            source_url=source_url,
-        )
-
-    elective_qty, elective_pool, elective_snippet = _extract_elective_qty_pool(normalized)
-    if elective_qty:
-        _set_field(
-            fields,
-            "elective_qty",
-            elective_qty,
-            confidence="medium",
-            rule="elective_qty_group_pattern",
-            snippet=elective_snippet,
-            source_url=source_url,
-        )
-    if elective_pool:
-        _set_field(
-            fields,
-            "elective_pool",
-            elective_pool,
-            confidence="medium",
-            rule="elective_pool_group_pattern",
-            snippet=elective_snippet,
-            source_url=source_url,
-        )
-
-    has_subjects = any(
-        fields[key].value
-        for key in ("english_req", "math_req", "social_req", "science_req")
-    )
-    req_type, req_conf = _derive_requirement_type(
-        normalized,
-        has_subject_requirements=bool(has_subjects),
-        has_min_average=bool(min_avg),
-        institution_name=normalize_text(institution_name).lower(),
-    )
-    if req_type:
-        _set_field(
-            fields,
-            "requirement_type",
-            req_type,
-            confidence=req_conf,
-            rule="requirement_type_derivation",
-            snippet=normalized[:240],
-            source_url=source_url,
-        )
-
-    return ProgramFieldExtraction(fields=fields)
+    return ProgramFieldExtraction(fields=fields, evidence=evidence)
