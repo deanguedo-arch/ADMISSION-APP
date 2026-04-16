@@ -428,11 +428,12 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
   ) | Where-Object { -not (Is-Blank $_) }
   $hasCourseMinimumSignal = @($hasCourseMinimumSignal)
   $hasOverallAverageSignal = (-not (Is-Blank (Get-PropValue -row $row -names @("Min_Avg_Final")))) -or (-not (Is-Blank (Get-PropValue -row $row -names @("Avg_Total"))))
+  $preferAcademicRoute = ($hasSubjectSignal.Count -gt 0) -or $hasOverallAverageSignal
 
   $mathAssessment = (Normalize-Text $row.Math_Assessment_Flag).ToLowerInvariant()
 
   if (-not $text -or $lower -eq "unknown") {
-    if ($mathAssessment -eq "yes") { return "placement_assessment" }
+    if ($mathAssessment -eq "yes" -and -not $preferAcademicRoute) { return "placement_assessment" }
     if ($hasSubjectSignal.Count -gt 0) {
       if ((-not $hasOverallAverageSignal) -and $hasCourseMinimumSignal.Count -gt 0) {
         return "course_min_only"
@@ -443,6 +444,14 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
   }
 
   if ($mathAssessment -eq "yes" -and -not $lower.StartsWith("placement_assessment")) {
+    if ($preferAcademicRoute) {
+      $notesIndex = $lower.IndexOf("; notes:")
+      $suffix = if ($notesIndex -ge 0) { $text.Substring($notesIndex) } else { "" }
+      if ((-not $hasOverallAverageSignal) -and $hasCourseMinimumSignal.Count -gt 0) {
+        return "course_min_only$suffix"
+      }
+      return "alberta_high_school_courses$suffix"
+    }
     $notesIndex = $lower.IndexOf("; notes:")
     if ($notesIndex -ge 0) {
       return "placement_assessment$($text.Substring($notesIndex))"
@@ -450,11 +459,23 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
     return "placement_assessment"
   }
 
+  if ($preferAcademicRoute -and $lower.StartsWith("placement_assessment")) {
+    $notesIndex = $lower.IndexOf("; notes:")
+    $suffix = if ($notesIndex -ge 0) { $text.Substring($notesIndex) } else { "" }
+    if ((-not $hasOverallAverageSignal) -and $hasCourseMinimumSignal.Count -gt 0) {
+      return "course_min_only$suffix"
+    }
+    return "alberta_high_school_courses$suffix"
+  }
+
   if ($lower -match "^(alberta_high_school_courses|course_min_only|placement_assessment|post_secondary_pathway|regular_admission|first_year_admission)(;|$)") {
     return $text
   }
 
   if ($lower -match "placement|assessment|accuplacer|casper") {
+    if ($preferAcademicRoute) {
+      return "alberta_high_school_courses; notes: $text"
+    }
     return "placement_assessment; notes: $text"
   }
 
@@ -603,6 +624,57 @@ function Test-SubjectCountsAsCourse([object]$row, [string]$subject) {
     $mode = Get-InferredRequirementMode -subject $subject -value $requirement
   }
   return $mode -eq "course"
+}
+
+function Get-DisplayForHighSchoolValue([object]$row) {
+  $credential = (Normalize-Text $row.Credential_Type).ToLowerInvariant()
+  $requirementType = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+  $hsDiploma = (Normalize-Text $row.HS_Diploma_Req).ToLowerInvariant()
+  $englishMode = (Normalize-Text $row.English_Requirement_Mode).ToLowerInvariant()
+  $mathMode = (Normalize-Text $row.Math_Requirement_Mode).ToLowerInvariant()
+  $programUrl = (Normalize-Text $row.Program_URL).ToLowerInvariant()
+
+  if ($hsDiploma -eq "no") { return "No" }
+  if ($requirementType.StartsWith("post_secondary_pathway")) { return "No" }
+
+  $hasCourseSignals = @(
+    $(if (Test-SubjectCountsAsCourse -row $row -subject "English") { $row.English_Req } else { "" }),
+    $(if (Test-SubjectCountsAsCourse -row $row -subject "Math") { $row.Math_Req } else { "" }),
+    $row.Social_Req,
+    $row.Science_Req
+  ) | Where-Object { -not (Is-Blank $_) }
+  $hasCourseSignals = @($hasCourseSignals)
+  $hasStructuredAcademicSignal = `
+    $hasCourseSignals.Count -gt 0 -or `
+    $requirementType.StartsWith("alberta_high_school_courses") -or `
+    $requirementType.StartsWith("course_min_only")
+  $hasAverageContext = (-not (Is-Blank $row.Min_Avg_Final)) -or (-not (Is-Blank $row.Avg_Total))
+  $hasAverageOnly = $hasAverageContext -and (-not $hasStructuredAcademicSignal)
+  $isAssessmentOrGateOnly = `
+    $englishMode -eq "elp" -or `
+    $mathMode -eq "placement_assessment" -or `
+    $mathMode -eq "other_gate" -or `
+    $requirementType.StartsWith("placement_assessment")
+  $isMacewanDepartmentContinuation = `
+    $programUrl.Contains("macewan.ca/academics/academic-departments/") -and `
+    ($programUrl -match "(-major|-honours)/?$")
+
+  if ($isMacewanDepartmentContinuation) { return "No" }
+
+  if ($credential -eq "other" -and -not $hasStructuredAcademicSignal) {
+    return "No"
+  }
+
+  if (
+    (-not $hasStructuredAcademicSignal) -and (
+      $hasAverageOnly -or
+      $isAssessmentOrGateOnly
+    )
+  ) {
+    return "No"
+  }
+
+  return "Yes"
 }
 
 function Normalize-SubjectRequirementFields([object]$row) {
@@ -1351,6 +1423,7 @@ $canonical = foreach ($r in $rows) {
     HS_Diploma_Req       = $r.HS_Diploma_Req
     Math_Assessment_Flag = $r.Math_Assessment_Flag
     ELP_Tests_Mentioned  = $r.ELP_Tests_Mentioned
+    Display_For_High_School = ""
   }
 }
 
@@ -1422,6 +1495,7 @@ if ($DropNaitNonPrograms -and $naitSeedRowsByKey.Count -gt 0) {
       HS_Diploma_Req       = "Unknown"
       Math_Assessment_Flag = "Unknown"
       ELP_Tests_Mentioned  = ""
+      Display_For_High_School = ""
     }
   }
 
@@ -1498,6 +1572,7 @@ if ($DropNorQuestNonPrograms -and $norquestSeedRowsByKey.Count -gt 0) {
       HS_Diploma_Req       = "Unknown"
       Math_Assessment_Flag = "Unknown"
       ELP_Tests_Mentioned  = ""
+      Display_For_High_School = ""
     }
   }
 
@@ -1990,6 +2065,8 @@ foreach ($row in @($canonical)) {
     $row.HS_Diploma_Req = "No"
     $row.Math_Assessment_Flag = "No"
   }
+
+  $row.Display_For_High_School = Get-DisplayForHighSchoolValue -row $row
 }
 
 if ($DropExactDuplicates) {

@@ -197,7 +197,7 @@
       "math_requirement_mode": "course",
       "math_assessment_flag": "Yes",
       "bio_30_req": "Yes",
-      "requirement_type": "placement_assessment",
+      "requirement_type": "alberta_high_school_courses",
       "elp_tests_mentioned": "IELTS; TOEFL; Duolingo; CAEL; Pearson"
     },
     "expected_contains": {

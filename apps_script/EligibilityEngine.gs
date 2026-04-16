@@ -42,6 +42,7 @@ function evaluateProgramsForStudent_(opts) {
     const programUrl = getStr_(r, idx, "Program_URL");
 
     if (!institution || !program) return;
+    if (typeof shouldDisplayForHighSchool_ === "function" && !shouldDisplayForHighSchool_(r, idx)) return;
     if (status && status.toLowerCase() !== "active") return;
 
     const reasons = [];

@@ -31,6 +31,7 @@ OUTPUT_COLUMNS = [
     "Institution",
     "Program",
     "Credential_Type",
+    "Display_For_High_School",
     "Status",
     "Program_URL",
     "English_Requirement_Mode",

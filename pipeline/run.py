@@ -25,6 +25,7 @@ try:
         ProgramFieldExtraction,
         SourceDocument,
         normalize_field,
+        subject_field_is_course_mode,
     )
 except ImportError:
     from pipeline.adapters.base import (
@@ -35,6 +36,7 @@ except ImportError:
         ProgramFieldExtraction,
         SourceDocument,
         normalize_field,
+        subject_field_is_course_mode,
     )
 
 try:
@@ -1050,6 +1052,22 @@ def normalize_assessment_requirement_type(
     math_assessment = normalize_text(fields.get("math_assessment_flag", ExtractedField(value=None)).value).lower()
     requirement_type = normalize_text(fields.get("requirement_type", ExtractedField(value=None)).value)
     if math_assessment != "yes":
+        return extraction
+    has_course_requirements = any(
+        (
+            subject_field_is_course_mode(fields, "english"),
+            subject_field_is_course_mode(fields, "math"),
+            normalize_text(fields.get("social_req", ExtractedField(value=None)).value),
+            normalize_text(fields.get("science_req", ExtractedField(value=None)).value),
+        )
+    )
+    has_average_context = any(
+        (
+            normalize_text(fields.get("min_avg_final", ExtractedField(value=None)).value),
+            normalize_text(fields.get("avg_total", ExtractedField(value=None)).value),
+        )
+    )
+    if has_course_requirements or has_average_context:
         return extraction
     if requirement_type.lower().startswith("placement_assessment"):
         return extraction

@@ -26,6 +26,7 @@ REQUIRED_HEADERS = [
     "Math_Requirement_Mode",
     "Requirement_Type",
     "Math_Assessment_Flag",
+    "Display_For_High_School",
 ]
 
 NUMERIC_FIELDS = [
@@ -177,6 +178,7 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
     exact_duplicate_counter: Counter[tuple[str, ...]] = Counter()
     invalid_requirement_modes: list[tuple[int, str, str, str]] = []
     invalid_mode_value_combos: list[tuple[int, str]] = []
+    invalid_display_values: list[tuple[int, str, str]] = []
     institution_rows: Counter[str] = Counter()
     institution_blank_counts: dict[str, Counter[str]] = defaultdict(Counter)
     shell_rows_by_institution: Counter[str] = Counter()
@@ -185,6 +187,9 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
     for i, row in enumerate(rows, start=2):
         institution = normalize_text(row.get("Institution")) or "<blank>"
         institution_rows[institution] += 1
+        display_value = normalize_text(row.get("Display_For_High_School"))
+        if display_value not in {"Yes", "No"}:
+            invalid_display_values.append((i, normalize_text(row.get("Program")), display_value or "<blank>"))
 
         url = normalize_text(row.get("Program_URL"))
         if not url:
@@ -247,7 +252,14 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
 
         math_assessment = normalize_text(row.get("Math_Assessment_Flag")).lower()
         requirement_type = normalize_text(row.get("Requirement_Type")).lower()
-        if math_assessment == "yes" and requirement_type and not requirement_type.startswith("placement_assessment"):
+        if (
+            math_assessment == "yes"
+            and requirement_type
+            and not requirement_type.startswith("placement_assessment")
+            and not has_subject_requirements(row)
+            and is_blankish(row.get("Min_Avg_Final"))
+            and is_blankish(row.get("Avg_Total"))
+        ):
             assessment_type_mismatch_rows.append(
                 (
                     i,
@@ -337,6 +349,16 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
             f"({len(invalid_requirement_modes)} rows). Examples: {samples}"
         )
 
+    if invalid_display_values:
+        samples = "; ".join(
+            f"row {row} {program}='{value}'"
+            for row, program, value in invalid_display_values[:12]
+        )
+        errors.append(
+            "Invalid Display_For_High_School values found "
+            f"({len(invalid_display_values)} rows). Examples: {samples}"
+        )
+
     if invalid_mode_value_combos:
         samples = "; ".join(
             f"row {row} {detail}"
@@ -354,6 +376,7 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
         )
         errors.append(
             "Math_Assessment_Flag=Yes requires Requirement_Type to start with placement_assessment "
+            "when no academic subject/average context is present "
             f"({len(assessment_type_mismatch_rows)} rows). Examples: {samples}"
         )
 

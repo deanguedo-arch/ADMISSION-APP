@@ -99,6 +99,8 @@ class ProgramFieldExtraction:
 
 
 ENGLISH_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\b(?:english\s+language\s+arts|english|ela)\s*20-1\b", "English 20-1"),
+    (r"\b(?:english\s+language\s+arts|english|ela)\s*20-2\b", "English 20-2"),
     (r"\b(?:english\s+language\s+arts|english|ela)\s*30-1\b", "English 30-1"),
     (r"\b(?:english\s+language\s+arts|english|ela)\s*30-2\b", "English 30-2"),
 )
@@ -865,10 +867,10 @@ def derive_requirement_type(
 ) -> tuple[str | None, list[str], str]:
     broad_source = is_broad_accessory_note_source(source_url)
     notes = extract_note_tokens(text, source_url=source_url)
+    if has_subject_requirements or has_min_average:
+        return "alberta_high_school_courses", notes, ("high" if notes or has_assessment_pathway_signal(text, source_url=source_url) else "medium")
     if has_assessment_pathway_signal(text, source_url=source_url):
         return "placement_assessment", notes, "high"
-    if has_subject_requirements or has_min_average:
-        return "alberta_high_school_courses", notes, ("high" if notes else "medium")
     if not broad_source and has_post_secondary_pathway_signal(text):
         return "regular_admission", notes, "medium"
     if not broad_source and re.search(r"\bregular admission\b", text, flags=re.I):
@@ -879,7 +881,7 @@ def derive_requirement_type(
 def has_high_school_requirement_signal(text: str) -> bool:
     return bool(
         re.search(
-            r"\b(?:grade 12|high school|english language arts 30|mathematics 30|social studies 30|biology 30|chemistry 30|physics 30|science 30)\b",
+            r"\b(?:grade 12|high school|english language arts (?:20|30)|mathematics (?:20|30)|social studies 30|biology 30|chemistry 30|physics 30|science 30)\b",
             text,
             flags=re.I,
         )

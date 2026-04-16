@@ -262,6 +262,11 @@ function getSubjectRequirementText_(subject, row, idx) {
   return req;
 }
 
+function shouldDisplayForHighSchool_(row, idx) {
+  const token = String(getStr_(row, idx, "Display_For_High_School") || "").trim().toLowerCase();
+  return token !== "no";
+}
+
 function toNumber_(v) {
   if (v === null || v === undefined) return NaN;
   const s = String(v).trim();
@@ -575,6 +580,7 @@ function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
     const institution = getStr_(row, idx, "Institution");
     const program = getStr_(row, idx, "Program");
     if (!institution || !program) continue;
+    if (!shouldDisplayForHighSchool_(row, idx)) continue;
 
     const status = getStr_(row, idx, "Status");
     if (status && status.toLowerCase() !== "active") continue;
@@ -610,6 +616,7 @@ function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
       requirementType: requirementType || "",
       sourceUrl,
       datasetDate: datasetDate || "",
+      displayForHighSchool: true,
       avgTotal: isFinite(avgTotal) && avgTotal > 0 ? Number(avgTotal) : null,
       englishRequirement: englishRequirement || "",
       englishRequirementMode: englishRequirementMode || "",
@@ -1690,6 +1697,7 @@ function evaluateProgramsForStudent_(opts) {
     const programUrl = getStr_(r, idx, "Program_URL");
 
     if (!institution || !program) return;
+    if (typeof shouldDisplayForHighSchool_ === "function" && !shouldDisplayForHighSchool_(r, idx)) return;
     if (status && status.toLowerCase() !== "active") return;
 
     const reasons = [];

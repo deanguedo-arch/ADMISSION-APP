@@ -1491,3 +1491,44 @@ Keep entries short and append-only.
   - `node .\tools\check-first-load-ux.js`
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
+
+## 2026-04-16 - High-school-only display filtering + NorQuest route recovery
+
+- Added canonical `Display_For_High_School` classification in `clean-master.ps1` so the app can default-hide non-direct-entry rows without adding a user-facing audience toggle.
+- Tightened the hide logic to keep real direct-entry standalone programs like `MacEwan | Acupuncture`, while hiding:
+  - post-secondary/pathway rows (`HS_Diploma_Req = No` / `post_secondary_pathway`)
+  - MacEwan academic-department major/honours continuations
+  - `Other` rows with no structured high-school route
+  - ELP/assessment-only rows with no real high-school admissions path
+- Fixed NorQuest direct-entry recovery:
+  - `Digital Information Careers` now stays a course-based high-school route (`course_min_only`)
+  - `Machine Learning Analyst` now recovers from fetch misses through a narrow `PROGRAM_OVERRIDES.csv` proof-text override and remains visible as `alberta_high_school_courses`
+- Wired the web app to respect `Display_For_High_School` in both Explorer and Eligibility Results:
+  - `apps_script/EligibilityProgramsData.gs`
+  - `apps_script/EligibilityEngine.gs`
+- Added regression coverage:
+  - `tools/check-high-school-display-flag.py`
+  - `tools/check-web-high-school-filter.js`
+- Added CI coverage in `.github/workflows/dataset-validation.yml` for the new canonical/web filter checks.
+- Rebuilt canonical + snapshot outputs:
+  - canonical rows: `325`
+  - `Display_For_High_School = Yes`: `197`
+  - `Display_For_High_School = No`: `128`
+  - review queue rows: `98`
+- Verification PASS:
+  - `python .\pipeline\check_program_field_fixtures.py`
+  - `python .\tools\check-high-school-display-flag.py`
+  - `python .\tools\validate-dataset.py --input .\data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `python .\tools\build-review-queue.py --input .\data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `node .\tools\check-web-high-school-filter.js`
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `node .\tools\check-science-requirement-parsing.js`
+  - `node .\tools\check-placement-confidence.js`
+  - `node .\tools\check-explorer-program-structure.js`
+  - `node .\tools\check-course-input-upsert.js`
+  - `node .\tools\check-first-load-ux.js`
+  - `node .\tools\check-admission-route-display.js`
+  - `node .\tools\check-offline-bridge-explorer-bootstrap.js`
+  - `node .\tools\check-details-panel-height-sync.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`

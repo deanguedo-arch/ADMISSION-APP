@@ -142,6 +142,7 @@ $expectedByFile = @{
     "inferRequirementMode_",
     "getSubjectRequirementMode_",
     "getSubjectRequirementText_",
+    "shouldDisplayForHighSchool_",
     "toNumber_",
     "normalizeDateYmd_",
     "resolveDatasetDateFromPrograms_",
