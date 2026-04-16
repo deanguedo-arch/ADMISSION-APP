@@ -141,6 +141,35 @@ assert(
   "Expected minimum-mark bullet"
 );
 
+const ualbertaEducation = buildAdmissionRouteDisplay_({
+  requirementType:
+    "alberta_high_school_courses; notes: 3 admission subjects must be from Groups A or C (UAlberta chart); notes: 1 more from Groups A/B/C (some substitutions may apply)",
+  requirements: [{ label: "English", requirement: "English 30-1", minMark: 50 }],
+  average: { totalCourses: 5 },
+  electives: { allowedGroups: ["A", "B", "C"] },
+});
+
+assert(
+  ualbertaEducation.bullets.includes("Admission average uses 5 subjects"),
+  "Expected UAlberta Education average-course-count bullet"
+);
+assert(
+  ualbertaEducation.bullets.includes("English: English 30-1"),
+  "Expected UAlberta Education English bullet"
+);
+assert(
+  !ualbertaEducation.bullets.includes("Remaining 4 subjects can come from Groups A/B/C"),
+  "Expected explicit UAlberta group rules to replace the generic remaining-subject bullet"
+);
+assert(
+  ualbertaEducation.bullets.includes("3 admission subjects must be from Groups A or C (UAlberta chart)"),
+  "Expected UAlberta Education group-A/C bullet"
+);
+assert(
+  ualbertaEducation.bullets.includes("1 more from Groups A/B/C (some substitutions may apply)"),
+  "Expected UAlberta Education final-subject bullet"
+);
+
 const placement = buildAdmissionRouteDisplay_({
   requirementType: "placement_assessment",
   requirements: [],

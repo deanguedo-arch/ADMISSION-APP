@@ -555,6 +555,21 @@ function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
     const competitive = getStr_(row, idx, "Competitive_Final");
     const sourceUrl = normalizeHttpUrlForOutput_(getStr_(row, idx, "Program_URL"));
     const requirementType = getStr_(row, idx, "Requirement_Type");
+    const avgTotalRaw = getStr_(row, idx, "Avg_Total");
+    const avgTotalNumber = toNumber_(avgTotalRaw);
+    const avgTotal = isFinite(avgTotalNumber) ? avgTotalNumber : parseCountToken_(avgTotalRaw);
+    const englishRequirement = getSubjectRequirementText_("english", row, idx);
+    const englishRequirementMode = getSubjectRequirementMode_("english", row, idx);
+    const englishMin = toNumber_(unifyEnglishMin_(row, idx));
+    const mathRequirement = getSubjectRequirementText_("math", row, idx);
+    const mathRequirementMode = getSubjectRequirementMode_("math", row, idx);
+    const mathMin = toNumber_(getStr_(row, idx, "Math_Min"));
+    const scienceRequirement = getStr_(row, idx, "Science_Req");
+    const scienceMin = toNumber_(getStr_(row, idx, "Science_Min"));
+    const electiveNeedRaw = getStr_(row, idx, "Elective_Need");
+    const electiveNeed = parseCountToken_(electiveNeedRaw);
+    const electiveGroupsRaw = getStr_(row, idx, "Elective_Groups");
+    const allowedGroups = electiveGroupsRaw ? parseAllowedGroups_(electiveGroupsRaw) : [];
 
     out.push({
       key: makeExplorerProgramKey_(institution, program, credential, r),
@@ -566,6 +581,17 @@ function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
       requirementType: requirementType || "",
       sourceUrl,
       datasetDate: datasetDate || "",
+      avgTotal: isFinite(avgTotal) && avgTotal > 0 ? Number(avgTotal) : null,
+      englishRequirement: englishRequirement || "",
+      englishRequirementMode: englishRequirementMode || "",
+      englishMin: isFinite(englishMin) && englishMin > 0 ? Number(englishMin) : null,
+      mathRequirement: mathRequirement || "",
+      mathRequirementMode: mathRequirementMode || "",
+      mathMin: isFinite(mathMin) && mathMin > 0 ? Number(mathMin) : null,
+      scienceRequirement: scienceRequirement || "",
+      scienceMin: isFinite(scienceMin) && scienceMin > 0 ? Number(scienceMin) : null,
+      electiveNeed: isFinite(electiveNeed) && electiveNeed > 0 ? Number(electiveNeed) : null,
+      allowedGroups,
     });
   }
 

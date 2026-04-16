@@ -449,9 +449,16 @@
       }
 
       .mode-tab.active {
-        border-color: #8bbfaa;
-        background: #edf7f2;
-        color: var(--brand-dark);
+        border-color: var(--brand-dark);
+        background: linear-gradient(180deg, #238c68 0%, #176f52 100%);
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(23, 111, 82, 0.16);
+      }
+
+      .mode-tab.active .mode-count {
+        border-color: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
       }
 
       .mode-count {
@@ -524,14 +531,14 @@
       }
 
       .summary-filter.is-active {
-        border-color: #8fbfaa;
-        background: #eaf6f0;
-        box-shadow: 0 1px 0 rgba(17, 102, 76, 0.14);
+        border-color: var(--brand-dark);
+        background: linear-gradient(180deg, #eff9f4 0%, #def2e8 100%);
+        box-shadow: 0 10px 18px rgba(23, 111, 82, 0.12), inset 3px 0 0 var(--brand);
       }
 
       .stat .label {
         font-size: 0.75rem;
-        color: var(--ink-soft);
+        color: #49645b;
       }
 
       .stat .value {
@@ -539,6 +546,7 @@
         font-family: "Rubik", sans-serif;
         font-size: 1.04rem;
         font-weight: 700;
+        color: #21473a;
       }
 
       .stat.good .value {

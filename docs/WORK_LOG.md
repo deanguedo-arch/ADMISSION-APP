@@ -1439,3 +1439,32 @@ Keep entries short and append-only.
   - `node .\tools\check-web-auth-bootstrap.js`
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
+
+## 2026-04-16 - Explorer detail fidelity + duplicate input cleanup
+
+- Fixed Explorer detail rendering so it carries structured subject requirements from the canonical dataset instead of flattening to loose note text only.
+  - UAlberta `Education (First-Year)` now shows the 5-subject average, `English 30-1`, and the faculty-specific group split in `Admission Route`.
+- Added structured explorer payload fields from Apps Script bootstrap:
+  - `avgTotal`
+  - subject requirements/minimums
+  - requirement modes
+  - allowed elective groups
+- Tightened `Admission Route` bullets so explicit group-count notes replace the generic fallback bullet when the source row already provides a precise distribution.
+- Changed duplicate named-course behavior in the input table from silent dedupe to update-in-place:
+  - entering the same course again now updates the existing row mark and removes the duplicate row
+  - the UI surfaces a short status message instead of relying on `latest entry wins`
+- Strengthened active-state styling for result mode tabs and summary filters.
+- Added regression checks:
+  - `tools/check-explorer-program-structure.js`
+  - `tools/check-course-input-upsert.js`
+- Rebuilt `docs/` snapshot after the web-app change.
+- Verification PASS:
+  - `node .\tools\check-first-load-ux.js`
+  - `node .\tools\check-explorer-program-structure.js`
+  - `node .\tools\check-course-input-upsert.js`
+  - `node .\tools\check-admission-route-display.js`
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `node .\tools\check-science-requirement-parsing.js`
+  - `node .\tools\check-placement-confidence.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`

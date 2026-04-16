@@ -467,9 +467,16 @@
       }
 
       .mode-tab.active {
-        border-color: #8bbfaa;
-        background: #edf7f2;
-        color: var(--brand-dark);
+        border-color: var(--brand-dark);
+        background: linear-gradient(180deg, #238c68 0%, #176f52 100%);
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(23, 111, 82, 0.16);
+      }
+
+      .mode-tab.active .mode-count {
+        border-color: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
       }
 
       .mode-count {
@@ -542,14 +549,14 @@
       }
 
       .summary-filter.is-active {
-        border-color: #8fbfaa;
-        background: #eaf6f0;
-        box-shadow: 0 1px 0 rgba(17, 102, 76, 0.14);
+        border-color: var(--brand-dark);
+        background: linear-gradient(180deg, #eff9f4 0%, #def2e8 100%);
+        box-shadow: 0 10px 18px rgba(23, 111, 82, 0.12), inset 3px 0 0 var(--brand);
       }
 
       .stat .label {
         font-size: 0.75rem;
-        color: var(--ink-soft);
+        color: #49645b;
       }
 
       .stat .value {
@@ -557,6 +564,7 @@
         font-family: "Rubik", sans-serif;
         font-size: 1.04rem;
         font-weight: 700;
+        color: #21473a;
       }
 
       .stat.good .value {
@@ -6305,6 +6313,40 @@ function boot() {
         setMeetingMode_(!state.meetingMode);
       }
 
+      function buildExplorerRequirements_(item) {
+        const requirements = [];
+        const englishRequirement = String(item && item.englishRequirement || "").trim();
+        const mathRequirement = String(item && item.mathRequirement || "").trim();
+        const scienceRequirement = String(item && item.scienceRequirement || "").trim();
+        const englishMin = toFiniteNumber(item && item.englishMin);
+        const mathMin = toFiniteNumber(item && item.mathMin);
+        const scienceMin = toFiniteNumber(item && item.scienceMin);
+
+        if (englishRequirement) {
+          requirements.push({
+            label: "English",
+            requirement: englishRequirement,
+            minMark: Number.isFinite(englishMin) ? englishMin : NaN,
+          });
+        }
+        if (mathRequirement) {
+          requirements.push({
+            label: "Math",
+            requirement: mathRequirement,
+            minMark: Number.isFinite(mathMin) ? mathMin : NaN,
+          });
+        }
+        if (scienceRequirement) {
+          requirements.push({
+            label: "Science",
+            requirement: scienceRequirement,
+            minMark: Number.isFinite(scienceMin) ? scienceMin : NaN,
+          });
+        }
+
+        return requirements;
+      }
+
       function setExplorerProgramsFromBoot_(bootData) {
         const boot = bootData && typeof bootData === "object" ? bootData : {};
         const source = Array.isArray(boot.explorerPrograms) ? boot.explorerPrograms : [];
@@ -6321,6 +6363,11 @@ function boot() {
           const requirementType = String(item.requirementType || "").trim();
           const sourceUrl = normalizeHttpUrl_(item.sourceUrl || "");
           const datasetDate = toYmdDate_(item.datasetDate || "") || toYmdDate_((boot.dataset && boot.dataset.lastProgramsSyncUtc) || "");
+          const avgTotal = toFiniteNumber(item.avgTotal);
+          const allowedGroups = Array.isArray(item.allowedGroups)
+            ? item.allowedGroups.map((x) => String(x || "").trim().toUpperCase()).filter(Boolean)
+            : [];
+          const requirements = buildExplorerRequirements_(item);
           const key = sanitizeProgramKey(item.key) || `explorer_${i + 1}`;
           out.push({
             key,
@@ -6332,7 +6379,18 @@ function boot() {
             requirementType,
             sourceUrl,
             datasetDate,
-            searchText: `${institution} ${program} ${credential} ${competitiveGuidance} ${requirementType}`.toLowerCase(),
+            requirements,
+            average: {
+              totalCourses: Number.isFinite(avgTotal) ? avgTotal : NaN,
+            },
+            electives: {
+              allowedGroups,
+              ruleSummary: "",
+              selected: [],
+            },
+            searchText: `${institution} ${program} ${credential} ${competitiveGuidance} ${requirementType} ${requirements
+              .map((req) => `${req.label} ${req.requirement}`)
+              .join(" ")}`.toLowerCase(),
           });
         }
         out.sort((a, b) => compareInstitutionProgram(a, b));
@@ -6511,18 +6569,48 @@ function boot() {
         return { key, label };
       }
 
+      function syncNamedRowMark_(row, markValue) {
+        if (!row) return;
+        const markInput = row.querySelector("input.mark-input");
+        const errorEl = row.querySelector(".cell-error");
+        if (!markInput) return;
+        const parsed = parseMarkInput(markValue);
+        if (parsed.ok && !parsed.empty) {
+          markInput.value = parsed.normalized;
+          validateMarkField(markInput, errorEl);
+        }
+      }
+
       function dedupeNamedRowsForActiveRow_(activeRow) {
         if (!activeRow) return;
         const input = activeRow.querySelector('td:nth-child(1) input');
         const token = normalizeCourseToken(input && input.value);
         if (!token) return;
+        const resolved = resolveCourseLabel(input && input.value, "named");
+        if (resolved && input) input.value = resolved.label;
         const rows = Array.from(ui.namedBody.querySelectorAll("tr"));
-        rows.forEach((row) => {
-          if (row === activeRow) return;
+        const existingRow = rows.find((row) => {
+          if (row === activeRow) return false;
           const rowInput = row.querySelector('td:nth-child(1) input');
-          const rowToken = normalizeCourseToken(rowInput && rowInput.value);
-          if (rowToken === token) row.remove();
+          return normalizeCourseToken(rowInput && rowInput.value) === token;
         });
+        if (!existingRow) return;
+
+        const existingInput = existingRow.querySelector('td:nth-child(1) input');
+        if (resolved && existingInput) existingInput.value = resolved.label;
+        const activeMarkInput = activeRow.querySelector("input.mark-input");
+        const parsedActiveMark = parseMarkInput(activeMarkInput && activeMarkInput.value);
+        if (parsedActiveMark.ok && !parsedActiveMark.empty) {
+          syncNamedRowMark_(existingRow, parsedActiveMark.normalized);
+        }
+        activeRow.remove();
+
+        const label = (resolved && resolved.label) || String((existingInput && existingInput.value) || "").trim() || "course";
+        if (parsedActiveMark.ok && !parsedActiveMark.empty) {
+          setStatus(`Updated the existing course row for ${label}.`);
+        } else {
+          setStatus(`Kept the existing course row for ${label}.`);
+        }
       }
 
       function dedupeManualRowsForActiveRow_(activeRow) {
@@ -7856,7 +7944,8 @@ function boot() {
       }
 
       function requirementTypeNoteLabel_(value, baseToken) {
-        const note = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ").toLowerCase();
+        const rawNote = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ");
+        const note = rawNote.toLowerCase();
         const base = normalizeDisplayCopy_(baseToken).replace(/_/g, " ").toLowerCase();
         if (!note || note === base) return "";
         if (note === "post-secondary pathway") return base === "post secondary pathway" ? "" : "Previous post-secondary study may also apply";
@@ -7872,7 +7961,7 @@ function boot() {
         if (/^see (degree|program|department|faculty)$/i.test(note)) {
           return "See the official program page for exact admission details";
         }
-        return sentenceCaseDisplay_(note);
+        return sentenceCaseDisplay_(rawNote);
       }
 
       function formatRequirementTypeForDisplay_(value, fallback) {
@@ -7896,7 +7985,8 @@ function boot() {
       }
 
       function admissionRouteNoteBullet_(value, baseToken) {
-        const note = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ").toLowerCase();
+        const rawNote = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ");
+        const note = rawNote.toLowerCase();
         const base = normalizeDisplayCopy_(baseToken).replace(/_/g, " ").toLowerCase();
         if (!note || note === base || note === "regular admission") return "";
 
@@ -7920,7 +8010,7 @@ function boot() {
         if (/^see (degree|program|department|faculty)$/i.test(note)) {
           return "See the official program page for exact admission details";
         }
-        return sentenceCaseDisplay_(note);
+        return sentenceCaseDisplay_(rawNote);
       }
 
       function buildAdmissionRouteDisplay_(opts) {
@@ -7938,6 +8028,11 @@ function boot() {
         const bullets = [];
         const subjectRequirementBullets = [];
         const minMarks = [];
+        const noteBullets = uniqueStrings(
+          parts
+            .map((part) => admissionRouteNoteBullet_(part, baseToken))
+            .filter(Boolean)
+        );
 
         requirements.forEach((req) => {
           const label = normalizeDisplayCopy_(req && req.label);
@@ -7960,7 +8055,13 @@ function boot() {
           ? electives.allowedGroups.map((x) => String(x || "").trim().toUpperCase()).filter(Boolean)
           : [];
         const remainingSubjects = Number.isFinite(totalCourses) ? Math.max(0, totalCourses - subjectRequirementBullets.length) : 0;
-        if (remainingSubjects > 0 && allowedGroups.length) {
+        const hasExplicitGroupDistribution = noteBullets.some(
+          (bullet) =>
+            /^(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:more\s+)?(?:admission\s+)?subjects?\s+(?:must\s+be\s+from|can\s+come\s+from)/i.test(
+              String(bullet || "").trim()
+            )
+        );
+        if (remainingSubjects > 0 && allowedGroups.length && !hasExplicitGroupDistribution) {
           const noun = remainingSubjects === 1 ? "subject" : "subjects";
           bullets.push(`Remaining ${remainingSubjects} ${noun} can come from Groups ${allowedGroups.join("/")}`);
         }
@@ -7974,10 +8075,7 @@ function boot() {
           bullets.push(`Minimum ${uniqueMinMarks[0]}% in each listed subject`);
         }
 
-        parts.forEach((part) => {
-          const bullet = admissionRouteNoteBullet_(part, baseToken);
-          if (bullet) bullets.push(bullet);
-        });
+        bullets.push(...noteBullets);
 
         if (!bullets.length) {
           if (/^placement_assessment$/i.test(baseToken)) {
@@ -8339,6 +8437,9 @@ function boot() {
         const routeDisplay = buildAdmissionRouteDisplay_({
           requirementType: row.requirementType,
           fallback: "Admission details vary; verify the official program page.",
+          requirements: row.requirements,
+          average: row.average,
+          electives: row.electives,
         });
         const routeBulletsHtml = routeDisplay.bullets.length
           ? `<ul class="detail-list">${routeDisplay.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
