@@ -15,6 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Sora:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
       :root {
         --bg-page: #f2f5f3;
@@ -70,7 +71,7 @@
         justify-content: space-between;
         gap: 12px;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
 
       .hero-main {
@@ -79,7 +80,7 @@
         border-top: 4px solid var(--brand);
         border-radius: 12px;
         background: var(--bg-panel);
-        padding: 10px 14px;
+        padding: 8px 12px;
       }
 
       .brand-lockup {
@@ -89,8 +90,8 @@
       }
 
       .brand-logo {
-        width: min(42vw, 280px);
-        max-height: 68px;
+        width: min(38vw, 240px);
+        max-height: 56px;
         object-fit: contain;
         object-position: left center;
       }
@@ -106,22 +107,22 @@
       .subtitle {
         margin: 5px 0 0;
         color: var(--ink-soft);
-        font-size: 0.93rem;
+        font-size: 0.89rem;
       }
 
       .stamp {
-        font-size: 0.86rem;
+        font-size: 0.82rem;
         color: var(--brand-dark);
-        padding: 8px 10px;
+        padding: 7px 9px;
         border: 1px solid var(--line);
         border-radius: 10px;
         background: var(--bg-panel);
-        min-width: 260px;
+        min-width: 220px;
       }
 
       .auth-strip {
-        margin-bottom: 12px;
-        padding: 10px 12px;
+        margin-bottom: 10px;
+        padding: 8px 10px;
         border: 1px solid var(--line);
         border-radius: 12px;
         background: var(--bg-panel);
@@ -136,6 +137,37 @@
         margin: 0;
         color: var(--ink-soft);
         font-size: 0.93rem;
+      }
+
+      .auth-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      #googleSignIn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .auth-fallback {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .auth-fallback-link {
+        text-decoration: none;
+      }
+
+      .auth-fallback-note {
+        margin: 0;
+        font-size: 0.78rem;
       }
 
       .workflow {
@@ -355,7 +387,14 @@
       }
 
       .run-actions {
-        margin-top: 12px;
+        margin: 0 0 12px;
+        padding: 2px 0 12px;
+        border-bottom: 1px solid #e4ece8;
+        align-items: center;
+      }
+
+      .run-actions .btn {
+        min-width: 140px;
       }
 
       .btn {
@@ -428,9 +467,16 @@
       }
 
       .mode-tab.active {
-        border-color: #8bbfaa;
-        background: #edf7f2;
-        color: var(--brand-dark);
+        border-color: var(--brand-dark);
+        background: linear-gradient(180deg, #238c68 0%, #176f52 100%);
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(23, 111, 82, 0.16);
+      }
+
+      .mode-tab.active .mode-count {
+        border-color: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
       }
 
       .mode-count {
@@ -503,14 +549,14 @@
       }
 
       .summary-filter.is-active {
-        border-color: #8fbfaa;
-        background: #eaf6f0;
-        box-shadow: 0 1px 0 rgba(17, 102, 76, 0.14);
+        border-color: var(--brand-dark);
+        background: linear-gradient(180deg, #eff9f4 0%, #def2e8 100%);
+        box-shadow: 0 10px 18px rgba(23, 111, 82, 0.12), inset 3px 0 0 var(--brand);
       }
 
       .stat .label {
         font-size: 0.75rem;
-        color: var(--ink-soft);
+        color: #49645b;
       }
 
       .stat .value {
@@ -518,6 +564,7 @@
         font-family: "Rubik", sans-serif;
         font-size: 1.04rem;
         font-weight: 700;
+        color: #21473a;
       }
 
       .stat.good .value {
@@ -813,6 +860,9 @@
       .card-reason {
         font-size: 0.85rem;
         color: #435750;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        hyphens: auto;
       }
 
       .card-warning {
@@ -1087,6 +1137,9 @@
         margin: 0;
         font-size: 0.88rem;
         color: var(--ink-soft);
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        hyphens: auto;
       }
 
       .detail-link-row {
@@ -1265,6 +1318,19 @@
         color: #265845;
         text-transform: uppercase;
         letter-spacing: 0.03em;
+      }
+
+      .detail-block p {
+        margin: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        hyphens: auto;
+      }
+
+      .detail-summary {
+        margin-bottom: 6px !important;
+        font-weight: 600;
+        color: #234d3e;
       }
 
       .detail-list {
@@ -3383,7 +3449,7 @@
         padding: 14px 12px;
         background: #f8fcfa;
         display: grid;
-        gap: 4px;
+        gap: 6px;
       }
 
       .empty-state h3 {
@@ -3396,6 +3462,15 @@
         margin: 0;
         font-size: 0.86rem;
         color: #4e665d;
+      }
+
+      .empty-checklist {
+        margin: 0;
+        padding-left: 18px;
+        color: #33564b;
+        font-size: 0.85rem;
+        display: grid;
+        gap: 4px;
       }
 
       .card-actions {
@@ -4865,7 +4940,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Next Step" />
 </head>
-  <body data-screen="results">
+  <body data-screen="inputs">
     <div class="shell" id="appShell">
       <div id="appHeader">
       <header class="hero">
@@ -4902,8 +4977,14 @@
               aria-controls="studentInputsPanel"
             >Hide <<</button>
           </div>
-          <p class="hint" id="inputsHint">Add final marks only. Duplicate courses are deduped automatically (latest entry wins).</p>
+          <p class="hint" id="inputsHint">Add final marks only. Keep one row per course and update marks in place when needed.</p>
           <p class="hint core-flow-note">Core workflow: add courses, run check, review top recommendations, capture decision note.</p>
+
+          <div class="actions run-actions">
+            <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
+            <button class="btn btn-danger-lite" id="resetBtn" type="button">Reset Form</button>
+          </div>
+          <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></p>
 
           <h3>Named Courses</h3>
           <table id="namedTable">
@@ -4939,11 +5020,6 @@
             </div>
           </div>
 
-          <div class="actions run-actions">
-            <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
-            <button class="btn btn-danger-lite" id="resetBtn" type="button">Reset Form</button>
-          </div>
-          <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></p>
         </section>
 
         <section class="panel panel-results mobile-screen" id="resultsPanel" data-mobile-screen="results">
@@ -4966,10 +5042,10 @@
           </div>
 
           <div class="mode-tabs" id="modeTabs" role="tablist" aria-label="Program views">
-            <button class="mode-tab" type="button" data-mode="explorer" aria-selected="false">
+            <button class="mode-tab active" type="button" data-mode="explorer" aria-selected="true">
               Program Explorer <span class="mode-count" id="modeCountExplorer">0</span>
             </button>
-            <button class="mode-tab active" type="button" data-mode="results" aria-selected="true">
+            <button class="mode-tab" type="button" data-mode="results" aria-selected="false">
               Eligibility Results <span class="mode-count" id="modeCountResults">0</span>
             </button>
             <button class="mode-tab" type="button" data-mode="pinned" aria-selected="false">
@@ -5024,8 +5100,8 @@
               <select class="result-control" id="credentialFilter" aria-label="Filter by credential">
                 <option value="">All Credentials</option>
               </select>
-              <select class="result-control" id="requirementTypeFilter" style="display: none" aria-label="Filter by requirement type">
-                <option value="">All Req Types</option>
+              <select class="result-control" id="requirementTypeFilter" style="display: none" aria-label="Filter by admission route">
+                <option value="">All Admission Routes</option>
               </select>
               <select class="result-control" id="sortSelect" aria-label="Sort programs">
                 <option value="closest">Sort: Closest to eligible</option>
@@ -5045,11 +5121,14 @@
               </button>
             </div>
 
-            <div class="ghost" id="rowsStamp" role="status" aria-live="polite" aria-atomic="true">No results yet</div>
+            <div class="ghost" id="rowsStamp" role="status" aria-live="polite" aria-atomic="true">Program Explorer loading...</div>
           </div>
 
           <div class="results-wrap" id="resultsWrap">
-            <div class="empty">Run a check to see program-by-program results.</div>
+            <div class="empty-state">
+              <h3>Start with student marks</h3>
+              <p>Program Explorer will load admissions routes while you enter final marks.</p>
+            </div>
           </div>
 
           <section class="compare-panel" id="comparePanel">
@@ -5074,7 +5153,10 @@
           </div>
           <h2 class="desktop-details-title">Program Details</h2>
           <div class="details-drawer" id="detailsDrawer">
-            <div class="ghost">Select a program card to inspect requirements and next steps.</div>
+            <div class="empty-state">
+              <h3>Program details will appear here</h3>
+              <p>Browse Program Explorer or run Check Eligibility, then open any program for requirements, gaps, and next steps.</p>
+            </div>
           </div>
         </section>
       </main>
@@ -5131,18 +5213,20 @@
       const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all"];
       const DEFAULT_RESULT_SORT = "closest";
       const PRIMARY_MODES = ["results", "explorer", "pinned", "compare"];
+      const DEFAULT_PRIMARY_MODE = "explorer";
+      const DEFAULT_RESULT_VIEW = "all";
       const MOBILE_BREAKPOINT = 980;
       const MOBILE_PAGE_SIZE = 40;
-      const MOBILE_SCREEN_DEFAULT = "results";
+      const MOBILE_SCREEN_DEFAULT = "inputs";
       const MOBILE_SCREENS = ["inputs", "results", "pinned", "compare", "details"];
 
       const state = {
         boot: null,
         result: null,
         resultModel: null,
-        primaryMode: "results",
+        primaryMode: DEFAULT_PRIMARY_MODE,
         explorerRows: [],
-        view: "ineligible",
+        view: DEFAULT_RESULT_VIEW,
         shortlist: {},
         selectedProgramKey: "",
         selectedExplorerKey: "",
@@ -5317,6 +5401,7 @@ function boot() {
       function syncResultsDetailsPanelHeights() {
         if (!ui.resultsPanel || !ui.detailsPanel) return;
         ui.detailsPanel.style.height = "";
+        ui.detailsPanel.style.minHeight = "";
 
         const resultsRect = ui.resultsPanel.getBoundingClientRect();
         const detailsRect = ui.detailsPanel.getBoundingClientRect();
@@ -5324,7 +5409,7 @@ function boot() {
         if (!sideBySide) return;
 
         const targetHeight = Math.ceil(ui.resultsPanel.offsetHeight);
-        if (targetHeight > 0) ui.detailsPanel.style.height = `${targetHeight}px`;
+        if (targetHeight > 0) ui.detailsPanel.style.minHeight = `${targetHeight}px`;
       }
 
       function loadPublicBootstrap() {
@@ -5361,10 +5446,12 @@ function boot() {
         if (boot.requiresAuth) {
           const auth = boot.auth || {};
           const message = String(auth.message || "").trim();
+          const allowedDomainSuffix = String(auth.allowedDomainSuffix || "@eips.ca").trim() || "@eips.ca";
           ui.googleSignIn.innerHTML = "";
-          ui.authLine.textContent = message || `Sign in with your ${auth.allowedDomainSuffix || "@eips.ca"} account.`;
-          ui.stamp.textContent = "Awaiting sign-in";
-          setStatus(message || "Sign in with your school account and reload the page.", true);
+          ui.authLine.textContent = message || `Sign in with your ${allowedDomainSuffix} account.`;
+          initializeGoogleSignIn(auth.googleClientId || "", allowedDomainSuffix);
+          ui.stamp.textContent = "Sign-in required";
+          setStatus(message || "Sign in to load course options.");
           updateMobileTopMetaVisibility_();
           return;
         }
@@ -5375,9 +5462,17 @@ function boot() {
         bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
         seedRows();
+        dedupeAllInputRows_();
         const stamp = formatUtcStamp(state.boot.generatedAt || "");
-        ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
-        ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
+        const dataset = boot.dataset && typeof boot.dataset === "object" ? boot.dataset : {};
+        const datasetDate = toYmdDate_(dataset.lastProgramsSyncUtc || dataset.lastProgramsSyncLocal || "");
+        const friendlyDatasetDate = formatFriendlyDate_(datasetDate);
+        ui.stamp.textContent = friendlyDatasetDate
+          ? `Admissions data updated ${friendlyDatasetDate}`
+          : "Advisor workspace ready";
+        ui.stamp.title = stamp ? `Options ready: ${stamp}` : "";
+        ui.authLine.textContent = state.auth.email ? "Staff access ready" : "Access ready";
+        ui.authLine.title = state.auth.email || "";
         updateSnapshotBannerFromBoot_(state.boot);
         updateModeCounts_();
         syncModeTabs_();
@@ -5386,16 +5481,51 @@ function boot() {
         trackUiEvent_("bootstrap_ready", { explorerPrograms: state.explorerRows.length });
       }
 
-      function initializeGoogleSignIn(clientId) {
+      function renderGoogleAccountChooserFallback_(allowedDomainSuffix, note) {
+        if (!ui.googleSignIn) return;
+        const suffix = String(allowedDomainSuffix || "@eips.ca").trim() || "@eips.ca";
+        const existing = ui.googleSignIn.querySelector(".auth-fallback");
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+        const wrap = document.createElement("div");
+        wrap.className = "auth-fallback";
+
+        const link = document.createElement("a");
+        link.className = "btn btn-subtle auth-fallback-link";
+        link.href = `https://accounts.google.com/AccountChooser?continue=${encodeURIComponent(window.location.href)}`;
+        link.target = "_top";
+        link.rel = "noopener noreferrer";
+        link.textContent = `Choose ${suffix} account`;
+        wrap.appendChild(link);
+
+        const noteText = String(note || "").trim();
+        if (noteText) {
+          const noteEl = document.createElement("p");
+          noteEl.className = "ghost auth-fallback-note";
+          noteEl.textContent = noteText;
+          wrap.appendChild(noteEl);
+        }
+
+        ui.googleSignIn.appendChild(wrap);
+      }
+
+      function initializeGoogleSignIn(clientId, allowedDomainSuffix) {
+        const fallbackNote = "If the Google sign-in button does not appear, use the chooser link and reload.";
         if (!clientId) {
+          ui.googleSignIn.innerHTML = "";
+          renderGoogleAccountChooserFallback_(allowedDomainSuffix, fallbackNote);
           setStatus(
             "Web app auth is not configured. Set Script Property WEBAPP_GOOGLE_CLIENT_ID in Apps Script.",
             true
           );
+          updateMobileTopMetaVisibility_();
           return;
         }
         if (!(window.google && google.accounts && google.accounts.id)) {
+          ui.googleSignIn.innerHTML = "";
+          renderGoogleAccountChooserFallback_(allowedDomainSuffix, fallbackNote);
           setStatus("Google sign-in script did not load. Refresh and try again.", true);
+          updateMobileTopMetaVisibility_();
           return;
         }
         ui.googleSignIn.innerHTML = "";
@@ -5412,6 +5542,8 @@ function boot() {
           text: "signin_with",
           logo_alignment: "left",
         });
+        renderGoogleAccountChooserFallback_(allowedDomainSuffix, fallbackNote);
+        updateMobileTopMetaVisibility_();
       }
 
       function onGoogleCredential(response) {
@@ -5442,8 +5574,8 @@ function boot() {
         for (let i = 0; i < electiveSlots; i++) addElectiveRow();
         state.result = null;
         state.resultModel = null;
-        state.primaryMode = "results";
-        state.view = "ineligible";
+        state.primaryMode = DEFAULT_PRIMARY_MODE;
+        state.view = DEFAULT_RESULT_VIEW;
         state.shortlist = {};
         state.selectedProgramKey = "";
         state.selectedExplorerKey = "";
@@ -5457,8 +5589,8 @@ function boot() {
         state.electiveRulesCollapsed = false;
         state.mobileRenderLimit = MOBILE_PAGE_SIZE;
         state.mobileFilterDrawerOpen = false;
-        state.mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
-        state.lastNonDetailScreen = state.mobileScreen === "details" ? MOBILE_SCREEN_DEFAULT : state.mobileScreen;
+        state.mobileScreen = MOBILE_SCREEN_DEFAULT;
+        state.lastNonDetailScreen = MOBILE_SCREEN_DEFAULT;
         if (ui.csvBtn) ui.csvBtn.disabled = true;
         if (ui.pdfBtn) ui.pdfBtn.disabled = true;
         syncResultControlContext_();
@@ -6047,7 +6179,7 @@ function boot() {
           sessionId: String(model.sessionId || ""),
           event: name,
           mode: normalizePrimaryMode_(state.primaryMode),
-          view: String(state.view || "ineligible"),
+          view: String(state.view || DEFAULT_RESULT_VIEW),
           payload: sanitizeTelemetryPayload_(payload),
         };
         model.events.push(record);
@@ -6070,7 +6202,7 @@ function boot() {
             mockMode: state.mockMode ? 1 : 0,
             signedInAs: String(state.auth && state.auth.email ? state.auth.email : ""),
             primaryMode: normalizePrimaryMode_(state.primaryMode),
-            currentView: String(state.view || "ineligible"),
+            currentView: String(state.view || DEFAULT_RESULT_VIEW),
             datasetStamp: getResultDatasetStamp() || "",
             datasetDate: getResultDatasetDate() || "",
           },
@@ -6183,6 +6315,40 @@ function boot() {
         setMeetingMode_(!state.meetingMode);
       }
 
+      function buildExplorerRequirements_(item) {
+        const requirements = [];
+        const englishRequirement = String(item && item.englishRequirement || "").trim();
+        const mathRequirement = String(item && item.mathRequirement || "").trim();
+        const scienceRequirement = String(item && item.scienceRequirement || "").trim();
+        const englishMin = toFiniteNumber(item && item.englishMin);
+        const mathMin = toFiniteNumber(item && item.mathMin);
+        const scienceMin = toFiniteNumber(item && item.scienceMin);
+
+        if (englishRequirement) {
+          requirements.push({
+            label: "English",
+            requirement: englishRequirement,
+            minMark: Number.isFinite(englishMin) ? englishMin : NaN,
+          });
+        }
+        if (mathRequirement) {
+          requirements.push({
+            label: "Math",
+            requirement: mathRequirement,
+            minMark: Number.isFinite(mathMin) ? mathMin : NaN,
+          });
+        }
+        if (scienceRequirement) {
+          requirements.push({
+            label: "Science",
+            requirement: scienceRequirement,
+            minMark: Number.isFinite(scienceMin) ? scienceMin : NaN,
+          });
+        }
+
+        return requirements;
+      }
+
       function setExplorerProgramsFromBoot_(bootData) {
         const boot = bootData && typeof bootData === "object" ? bootData : {};
         const source = Array.isArray(boot.explorerPrograms) ? boot.explorerPrograms : [];
@@ -6199,6 +6365,11 @@ function boot() {
           const requirementType = String(item.requirementType || "").trim();
           const sourceUrl = normalizeHttpUrl_(item.sourceUrl || "");
           const datasetDate = toYmdDate_(item.datasetDate || "") || toYmdDate_((boot.dataset && boot.dataset.lastProgramsSyncUtc) || "");
+          const avgTotal = toFiniteNumber(item.avgTotal);
+          const allowedGroups = Array.isArray(item.allowedGroups)
+            ? item.allowedGroups.map((x) => String(x || "").trim().toUpperCase()).filter(Boolean)
+            : [];
+          const requirements = buildExplorerRequirements_(item);
           const key = sanitizeProgramKey(item.key) || `explorer_${i + 1}`;
           out.push({
             key,
@@ -6210,7 +6381,18 @@ function boot() {
             requirementType,
             sourceUrl,
             datasetDate,
-            searchText: `${institution} ${program} ${credential} ${competitiveGuidance} ${requirementType}`.toLowerCase(),
+            requirements,
+            average: {
+              totalCourses: Number.isFinite(avgTotal) ? avgTotal : NaN,
+            },
+            electives: {
+              allowedGroups,
+              ruleSummary: "",
+              selected: [],
+            },
+            searchText: `${institution} ${program} ${credential} ${competitiveGuidance} ${requirementType} ${requirements
+              .map((req) => `${req.label} ${req.requirement}`)
+              .join(" ")}`.toLowerCase(),
           });
         }
         out.sort((a, b) => compareInstitutionProgram(a, b));
@@ -6389,18 +6571,48 @@ function boot() {
         return { key, label };
       }
 
+      function syncNamedRowMark_(row, markValue) {
+        if (!row) return;
+        const markInput = row.querySelector("input.mark-input");
+        const errorEl = row.querySelector(".cell-error");
+        if (!markInput) return;
+        const parsed = parseMarkInput(markValue);
+        if (parsed.ok && !parsed.empty) {
+          markInput.value = parsed.normalized;
+          validateMarkField(markInput, errorEl);
+        }
+      }
+
       function dedupeNamedRowsForActiveRow_(activeRow) {
         if (!activeRow) return;
         const input = activeRow.querySelector('td:nth-child(1) input');
         const token = normalizeCourseToken(input && input.value);
         if (!token) return;
+        const resolved = resolveCourseLabel(input && input.value, "named");
+        if (resolved && input) input.value = resolved.label;
         const rows = Array.from(ui.namedBody.querySelectorAll("tr"));
-        rows.forEach((row) => {
-          if (row === activeRow) return;
+        const existingRow = rows.find((row) => {
+          if (row === activeRow) return false;
           const rowInput = row.querySelector('td:nth-child(1) input');
-          const rowToken = normalizeCourseToken(rowInput && rowInput.value);
-          if (rowToken === token) row.remove();
+          return normalizeCourseToken(rowInput && rowInput.value) === token;
         });
+        if (!existingRow) return;
+
+        const existingInput = existingRow.querySelector('td:nth-child(1) input');
+        if (resolved && existingInput) existingInput.value = resolved.label;
+        const activeMarkInput = activeRow.querySelector("input.mark-input");
+        const parsedActiveMark = parseMarkInput(activeMarkInput && activeMarkInput.value);
+        if (parsedActiveMark.ok && !parsedActiveMark.empty) {
+          syncNamedRowMark_(existingRow, parsedActiveMark.normalized);
+        }
+        activeRow.remove();
+
+        const label = (resolved && resolved.label) || String((existingInput && existingInput.value) || "").trim() || "course";
+        if (parsedActiveMark.ok && !parsedActiveMark.empty) {
+          setStatus(`Updated the existing course row for ${label}.`);
+        } else {
+          setStatus(`Kept the existing course row for ${label}.`);
+        }
       }
 
       function dedupeManualRowsForActiveRow_(activeRow) {
@@ -6606,7 +6818,7 @@ function boot() {
       function applyResultPayload(result) {
         state.result = result || null;
         state.resultModel = buildResultModel(state.result);
-        if (RESULT_VIEWS.indexOf(state.view) < 0) state.view = "ineligible";
+        if (RESULT_VIEWS.indexOf(state.view) < 0) state.view = DEFAULT_RESULT_VIEW;
         trimShortlistToCurrentModel();
         trimCompareToCurrentModel();
         if (state.selectedProgramKey && !(state.resultModel && state.resultModel.rowsByKey && state.resultModel.rowsByKey[state.selectedProgramKey])) {
@@ -6896,8 +7108,9 @@ function boot() {
         bindDatalist("namedCourses", state.boot.namedCourseOptions);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions);
         seedRows();
-        ui.stamp.textContent = "Mock mode";
-        ui.authLine.textContent = "Local preview mode (no real student data is sent).";
+        dedupeAllInputRows_();
+        ui.stamp.textContent = "Local preview";
+        ui.authLine.textContent = "Preview mode for layout and workflow testing.";
         updateSnapshotBannerDate_("2026-02-10");
         updateMobileTopMetaVisibility_();
         updateModeCounts_();
@@ -6916,6 +7129,24 @@ function boot() {
       function formatUtcStamp(value) {
         const iso = String(value || "").trim();
         return iso ? iso.replace("T", " ").replace("Z", " UTC") : "";
+      }
+
+      function formatFriendlyDate_(value) {
+        const ymd = toYmdDate_(value || "");
+        if (!ymd) return "";
+        const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return ymd;
+        const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+        try {
+          return new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            timeZone: "UTC",
+          }).format(date);
+        } catch (_err) {
+          return ymd;
+        }
       }
 
       function toYmdDate_(value) {
@@ -6988,20 +7219,26 @@ function boot() {
       function updateSnapshotBannerDate_(datasetDate) {
         if (!ui.snapshotDataDate) return;
         const ymd = toYmdDate_(datasetDate || "");
+        const friendlyDate = formatFriendlyDate_(ymd);
         if (ui.snapshotBanner) ui.snapshotBanner.classList.remove("fresh", "aging", "stale");
         if (!ymd) {
-          ui.snapshotDataDate.textContent = "Data date: n/a";
+          ui.snapshotDataDate.textContent = "Admissions data date unavailable";
           return;
         }
 
         const daysOld = parseDatasetDateDaysOld_(ymd);
         if (daysOld === null) {
-          ui.snapshotDataDate.textContent = `Data date: ${ymd}`;
+          ui.snapshotDataDate.textContent = friendlyDate
+            ? `Admissions data refreshed ${friendlyDate}`
+            : `Admissions data refreshed ${ymd}`;
           return;
         }
 
         const stale = isDatasetStale_(daysOld);
-        ui.snapshotDataDate.textContent = `Data date: ${ymd} (${daysOld} day${daysOld === 1 ? "" : "s"} old)`;
+        const relative = daysOld === 0 ? "" : ` (${daysOld} day${daysOld === 1 ? "" : "s"} ago)`;
+        ui.snapshotDataDate.textContent = friendlyDate
+          ? `Admissions data refreshed ${friendlyDate}${relative}`
+          : `Admissions data refreshed ${ymd}${relative}`;
         if (ui.snapshotBanner) ui.snapshotBanner.classList.add(stale.bucket);
       }
 
@@ -7020,6 +7257,8 @@ function boot() {
       function updateHeaderStampFromResult() {
         if (!state.result) return;
         const meta = getResultMeta();
+        const datasetDate = getResultDatasetDate() || toYmdDate_(meta.lastProgramsSyncUtc || meta.lastProgramsSyncLocal || "");
+        const friendlyDatasetDate = formatFriendlyDate_(datasetDate);
         const generated = formatUtcStamp(state.result.generatedAt || meta.generatedAt || "");
         const syncedLocal = String(meta.lastProgramsSyncLocal || "").trim();
         const synced = formatUtcStamp(meta.lastProgramsSyncUtc || "");
@@ -7028,10 +7267,11 @@ function boot() {
         const institutions = uniqueStrings(
           rows.map((row) => String(row.institution || "").trim()).filter(Boolean)
         );
-        const sourceText = institutions.length ? institutions.slice(0, 3).join(" / ") : "Admissions dataset";
-        const updateText = syncedLocal || synced || generated || "n/a";
-        ui.stamp.textContent = `Data updated: ${updateText} | Source: ${sourceText}`;
+        ui.stamp.textContent = friendlyDatasetDate
+          ? `Admissions data updated ${friendlyDatasetDate}`
+          : "Advisor workspace ready";
         const hidden = [];
+        if (institutions.length) hidden.push(`Institutions: ${institutions.slice(0, 3).join(" / ")}`);
         if (syncedLocal) hidden.push(`Synced (local): ${syncedLocal}`);
         if (synced) hidden.push(`Synced (UTC): ${synced}`);
         if (generated) hidden.push(`Generated: ${generated}`);
@@ -7042,8 +7282,8 @@ function boot() {
       }
 
       function normalizePrimaryMode_(value) {
-        const mode = String(value || "results").trim().toLowerCase();
-        return PRIMARY_MODES.indexOf(mode) >= 0 ? mode : "results";
+        const mode = String(value || DEFAULT_PRIMARY_MODE).trim().toLowerCase();
+        return PRIMARY_MODES.indexOf(mode) >= 0 ? mode : DEFAULT_PRIMARY_MODE;
       }
 
       function getSortOptionsForMode_(mode) {
@@ -7113,7 +7353,7 @@ function boot() {
           return;
         }
         state.primaryMode = next;
-        if (next === "results" && RESULT_VIEWS.indexOf(state.view) < 0) state.view = "ineligible";
+        if (next === "results" && RESULT_VIEWS.indexOf(state.view) < 0) state.view = DEFAULT_RESULT_VIEW;
         if (next !== "results" && next !== "pinned") closeFiltersDrawer_({ silent: true });
         if (next !== previous && options.track !== false) trackUiEvent_("mode_switch", { to: next });
         syncModeTabs_();
@@ -7141,7 +7381,7 @@ function boot() {
         if (state.primaryMode !== "results") return;
         const btn = e.target && e.target.closest("button[data-view]");
         if (!btn) return;
-        const nextView = String(btn.dataset.view || "ineligible").trim();
+        const nextView = String(btn.dataset.view || DEFAULT_RESULT_VIEW).trim();
         if (RESULT_VIEWS.indexOf(nextView) < 0) return;
         state.view = nextView;
         resetMobileRenderLimit_();
@@ -7325,9 +7565,10 @@ function boot() {
         if (ui.requirementTypeFilter && isExplorerMode) {
           renderSelectOptions(
             ui.requirementTypeFilter,
-            "All Req Types",
+            "All Admission Routes",
             requirementTypes,
-            state.resultFilters.requirementType
+            state.resultFilters.requirementType,
+            (value) => formatRequirementTypeForDisplay_(value, value)
           );
           if (state.resultFilters.requirementType && requirementTypes.indexOf(state.resultFilters.requirementType) < 0) {
             state.resultFilters.requirementType = "";
@@ -7337,7 +7578,7 @@ function boot() {
         syncFiltersDrawerControls_();
       }
 
-      function renderSelectOptions(select, emptyLabel, options, selectedValue) {
+      function renderSelectOptions(select, emptyLabel, options, selectedValue, labelFormatter) {
         const selected = String(selectedValue || "").trim();
         const html =
           `<option value="">${escapeHtml(emptyLabel)}</option>` +
@@ -7345,7 +7586,8 @@ function boot() {
             .map((opt) => {
               const value = String(opt || "").trim();
               const selectedAttr = value === selected ? ' selected="selected"' : "";
-              return `<option value="${escapeAttr(value)}"${selectedAttr}>${escapeHtml(value)}</option>`;
+              const label = typeof labelFormatter === "function" ? String(labelFormatter(value) || value) : value;
+              return `<option value="${escapeAttr(value)}"${selectedAttr}>${escapeHtml(label)}</option>`;
             })
             .join("");
         select.innerHTML = html;
@@ -7648,6 +7890,259 @@ function boot() {
         `;
       }
 
+      function renderGettingStartedStateHtml_() {
+        return `
+          <div class="empty-state">
+            <h3>Start with student marks</h3>
+            <p>Program Explorer is ready while you enter final Grade 12 marks. Run Check Eligibility when you want ranked matches.</p>
+            <ul class="empty-checklist">
+              <li>Enter final Grade 12 courses and marks</li>
+              <li>Use Check Eligibility to rank likely-fit programs</li>
+              <li>Select a program to review requirements, gaps, and next steps</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      function renderDetailsIntroStateHtml_() {
+        return `
+          <div class="empty-state">
+            <h3>Program details will appear here</h3>
+            <p>Browse Program Explorer or run Check Eligibility, then open any program for a clearer admission route and next steps.</p>
+            <ul class="empty-checklist">
+              <li>Use Program Explorer for a quick route and minimum-average scan</li>
+              <li>Run Check Eligibility after entering student marks</li>
+              <li>Pin or compare programs once a shortlist starts to form</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      function normalizeDisplayCopy_(value) {
+        return String(value || "").replace(/\s+/g, " ").trim();
+      }
+
+      function ensureSentenceDisplay_(value) {
+        const text = normalizeDisplayCopy_(value);
+        if (!text) return "";
+        return /[.!?]$/.test(text) ? text : `${text}.`;
+      }
+
+      function sentenceCaseDisplay_(value) {
+        const text = normalizeDisplayCopy_(value).replace(/_/g, " ");
+        if (!text) return "";
+        return text.charAt(0).toUpperCase() + text.slice(1);
+      }
+
+      function requirementTypeBaseLabel_(value) {
+        const token = normalizeDisplayCopy_(value).toLowerCase().replace(/\s+/g, "_");
+        if (!token) return "";
+        if (token === "placement_assessment") return "Placement assessment required";
+        if (token === "alberta_high_school_courses") return "Alberta high school course requirements";
+        if (token === "course_min_only") return "Specific course minimums";
+        if (token === "post_secondary_pathway") return "Post-secondary pathway";
+        if (token === "regular_admission") return "Standard admission requirements";
+        if (token === "assessment_only") return "Assessment-based admission";
+        return sentenceCaseDisplay_(token);
+      }
+
+      function requirementTypeNoteLabel_(value, baseToken) {
+        const rawNote = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ");
+        const note = rawNote.toLowerCase();
+        const base = normalizeDisplayCopy_(baseToken).replace(/_/g, " ").toLowerCase();
+        if (!note || note === base) return "";
+        if (note === "post-secondary pathway") return base === "post secondary pathway" ? "" : "Previous post-secondary study may also apply";
+        if (note === "regular admission") return base === "regular admission" ? "" : "Standard admission requirements also apply";
+        if (note === "english language proficiency only" || note === "english language proficiency") {
+          return "English language proficiency required";
+        }
+        if (note === "portfolio required") return "Portfolio required";
+        if (note === "audition required") return "Audition required";
+        if (note === "interview required") return "Interview required";
+        if (note === "internationally educated nurse pathway") return "For internationally educated nurses";
+        if (note === "post-diploma pathway") return "For post-diploma applicants";
+        if (/^see (degree|program|department|faculty)$/i.test(note)) {
+          return "See the official program page for exact admission details";
+        }
+        return sentenceCaseDisplay_(rawNote);
+      }
+
+      function formatRequirementTypeForDisplay_(value, fallback) {
+        const safeFallback = normalizeDisplayCopy_(fallback || "Admission details vary; verify the official program page.");
+        const raw = normalizeDisplayCopy_(value);
+        if (!raw) return safeFallback;
+
+        const parts = raw.split(";").map((x) => normalizeDisplayCopy_(x)).filter(Boolean);
+        const baseToken = parts.shift() || "";
+        const baseLabel = requirementTypeBaseLabel_(baseToken);
+        const noteLabels = uniqueStrings(
+          parts
+            .map((part) => requirementTypeNoteLabel_(part, baseToken))
+            .filter(Boolean)
+        );
+        const segments = []
+          .concat(baseLabel ? [baseLabel] : [])
+          .concat(noteLabels);
+        if (!segments.length) return safeFallback;
+        return segments.map((segment) => ensureSentenceDisplay_(segment)).join(" ");
+      }
+
+      function admissionRouteNoteBullet_(value, baseToken) {
+        const rawNote = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ");
+        const note = rawNote.toLowerCase();
+        const base = normalizeDisplayCopy_(baseToken).replace(/_/g, " ").toLowerCase();
+        if (!note || note === base || note === "regular admission") return "";
+
+        const maxGroupMatch = note.match(/^max(?:imum)?\s+(\d+)\s+group\s+([abcd])$/i);
+        if (maxGroupMatch) {
+          const count = Number(maxGroupMatch[1]);
+          const group = String(maxGroupMatch[2] || "").toUpperCase();
+          const noun = count === 1 ? "subject" : "subjects";
+          return `Maximum ${count} ${noun} from Group ${group}`;
+        }
+
+        if (note === "post-secondary pathway") return base === "post secondary pathway" ? "" : "Previous post-secondary study may also apply";
+        if (note === "english language proficiency only" || note === "english language proficiency") {
+          return "English language proficiency required";
+        }
+        if (note === "portfolio required") return "Portfolio required";
+        if (note === "audition required") return "Audition required";
+        if (note === "interview required") return "Interview required";
+        if (note === "internationally educated nurse pathway") return "For internationally educated nurses";
+        if (note === "post-diploma pathway") return "For post-diploma applicants";
+        if (/^see (degree|program|department|faculty)$/i.test(note)) {
+          return "See the official program page for exact admission details";
+        }
+        return sentenceCaseDisplay_(rawNote);
+      }
+
+      function buildAdmissionRouteDisplay_(opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const raw = normalizeDisplayCopy_(options.requirementType);
+        const fallback = normalizeDisplayCopy_(options.fallback || "Admission details vary; verify the official program page.");
+        if (!raw) return { summary: fallback, bullets: [] };
+
+        const parts = raw.split(";").map((x) => normalizeDisplayCopy_(x)).filter(Boolean);
+        const baseToken = parts.shift() || "";
+        const summary = requirementTypeBaseLabel_(baseToken) || fallback;
+        const requirements = Array.isArray(options.requirements) ? options.requirements : [];
+        const average = options.average && typeof options.average === "object" ? options.average : {};
+        const electives = options.electives && typeof options.electives === "object" ? options.electives : {};
+        const bullets = [];
+        const subjectRequirementBullets = [];
+        const minMarks = [];
+        const noteBullets = uniqueStrings(
+          parts
+            .map((part) => admissionRouteNoteBullet_(part, baseToken))
+            .filter(Boolean)
+        );
+
+        requirements.forEach((req) => {
+          const label = normalizeDisplayCopy_(req && req.label);
+          const requirement = normalizeDisplayCopy_(req && req.requirement);
+          const minMark = Number(req && req.minMark);
+          if (!label || !requirement) return;
+          subjectRequirementBullets.push(`${label}: ${requirement}`);
+          if (Number.isFinite(minMark) && minMark > 0) minMarks.push(minMark);
+        });
+
+        const totalCourses = Number(average && average.totalCourses);
+        if (Number.isFinite(totalCourses) && totalCourses > 0) {
+          const noun = totalCourses === 1 ? "subject" : "subjects";
+          bullets.push(`Admission average uses ${totalCourses} ${noun}`);
+        }
+
+        bullets.push(...subjectRequirementBullets);
+
+        const allowedGroups = Array.isArray(electives.allowedGroups)
+          ? electives.allowedGroups.map((x) => String(x || "").trim().toUpperCase()).filter(Boolean)
+          : [];
+        const remainingSubjects = Number.isFinite(totalCourses) ? Math.max(0, totalCourses - subjectRequirementBullets.length) : 0;
+        const hasExplicitGroupDistribution = noteBullets.some(
+          (bullet) =>
+            /^(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:more\s+)?(?:admission\s+)?subjects?\s+(?:must\s+be\s+from|can\s+come\s+from)/i.test(
+              String(bullet || "").trim()
+            )
+        );
+        if (remainingSubjects > 0 && allowedGroups.length && !hasExplicitGroupDistribution) {
+          const noun = remainingSubjects === 1 ? "subject" : "subjects";
+          bullets.push(`Remaining ${remainingSubjects} ${noun} can come from Groups ${allowedGroups.join("/")}`);
+        }
+
+        const uniqueMinMarks = uniqueStrings(
+          minMarks
+            .filter((x) => Number.isFinite(x) && x > 0)
+            .map((x) => String(Math.round(x)))
+        );
+        if (uniqueMinMarks.length === 1) {
+          bullets.push(`Minimum ${uniqueMinMarks[0]}% in each listed subject`);
+        }
+
+        bullets.push(...noteBullets);
+
+        if (!bullets.length) {
+          if (/^placement_assessment$/i.test(baseToken)) {
+            bullets.push("Confirm required assessment steps on the official program page");
+          } else if (/^post_secondary_pathway$/i.test(baseToken)) {
+            bullets.push("Review the official program page for prior post-secondary admission details");
+          } else {
+            bullets.push("Verify exact admission details on the official program page");
+          }
+        }
+
+        return {
+          summary,
+          bullets: uniqueStrings(
+            bullets.map((x) => normalizeDisplayCopy_(x)).filter(Boolean)
+          ),
+        };
+      }
+
+      function formatCompetitiveGuidanceForDisplay_(value, opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const emptyLabel = Object.prototype.hasOwnProperty.call(options, "emptyLabel")
+          ? String(options.emptyLabel || "")
+          : "Not listed";
+        const raw = normalizeDisplayCopy_(value);
+        if (!raw) return emptyLabel;
+        if (/^minimum only$/i.test(raw)) return emptyLabel;
+        if (/^(see degree|refer to degree)$/i.test(raw)) return emptyLabel;
+        if (
+          /(?:^|[\s>])nimum grades you need to achieve to be considered for admission to the program/i.test(raw) ||
+          /minimum grades you need to achieve to be considered for admission to the program/i.test(raw) ||
+          /program of choice is considered competitive/i.test(raw) ||
+          /international students must qualify for admission under the regular or previous post-secondary categories/i.test(raw)
+        ) {
+          return "See the official program page for current competitive guidance.";
+        }
+        if (raw.length > 220) return "See the official program page for current competitive guidance.";
+        return raw;
+      }
+
+      function summarizeCompetitiveGuidanceForCard_(value) {
+        const text = formatCompetitiveGuidanceForDisplay_(value, { emptyLabel: "" });
+        if (!text) return "";
+        if (/^See the official program page/i.test(text)) return "";
+        return text.length > 110 ? `${text.slice(0, 107).trimEnd()}...` : text;
+      }
+
+      function buildExplorerSummaryText_(row) {
+        const admissionRoute = formatRequirementTypeForDisplay_(
+          row && row.requirementType,
+          "Admission details vary; verify the official program page."
+        );
+        const competitive = summarizeCompetitiveGuidanceForCard_(row && row.competitiveGuidance);
+        if (!competitive) return admissionRoute;
+        return `${admissionRoute} ${ensureSentenceDisplay_(`Competitive guidance: ${competitive}`)}`;
+      }
+
+      function formatMinimumAverageDisplay_(value, emptyLabel) {
+        const label = normalizeDisplayCopy_(emptyLabel || "n/a") || "n/a";
+        const num = Number(value);
+        if (!Number.isFinite(num) || num <= 0) return label;
+        return formatCell(num);
+      }
+
       function renderResults() {
         if (isMobileAppShell_() && state.primaryMode === "explorer") {
           state.primaryMode = "results";
@@ -7674,11 +8169,13 @@ function boot() {
           ui.rowsStamp.textContent = shownCount === viewCount ? `${shownCount} programs` : `${shownCount} of ${viewCount} programs`;
 
           if (!filteredRows.length) {
-            const emptyMsg =
-              viewCount === 0
-                ? "Program Explorer is empty."
-                : "No programs match the current filters. Clear filters to widen results.";
-            ui.resultsWrap.innerHTML = renderEmptyStateHtml_("No Explorer Matches", emptyMsg);
+            ui.resultsWrap.innerHTML = viewCount === 0
+              ? renderGettingStartedStateHtml_()
+              : renderEmptyStateHtml_(
+                  "No Explorer Matches",
+                  "No programs match the current filters. Clear filters to widen results."
+                );
+            ui.rowsStamp.textContent = viewCount === 0 ? "Program Explorer ready after data loads" : ui.rowsStamp.textContent;
             syncResultControls();
             renderDetailsDrawer();
             return;
@@ -7695,11 +8192,8 @@ function boot() {
                     row.sourceUrl
                   )}" target="_blank" rel="noopener noreferrer">Program Link</a>`
                 : `<span class="source-link-missing">Source link missing</span>`;
-              const minAvgText = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
-              const reasonText =
-                row.competitiveGuidance ||
-                row.requirementType ||
-                "General admissions snapshot. Run eligibility check with marks for personalized results.";
+              const minAvgText = formatMinimumAverageDisplay_(row.minAvg, "n/a");
+              const reasonText = buildExplorerSummaryText_(row);
               const meetingRecord = getMeetingRecordForKey_(row.key);
               const decision = normalizeMeetingDecision_(meetingRecord.decision);
               const decisionPillHtml = decision
@@ -7745,11 +8239,8 @@ function boot() {
         }
 
         if (!state.result || !state.resultModel) {
-          ui.resultsWrap.innerHTML = renderEmptyStateHtml_(
-            "Run Eligibility Check",
-            "Add courses and marks, then run check to see ranked program recommendations."
-          );
-          ui.rowsStamp.textContent = "No results yet";
+          ui.resultsWrap.innerHTML = renderGettingStartedStateHtml_();
+          ui.rowsStamp.textContent = "Enter marks to unlock ranked matches";
           syncResultControls();
           updateFilterCounts();
           renderCompareStrip();
@@ -7930,7 +8421,7 @@ function boot() {
       function renderExplorerDetailsDrawer_() {
         const rows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
         if (!rows.length) {
-          ui.detailsDrawer.innerHTML = `<div class="ghost">Program Explorer is empty. Run a check or reload data.</div>`;
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           return;
         }
 
@@ -7940,13 +8431,22 @@ function boot() {
           state.selectedExplorerKey = row ? row.key : "";
         }
         if (!row) {
-          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program to inspect details.</div>`;
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           return;
         }
 
-        const minAvgText = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
-        const competitiveText = row.competitiveGuidance || "Not listed";
-        const requirementText = row.requirementType || "Not listed";
+        const minAvgText = formatMinimumAverageDisplay_(row.minAvg, "Not listed");
+        const competitiveText = formatCompetitiveGuidanceForDisplay_(row.competitiveGuidance, { emptyLabel: "Not listed" });
+        const routeDisplay = buildAdmissionRouteDisplay_({
+          requirementType: row.requirementType,
+          fallback: "Admission details vary; verify the official program page.",
+          requirements: row.requirements,
+          average: row.average,
+          electives: row.electives,
+        });
+        const routeBulletsHtml = routeDisplay.bullets.length
+          ? `<ul class="detail-list">${routeDisplay.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+          : "";
         const nextStepText = "Enter student marks and run Check Eligibility to get a personalized decision and gaps.";
         const meetingNoteHtml = renderMeetingNoteEditor_(row.key);
         const programLinkHtml = row.sourceUrl
@@ -7981,8 +8481,9 @@ function boot() {
             </div>
           </div>
           <div class="detail-block">
-            <h4>Requirement Type</h4>
-            <p>${escapeHtml(requirementText)}</p>
+            <h4>Admission Route</h4>
+            <p class="detail-summary">${escapeHtml(routeDisplay.summary)}</p>
+            ${routeBulletsHtml}
           </div>
           ${meetingNoteHtml}
         `;
@@ -8219,10 +8720,7 @@ function boot() {
         }
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
-          ui.detailsDrawer.innerHTML = renderEmptyStateHtml_(
-            "Program Detail",
-            "Select a program card to inspect requirements, gaps, and next steps."
-          );
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           schedulePanelHeightSync();
           return;
         }
@@ -8236,10 +8734,7 @@ function boot() {
         }
 
         if (!row) {
-          ui.detailsDrawer.innerHTML = renderEmptyStateHtml_(
-            "Program Detail",
-            "Select a program card to inspect requirements, gaps, and next steps."
-          );
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           schedulePanelHeightSync();
           return;
         }
@@ -8690,6 +9185,16 @@ function boot() {
         const avgNeedsAttention = avg.complete === false || avg.meetsMinimum === false;
         const allowedGroups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups : [];
         const selectedElectives = Array.isArray(electives.selected) ? electives.selected : [];
+        const routeDisplay = buildAdmissionRouteDisplay_({
+          requirementType: detail.requirementText,
+          fallback: "Admission details vary; verify the official program page.",
+          requirements: detail.requirements,
+          average: avg,
+          electives,
+        });
+        const routeBulletsHtml = routeDisplay.bullets.length
+          ? `<ul class="detail-list">${routeDisplay.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+          : "";
         const nextSemesterPlan = buildNextSemesterPlan_(row, detail);
         const hasNextPlanItems = !!(nextSemesterPlan.take.length || nextSemesterPlan.upgrade.length || nextSemesterPlan.notes.length);
 
@@ -8807,6 +9312,11 @@ function boot() {
           ${detailActionsHtml}
           ${warningHtml}
           ${highlightsHtml}
+          <div class="detail-block">
+            <h4>Admission Route</h4>
+            <p class="detail-summary">${escapeHtml(routeDisplay.summary)}</p>
+            ${routeBulletsHtml}
+          </div>
           <div class="meaning-panel">
             <h4>What this means</h4>
             ${meaningHtml}
@@ -9586,15 +10096,22 @@ function boot() {
           return `<p class="muted">No program is selected in the details drawer right now.</p>`;
         }
         if (state.primaryMode === "explorer") {
-          const minAvg = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
+          const minAvg = formatMinimumAverageDisplay_(row.minAvg, "n/a");
+          const admissionRoute = formatRequirementTypeForDisplay_(
+            row.requirementType,
+            "Admission details vary; verify the official program page."
+          );
+          const competitiveGuidance = formatCompetitiveGuidanceForDisplay_(row.competitiveGuidance, {
+            emptyLabel: "Not listed",
+          });
           return `
             <div class="summary-grid">
               <div><strong>Institution</strong><span>${escapeHtml(row.institution || "n/a")}</span></div>
               <div><strong>Program</strong><span>${escapeHtml(row.program || "n/a")}</span></div>
               <div><strong>Credential</strong><span>${escapeHtml(row.credential || "n/a")}</span></div>
               <div><strong>Minimum Average</strong><span>${escapeHtml(minAvg)}</span></div>
-              <div><strong>Requirement Type</strong><span>${escapeHtml(row.requirementType || "Not listed")}</span></div>
-              <div><strong>Competitive Guidance</strong><span>${escapeHtml(row.competitiveGuidance || "Not listed")}</span></div>
+              <div><strong>Admission Route</strong><span>${escapeHtml(admissionRoute)}</span></div>
+              <div><strong>Competitive Guidance</strong><span>${escapeHtml(competitiveGuidance)}</span></div>
             </div>
           `;
         }

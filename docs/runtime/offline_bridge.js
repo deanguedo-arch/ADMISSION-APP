@@ -209,6 +209,16 @@
   function buildExplorerProgramsForBootstrap() {
     var range = Array.isArray(snapshot.programsRange) ? snapshot.programsRange : [];
     if (range.length < 2) return [];
+    var datasetDate = normalizeText(snapshot.datasetDate);
+
+    if (typeof window.listExplorerProgramsForWeb_ === "function") {
+      try {
+        var delegated = window.listExplorerProgramsForWeb_(range, datasetDate);
+        if (Array.isArray(delegated)) return delegated.map(deepClone);
+      } catch (err) {
+        console.warn("Offline explorer bootstrap fell back to legacy serializer.", err);
+      }
+    }
 
     var header = Array.isArray(range[0]) ? range[0] : [];
     var idx = {};
@@ -227,7 +237,6 @@
     var colCompetitive = idx.competitive_final;
     var colRequirementType = idx.requirement_type;
     var colProgramUrl = idx.program_url;
-    var datasetDate = normalizeText(snapshot.datasetDate);
 
     var out = [];
     for (var r = 1; r < range.length; r++) {

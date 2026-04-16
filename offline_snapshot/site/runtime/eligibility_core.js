@@ -226,6 +226,42 @@ function unifyEnglishMin_(row, idx) {
   return b;
 }
 
+function normalizeRequirementModeToken_(value) {
+  const token = String(value || "").trim().toLowerCase();
+  if (token === "course" || token === "placement_assessment" || token === "elp" || token === "other_gate") {
+    return token;
+  }
+  return "";
+}
+
+function inferRequirementMode_(subject, reqText) {
+  const t = String(reqText || "").trim();
+  if (!t) return "";
+  if (/(placement|assessment|accuplacer|test)/i.test(t)) return "placement_assessment";
+  if (subject === "english" && /(english language proficiency|language proficiency|ielts|toefl|duolingo|cael|pearson|pte)/i.test(t)) {
+    return "elp";
+  }
+  if (subject === "english" && /(english|ela|\b(?:20|30)-[12]\b)/i.test(t)) return "course";
+  if (subject === "math" && /(math|mathematics|\b(?:20|30)-[12]\b|\b31\b)/i.test(t)) return "course";
+  return "other_gate";
+}
+
+function getSubjectRequirementMode_(subject, row, idx) {
+  const modeColumn = subject === "english" ? "English_Requirement_Mode" : subject === "math" ? "Math_Requirement_Mode" : "";
+  const explicit = modeColumn ? normalizeRequirementModeToken_(getStr_(row, idx, modeColumn)) : "";
+  if (explicit) return explicit;
+  const req = subject === "english" ? unifyEnglishReq_(row, idx) : subject === "math" ? getStr_(row, idx, "Math_Req") : "";
+  return inferRequirementMode_(subject, req);
+}
+
+function getSubjectRequirementText_(subject, row, idx) {
+  const req = subject === "english" ? unifyEnglishReq_(row, idx) : subject === "math" ? getStr_(row, idx, "Math_Req") : "";
+  const mode = getSubjectRequirementMode_(subject, row, idx);
+  if (mode === "placement_assessment") return "Placement assessment";
+  if (mode === "elp") return "English language proficiency";
+  return req;
+}
+
 function toNumber_(v) {
   if (v === null || v === undefined) return NaN;
   const s = String(v).trim();
@@ -548,17 +584,43 @@ function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
     const competitive = getStr_(row, idx, "Competitive_Final");
     const sourceUrl = normalizeHttpUrlForOutput_(getStr_(row, idx, "Program_URL"));
     const requirementType = getStr_(row, idx, "Requirement_Type");
+    const avgTotalRaw = getStr_(row, idx, "Avg_Total");
+    const avgTotalNumber = toNumber_(avgTotalRaw);
+    const avgTotal = isFinite(avgTotalNumber) ? avgTotalNumber : parseCountToken_(avgTotalRaw);
+    const englishRequirement = getSubjectRequirementText_("english", row, idx);
+    const englishRequirementMode = getSubjectRequirementMode_("english", row, idx);
+    const englishMin = toNumber_(unifyEnglishMin_(row, idx));
+    const mathRequirement = getSubjectRequirementText_("math", row, idx);
+    const mathRequirementMode = getSubjectRequirementMode_("math", row, idx);
+    const mathMin = toNumber_(getStr_(row, idx, "Math_Min"));
+    const scienceRequirement = getStr_(row, idx, "Science_Req");
+    const scienceMin = toNumber_(getStr_(row, idx, "Science_Min"));
+    const electiveNeedRaw = getStr_(row, idx, "Elective_Need");
+    const electiveNeed = parseCountToken_(electiveNeedRaw);
+    const electiveGroupsRaw = getStr_(row, idx, "Elective_Groups");
+    const allowedGroups = electiveGroupsRaw ? parseAllowedGroups_(electiveGroupsRaw) : [];
 
     out.push({
       key: makeExplorerProgramKey_(institution, program, credential, r),
       institution,
       program,
       credential,
-      minAvg: isFinite(minAvg) ? Number(minAvg) : null,
+      minAvg: isFinite(minAvg) && minAvg > 0 ? Number(minAvg) : null,
       competitiveGuidance: competitive || "",
       requirementType: requirementType || "",
       sourceUrl,
       datasetDate: datasetDate || "",
+      avgTotal: isFinite(avgTotal) && avgTotal > 0 ? Number(avgTotal) : null,
+      englishRequirement: englishRequirement || "",
+      englishRequirementMode: englishRequirementMode || "",
+      englishMin: isFinite(englishMin) && englishMin > 0 ? Number(englishMin) : null,
+      mathRequirement: mathRequirement || "",
+      mathRequirementMode: mathRequirementMode || "",
+      mathMin: isFinite(mathMin) && mathMin > 0 ? Number(mathMin) : null,
+      scienceRequirement: scienceRequirement || "",
+      scienceMin: isFinite(scienceMin) && scienceMin > 0 ? Number(scienceMin) : null,
+      electiveNeed: isFinite(electiveNeed) && electiveNeed > 0 ? Number(electiveNeed) : null,
+      allowedGroups,
     });
   }
 
@@ -694,10 +756,14 @@ function courseAliases_() {
   return map;
 }
 
-function evalSubject_(courseMap, subject, reqText, minMark) {
+function evalSubject_(courseMap, subject, reqText, minMark, requirementMode) {
   const t = String(reqText || "").trim();
+  const mode = normalizeRequirementModeToken_(requirementMode) || inferRequirementMode_(subject, t);
   if (!t) return { kind: "none" };
   if (/^(See Degree|Refer to Degree)$/i.test(t)) return { kind: "unknown", reason: t };
+  if (mode === "placement_assessment") return { kind: "assessment", reason: "assessment/placement mentioned" };
+  if (mode === "elp") return { kind: "unknown", reason: "English language proficiency" };
+  if (mode === "other_gate") return { kind: "unknown", reason: t || `${title_(subject)} gate` };
   if (/(placement|assessment|test)/i.test(t)) return { kind: "assessment", reason: "assessment/placement mentioned" };
   if (/english language proficiency/i.test(t)) return { kind: "unknown", reason: "English language proficiency" };
   if (/\bunspecified\b/i.test(t)) return { kind: "unknown", reason: `${title_(subject)} requirement unspecified` };
@@ -1640,14 +1706,16 @@ function evaluateProgramsForStudent_(opts) {
     const competitiveGuidance = normalizeCompetitive_(getStr_(r, idx, "Competitive_Final"));
     appendDatasetNotes_(requirementTypeEffective, notes, advisories);
 
-    const englishReq = unifyEnglishReq_(r, idx);
+    const englishReq = getSubjectRequirementText_("english", r, idx);
+    const englishMode = getSubjectRequirementMode_("english", r, idx);
     const englishMin = toNumber_(unifyEnglishMin_(r, idx));
-    const englishEval = evalSubject_(courseMap, "english", englishReq, englishMin);
+    const englishEval = evalSubject_(courseMap, "english", englishReq, englishMin, englishMode);
     appendEval_(englishEval, "English", reasons, notes, advisories);
 
-    const mathReq = getStr_(r, idx, "Math_Req");
+    const mathReq = getSubjectRequirementText_("math", r, idx);
+    const mathMode = getSubjectRequirementMode_("math", r, idx);
     const mathMin = toNumber_(getStr_(r, idx, "Math_Min"));
-    const mathEval = evalSubject_(courseMap, "math", mathReq, mathMin);
+    const mathEval = evalSubject_(courseMap, "math", mathReq, mathMin, mathMode);
     appendEval_(mathEval, "Math", reasons, notes, advisories);
 
     const socialReq = getStr_(r, idx, "Social_Req");
@@ -2185,6 +2253,14 @@ function normalizeCompetitive_(text) {
   if (!t) return "";
   if (/^Minimum Only$/i.test(t)) return "";
   if (/^(See Degree|Refer to Degree)$/i.test(t)) return "";
+  if (
+    /(?:^|[\s>])nimum grades you need to achieve to be considered for admission to the program/i.test(t) ||
+    /minimum grades you need to achieve to be considered for admission to the program/i.test(t) ||
+    /program of choice is considered competitive/i.test(t) ||
+    /international students must qualify for admission under the regular or previous post-secondary categories/i.test(t)
+  ) {
+    return "";
+  }
   return t;
 }
 

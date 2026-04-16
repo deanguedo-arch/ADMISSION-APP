@@ -68,6 +68,7 @@ function boot() {
       function syncResultsDetailsPanelHeights() {
         if (!ui.resultsPanel || !ui.detailsPanel) return;
         ui.detailsPanel.style.height = "";
+        ui.detailsPanel.style.minHeight = "";
 
         const resultsRect = ui.resultsPanel.getBoundingClientRect();
         const detailsRect = ui.detailsPanel.getBoundingClientRect();
@@ -75,7 +76,7 @@ function boot() {
         if (!sideBySide) return;
 
         const targetHeight = Math.ceil(ui.resultsPanel.offsetHeight);
-        if (targetHeight > 0) ui.detailsPanel.style.height = `${targetHeight}px`;
+        if (targetHeight > 0) ui.detailsPanel.style.minHeight = `${targetHeight}px`;
       }
 
       function loadPublicBootstrap() {
@@ -128,6 +129,7 @@ function boot() {
         bindDatalist("namedCourses", state.boot.namedCourseOptions || []);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
         seedRows();
+        dedupeAllInputRows_();
         const stamp = formatUtcStamp(state.boot.generatedAt || "");
         const dataset = boot.dataset && typeof boot.dataset === "object" ? boot.dataset : {};
         const datasetDate = toYmdDate_(dataset.lastProgramsSyncUtc || dataset.lastProgramsSyncLocal || "");
@@ -1773,6 +1775,7 @@ function boot() {
         bindDatalist("namedCourses", state.boot.namedCourseOptions);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions);
         seedRows();
+        dedupeAllInputRows_();
         ui.stamp.textContent = "Local preview";
         ui.authLine.textContent = "Preview mode for layout and workflow testing.";
         updateSnapshotBannerDate_("2026-02-10");

@@ -1468,3 +1468,26 @@ Keep entries short and append-only.
   - `node .\tools\check-placement-confidence.js`
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
+
+## 2026-04-16 - Offline Pages explorer parity + details column unclipping
+
+- Traced the UAlberta explorer mismatch to the static Pages bridge, not the canonical data or live deployment:
+  - `offline_snapshot/src/offline_bridge.js` was still serializing legacy flat explorer rows
+  - GitHub Pages was therefore loading the new renderer with the old bootstrap payload shape
+- Fixed the offline bridge to delegate explorer row construction to `listExplorerProgramsForWeb_()` when available, so static Pages and Apps Script now share the same structured explorer payload.
+- Fixed desktop details-panel sizing:
+  - replaced fixed `height` syncing with `min-height` syncing in `syncResultsDetailsPanelHeights()`
+  - this prevents long post-check details from being visually clipped in the right column
+- Added a small boot-time input reconciliation step after `seedRows()` in both secure bootstrap and mock mode so browser-restored duplicate named-course rows are collapsed immediately.
+- Added regression checks:
+  - `tools/check-offline-bridge-explorer-bootstrap.js`
+  - `tools/check-details-panel-height-sync.js`
+- Rebuilt both `offline_snapshot/site` and branch-published `docs/`.
+- Verification PASS:
+  - `node .\tools\check-offline-bridge-explorer-bootstrap.js`
+  - `node .\tools\check-details-panel-height-sync.js`
+  - `node .\tools\check-explorer-program-structure.js`
+  - `node .\tools\check-course-input-upsert.js`
+  - `node .\tools\check-first-load-ux.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`
