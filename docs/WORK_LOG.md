@@ -1309,3 +1309,29 @@ Keep entries short and append-only.
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
   - local preview auth smoke at `http://localhost:5511/WebApp.html?mock=1`
+## 2026-04-16 (audit stability pass: broad-source truthfulness + placement normalization)
+- Tightened broad-source extraction so NorQuest open-studies / dual-credit catalog pages no longer:
+  - promote `ELP tests mentioned` into `Requirement_Type`
+  - emit `regular_admission` / `post-secondary pathway` from broad-source accessory text
+  - leak course prerequisites into structured subject requirement fields without requirement-context evidence
+- Added fixture coverage in `pipeline/fixtures/program_field_cases.json` for broad-source post-secondary wording that previously produced `regular_admission; notes: post-secondary pathway`.
+- Added `tools/check-audit-canonical-regressions.py` coverage for the NorQuest rows called out in audit review:
+  - unresolved/open-studies contamination examples stay off Alberta high-school requirement types
+  - placement/assessment rows must land on `placement_assessment` when `Math_Assessment_Flag=Yes`
+- Normalized canonical requirement typing in `tools/clean-master.ps1` so `Math_Assessment_Flag=Yes` consistently upgrades the final row to `placement_assessment`, including rows where rulesets add the placement flag after structured extraction.
+- Rebuilt with:
+  - `.venv\Scripts\python.exe .\pipeline\run.py --profile candidate --index pipeline\program_index.cleaned.csv --out pipeline_artifacts --extract-only`
+  - `powershell -ExecutionPolicy Bypass -File .\tools\clean-master.ps1`
+- Validation PASS:
+  - full `pipeline/check_*.py` suite
+  - `python .\tools\check-audit-canonical-regressions.py`
+  - `python .\tools\validate-dataset.py --input data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `python .\tools\build-review-queue.py --input data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `node .\tools\check-science-requirement-parsing.js`
+  - `node .\tools\check-placement-confidence.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`
+- Remaining warning-level review:
+  - 4 NorQuest `UNKNOWN_REQUIREMENT_TYPE_WITH_URL` rows remain in `out/review_queue.csv` because current extracted evidence only supports ELP signals, not a defensible requirement-type classification (`Teaching English as a Second Language`, `Practical Nurse Diploma for Internationally Educated Nurses`, `Autism Studies`, `Digital Marketing`)
+  - 8 MacEwan exact duplicate groups remain warning-only and are currently duplicate payload rows sharing the same admissions URL

@@ -96,10 +96,8 @@
       "avg_total": "5",
       "english_req": "English 30-2",
       "math_req": "Math 30-2",
-      "elective_qty": "3"
-    },
-    "expected_contains": {
-      "requirement_type": "alberta_high_school_courses; notes:"
+      "elective_qty": "3",
+      "requirement_type": "alberta_high_school_courses"
     },
     "min_confidence": {
       "min_avg_final": "high",
@@ -189,12 +187,12 @@
       "english_min": "60",
       "math_assessment_flag": "Yes",
       "bio_30_req": "Yes",
+      "requirement_type": "placement_assessment",
       "elp_tests_mentioned": "IELTS; TOEFL; Duolingo; CAEL; Pearson"
     },
     "expected_contains": {
       "english_req": "English 30-1",
-      "math_req": "Math 20-1",
-      "requirement_type": "placement_assessment; notes:"
+      "math_req": "Math 20-1"
     },
     "min_confidence": {
       "math_assessment_flag": "high",
@@ -274,5 +272,28 @@
       "requirement_type": "alberta_high_school_courses",
       "math_assessment_flag": "No"
     }
+  },
+  {
+    "id": "norquest-open-studies-catalog-does-not-promote-program-requirements",
+    "institution": "NorQuest",
+    "source_url": "https://www.norquest.ca/programs-and-courses/open-studies",
+    "text": "Open Studies - NorQuest College - Edmonton, Alberta. BIOL1007 Introduction to Cell Biology. Pre-requisites: Biology 30 and Chemistry 30. MATH1001 Calculus I. Pre-requisite: Mathematics 30-1 or 30-2. International applicants may demonstrate English language proficiency through IELTS, TOEFL, Duolingo, CAEL, or Pearson. Browse programs and courses.",
+    "expected_missing": [
+      "math_req",
+      "science_req",
+      "requirement_type",
+      "elp_tests_mentioned"
+    ]
+  },
+  {
+    "id": "norquest-open-studies-post-secondary-terms-do-not-promote-requirement-type",
+    "institution": "NorQuest",
+    "source_url": "https://www.norquest.ca/programs-and-courses/open-studies",
+    "text": "Open Studies - NorQuest College - Edmonton, Alberta. Students can use open studies courses to prepare for future programs. Transfer applicants may present post-secondary credits and a minimum GPA when pathways apply. International applicants may demonstrate English language proficiency through IELTS, TOEFL, Duolingo, CAEL, or Pearson. Browse programs and courses.",
+    "expected_missing": [
+      "requirement_type",
+      "elp_tests_mentioned",
+      "math_assessment_flag"
+    ]
   }
 ]

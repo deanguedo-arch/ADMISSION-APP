@@ -442,11 +442,7 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
     return $text
   }
 
-  if (
-    $mathAssessment -eq "yes" `
-    -and -not $lower.StartsWith("placement_assessment") `
-    -and ($lower.StartsWith("alberta_high_school_courses") -or $lower.StartsWith("first_year_admission"))
-  ) {
+  if ($mathAssessment -eq "yes" -and -not $lower.StartsWith("placement_assessment")) {
     $notesIndex = $lower.IndexOf("; notes:")
     if ($notesIndex -ge 0) {
       return "placement_assessment$($text.Substring($notesIndex))"

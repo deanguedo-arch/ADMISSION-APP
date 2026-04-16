@@ -366,6 +366,14 @@ POST_SECONDARY_NOTE_CONTEXT_PATTERN = (
     r"\b(?:admission|admissions|entrance|require|required|requirements|applicant|applicants|must|minimum|"
     r"eligible|eligibility|accredited|recognized)\b"
 )
+BROAD_SOURCE_REQUIREMENT_CONTEXT_PATTERN = (
+    r"\b(?:minimum\s+(?:entrance|admission)\s+requirements?|program\s+requirements?|"
+    r"subject\s+requirements?|applicants?\s+must|must\s+(?:complete|present|achieve)|"
+    r"required\s+for\s+admission|admission\s+average|competitive\s+average|entrance\s+requirements?)\b"
+)
+BROAD_SOURCE_CATALOG_MARKER_PATTERN = (
+    r"\b(?:pre-?requisites?|lecture|lab|work experience|credit(?:s)?|course code|course description)\b"
+)
 
 
 def fragment_has_requirement_context(fragment: str, context_pattern: str = STRICT_NOTE_CONTEXT_PATTERN) -> bool:
@@ -400,6 +408,22 @@ def is_broad_accessory_note_source(source_url: str | None) -> bool:
     return any(token in url for token in broad_tokens)
 
 
+def allow_broad_source_signal(
+    source_url: str | None,
+    snippet: str | None,
+    *,
+    context_pattern: str = STRICT_NOTE_CONTEXT_PATTERN,
+) -> bool:
+    if not is_broad_accessory_note_source(source_url):
+        return True
+    normalized = normalize_text(snippet)
+    if not normalized:
+        return False
+    if re.search(BROAD_SOURCE_CATALOG_MARKER_PATTERN, normalized, flags=re.I):
+        return False
+    return fragment_has_requirement_context(normalized, BROAD_SOURCE_REQUIREMENT_CONTEXT_PATTERN)
+
+
 def extract_note_tokens(text: str, source_url: str | None = "") -> list[str]:
     notes = extract_group_constraint_notes(text)
     allow_accessory_notes = not is_broad_accessory_note_source(source_url)
@@ -412,15 +436,9 @@ def extract_note_tokens(text: str, source_url: str | None = "") -> list[str]:
             notes.append("audition required")
         if has_requirement_local_note(text, r"\binterview\b"):
             notes.append("interview required")
-    if re.search(r"\bregular admission\b", text, flags=re.I):
+    if not is_broad_accessory_note_source(source_url) and re.search(r"\bregular admission\b", text, flags=re.I):
         notes.append("regular admission")
-    if has_requirement_local_note(
-        text,
-        r"\benglish\s+language\s+proficiency\b|\bielts\b|\btoefl\b|\bduolingo\b|\bcael\b|\bpearson\b|\bpte\b",
-        ELP_NOTE_CONTEXT_PATTERN,
-    ):
-        notes.append("ELP tests mentioned")
-    if has_requirement_local_note(
+    if allow_accessory_notes and has_requirement_local_note(
         text,
         r"\b(?:two-year diploma|post-secondary credits?|minimum gpa|graduation gpa|accredited or recognized institution)\b",
         POST_SECONDARY_NOTE_CONTEXT_PATTERN,
@@ -755,14 +773,15 @@ def derive_requirement_type(
     has_min_average: bool,
     source_url: str | None = "",
 ) -> tuple[str | None, list[str], str]:
+    broad_source = is_broad_accessory_note_source(source_url)
     notes = extract_note_tokens(text, source_url=source_url)
     if has_assessment_pathway_signal(text, source_url=source_url):
         return "placement_assessment", notes, "high"
     if has_subject_requirements or has_min_average:
         return "alberta_high_school_courses", notes, ("high" if notes else "medium")
-    if has_post_secondary_pathway_signal(text):
+    if not broad_source and has_post_secondary_pathway_signal(text):
         return "regular_admission", notes, "medium"
-    if re.search(r"\bregular admission\b", text, flags=re.I):
+    if not broad_source and re.search(r"\bregular admission\b", text, flags=re.I):
         return "regular_admission", notes, "medium"
     return None, notes, "none"
 
@@ -817,36 +836,49 @@ def extract_generic_program_fields(
         text = normalize_text(document.text)
         if not text:
             continue
+        broad_source = is_broad_accessory_note_source(document.url)
 
         min_avg, min_rule, min_snippet = extract_min_average(text)
+        if min_avg and not allow_broad_source_signal(document.url, min_snippet):
+            min_avg, min_rule, min_snippet = None, None, None
         if min_avg:
             record_field(fields, evidence, "min_avg_final", min_avg, confidence="high", rule_id=min_rule, snippet=min_snippet, source_url=document.url)
 
         competitive_text, competitive_floor, competitive_snippet = extract_competitive(text)
+        if competitive_text and not allow_broad_source_signal(document.url, competitive_snippet):
+            competitive_text, competitive_floor, competitive_snippet = None, None, None
         if competitive_text:
             record_field(fields, evidence, "competitive_final", competitive_text, confidence="medium", rule_id="competitive_context", snippet=competitive_snippet, source_url=document.url)
         if competitive_floor:
             record_field(fields, evidence, "competitive_floor_numeric", competitive_floor, confidence="low", rule_id="competitive_floor", snippet=competitive_snippet, source_url=document.url)
 
         english_req, english_min, english_snippet = extract_courses_and_min(text, ENGLISH_PATTERNS, fallback_label="English Language Arts", rule_prefix="english")
+        if english_req and not allow_broad_source_signal(document.url, english_snippet):
+            english_req, english_min, english_snippet = None, None, None
         if english_req:
             record_field(fields, evidence, "english_req", english_req, confidence="high", rule_id="english_course_parse", snippet=english_snippet, source_url=document.url)
         if english_min:
             record_field(fields, evidence, "english_min", english_min, confidence="high", rule_id="english_min_parse", snippet=english_snippet, source_url=document.url)
 
         math_req, math_min, math_snippet = extract_courses_and_min(text, MATH_PATTERNS, fallback_label="Mathematics", rule_prefix="math")
+        if math_req and not allow_broad_source_signal(document.url, math_snippet):
+            math_req, math_min, math_snippet = None, None, None
         if math_req:
             record_field(fields, evidence, "math_req", math_req, confidence="high", rule_id="math_course_parse", snippet=math_snippet, source_url=document.url)
         if math_min:
             record_field(fields, evidence, "math_min", math_min, confidence="high", rule_id="math_min_parse", snippet=math_snippet, source_url=document.url)
 
         social_req, social_min, social_snippet = extract_courses_and_min(text, SOCIAL_PATTERNS, fallback_label="Social Studies", rule_prefix="social")
+        if social_req and not allow_broad_source_signal(document.url, social_snippet):
+            social_req, social_min, social_snippet = None, None, None
         if social_req:
             record_field(fields, evidence, "social_req", social_req, confidence="medium", rule_id="social_course_parse", snippet=social_snippet, source_url=document.url)
         if social_min:
             record_field(fields, evidence, "social_min", social_min, confidence="medium", rule_id="social_min_parse", snippet=social_snippet, source_url=document.url)
 
         science_req, science_min, science_snippet, science_flags = extract_science_details(text)
+        if science_req and not allow_broad_source_signal(document.url, science_snippet):
+            science_req, science_min, science_snippet, science_flags = None, None, None, {}
         if science_req:
             record_field(fields, evidence, "science_req", science_req, confidence="high", rule_id="science_course_parse", snippet=science_snippet, source_url=document.url)
         if science_min:
@@ -856,6 +888,8 @@ def extract_generic_program_fields(
                 record_field(fields, evidence, flag_name, flag_value, confidence="high", rule_id="science_flag_parse", snippet=science_snippet, source_url=document.url)
 
         elective_qty, elective_pool, elective_snippet = extract_elective_details(text)
+        if elective_qty and not allow_broad_source_signal(document.url, elective_snippet):
+            elective_qty, elective_pool, elective_snippet = None, None, None
         if elective_qty:
             record_field(fields, evidence, "elective_qty", elective_qty, confidence="medium", rule_id="elective_qty_parse", snippet=elective_snippet, source_url=document.url)
         if elective_pool:
@@ -880,6 +914,10 @@ def extract_generic_program_fields(
                 record_field(fields, evidence, "math_assessment_flag", math_assessment_flag, confidence="high", rule_id="math_assessment_detect", snippet=assessment_snippet, source_url=document.url)
 
             elp_tests, elp_snippet = extract_elp_tests(text)
+            if elp_tests and broad_source:
+                elp_tests, elp_snippet = None, None
+            elif elp_tests and not allow_broad_source_signal(document.url, elp_snippet, context_pattern=ELP_NOTE_CONTEXT_PATTERN):
+                elp_tests, elp_snippet = None, None
             if elp_tests:
                 record_field(fields, evidence, "elp_tests_mentioned", elp_tests, confidence="medium", rule_id="elp_test_detect", snippet=elp_snippet, source_url=document.url)
 

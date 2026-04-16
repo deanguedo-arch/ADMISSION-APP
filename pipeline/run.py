@@ -1053,13 +1053,7 @@ def normalize_assessment_requirement_type(
         return extraction
     if requirement_type.lower().startswith("placement_assessment"):
         return extraction
-
     lowered = requirement_type.lower()
-    if requirement_type and not (
-        lowered.startswith("alberta_high_school_courses")
-        or lowered.startswith("first_year_admission")
-    ):
-        return extraction
     notes_index = lowered.find("; notes:")
     suffix = requirement_type[notes_index:] if notes_index >= 0 else ""
     normalized = f"placement_assessment{suffix}"
