@@ -40,8 +40,8 @@ function main() {
   );
   assert.match(
     block,
-    /ui\.stamp\.textContent\s*=\s*"Awaiting sign-in";/,
-    "auth-required bootstrap should leave the page in an awaiting-sign-in state"
+    /ui\.stamp\.textContent\s*=\s*"Sign-in required";/,
+    "auth-required bootstrap should leave the page in a sign-in-required state"
   );
   assert.match(
     block,

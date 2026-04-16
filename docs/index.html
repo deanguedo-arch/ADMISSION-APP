@@ -71,7 +71,7 @@
         justify-content: space-between;
         gap: 12px;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
 
       .hero-main {
@@ -80,7 +80,7 @@
         border-top: 4px solid var(--brand);
         border-radius: 12px;
         background: var(--bg-panel);
-        padding: 10px 14px;
+        padding: 8px 12px;
       }
 
       .brand-lockup {
@@ -90,8 +90,8 @@
       }
 
       .brand-logo {
-        width: min(42vw, 280px);
-        max-height: 68px;
+        width: min(38vw, 240px);
+        max-height: 56px;
         object-fit: contain;
         object-position: left center;
       }
@@ -107,22 +107,22 @@
       .subtitle {
         margin: 5px 0 0;
         color: var(--ink-soft);
-        font-size: 0.93rem;
+        font-size: 0.89rem;
       }
 
       .stamp {
-        font-size: 0.86rem;
+        font-size: 0.82rem;
         color: var(--brand-dark);
-        padding: 8px 10px;
+        padding: 7px 9px;
         border: 1px solid var(--line);
         border-radius: 10px;
         background: var(--bg-panel);
-        min-width: 260px;
+        min-width: 220px;
       }
 
       .auth-strip {
-        margin-bottom: 12px;
-        padding: 10px 12px;
+        margin-bottom: 10px;
+        padding: 8px 10px;
         border: 1px solid var(--line);
         border-radius: 12px;
         background: var(--bg-panel);
@@ -387,7 +387,14 @@
       }
 
       .run-actions {
-        margin-top: 12px;
+        margin: 0 0 12px;
+        padding: 2px 0 12px;
+        border-bottom: 1px solid #e4ece8;
+        align-items: center;
+      }
+
+      .run-actions .btn {
+        min-width: 140px;
       }
 
       .btn {
@@ -3434,7 +3441,7 @@
         padding: 14px 12px;
         background: #f8fcfa;
         display: grid;
-        gap: 4px;
+        gap: 6px;
       }
 
       .empty-state h3 {
@@ -3447,6 +3454,15 @@
         margin: 0;
         font-size: 0.86rem;
         color: #4e665d;
+      }
+
+      .empty-checklist {
+        margin: 0;
+        padding-left: 18px;
+        color: #33564b;
+        font-size: 0.85rem;
+        display: grid;
+        gap: 4px;
       }
 
       .card-actions {
@@ -4916,7 +4932,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Next Step" />
 </head>
-  <body data-screen="results">
+  <body data-screen="inputs">
     <div class="shell" id="appShell">
       <div id="appHeader">
       <header class="hero">
@@ -4953,8 +4969,14 @@
               aria-controls="studentInputsPanel"
             >Hide <<</button>
           </div>
-          <p class="hint" id="inputsHint">Add final marks only. Duplicate courses are deduped automatically (latest entry wins).</p>
+          <p class="hint" id="inputsHint">Add final marks only. Keep one row per course and update marks in place when needed.</p>
           <p class="hint core-flow-note">Core workflow: add courses, run check, review top recommendations, capture decision note.</p>
+
+          <div class="actions run-actions">
+            <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
+            <button class="btn btn-danger-lite" id="resetBtn" type="button">Reset Form</button>
+          </div>
+          <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></p>
 
           <h3>Named Courses</h3>
           <table id="namedTable">
@@ -4990,11 +5012,6 @@
             </div>
           </div>
 
-          <div class="actions run-actions">
-            <button class="btn btn-main" id="runBtn" type="button">Check Eligibility</button>
-            <button class="btn btn-danger-lite" id="resetBtn" type="button">Reset Form</button>
-          </div>
-          <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></p>
         </section>
 
         <section class="panel panel-results mobile-screen" id="resultsPanel" data-mobile-screen="results">
@@ -5017,10 +5034,10 @@
           </div>
 
           <div class="mode-tabs" id="modeTabs" role="tablist" aria-label="Program views">
-            <button class="mode-tab" type="button" data-mode="explorer" aria-selected="false">
+            <button class="mode-tab active" type="button" data-mode="explorer" aria-selected="true">
               Program Explorer <span class="mode-count" id="modeCountExplorer">0</span>
             </button>
-            <button class="mode-tab active" type="button" data-mode="results" aria-selected="true">
+            <button class="mode-tab" type="button" data-mode="results" aria-selected="false">
               Eligibility Results <span class="mode-count" id="modeCountResults">0</span>
             </button>
             <button class="mode-tab" type="button" data-mode="pinned" aria-selected="false">
@@ -5096,11 +5113,14 @@
               </button>
             </div>
 
-            <div class="ghost" id="rowsStamp" role="status" aria-live="polite" aria-atomic="true">No results yet</div>
+            <div class="ghost" id="rowsStamp" role="status" aria-live="polite" aria-atomic="true">Program Explorer loading...</div>
           </div>
 
           <div class="results-wrap" id="resultsWrap">
-            <div class="empty">Run a check to see program-by-program results.</div>
+            <div class="empty-state">
+              <h3>Start with student marks</h3>
+              <p>Program Explorer will load admissions routes while you enter final marks.</p>
+            </div>
           </div>
 
           <section class="compare-panel" id="comparePanel">
@@ -5125,7 +5145,10 @@
           </div>
           <h2 class="desktop-details-title">Program Details</h2>
           <div class="details-drawer" id="detailsDrawer">
-            <div class="ghost">Select a program card to inspect requirements and next steps.</div>
+            <div class="empty-state">
+              <h3>Program details will appear here</h3>
+              <p>Browse Program Explorer or run Check Eligibility, then open any program for requirements, gaps, and next steps.</p>
+            </div>
           </div>
         </section>
       </main>
@@ -5182,18 +5205,20 @@
       const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all"];
       const DEFAULT_RESULT_SORT = "closest";
       const PRIMARY_MODES = ["results", "explorer", "pinned", "compare"];
+      const DEFAULT_PRIMARY_MODE = "explorer";
+      const DEFAULT_RESULT_VIEW = "all";
       const MOBILE_BREAKPOINT = 980;
       const MOBILE_PAGE_SIZE = 40;
-      const MOBILE_SCREEN_DEFAULT = "results";
+      const MOBILE_SCREEN_DEFAULT = "inputs";
       const MOBILE_SCREENS = ["inputs", "results", "pinned", "compare", "details"];
 
       const state = {
         boot: null,
         result: null,
         resultModel: null,
-        primaryMode: "results",
+        primaryMode: DEFAULT_PRIMARY_MODE,
         explorerRows: [],
-        view: "ineligible",
+        view: DEFAULT_RESULT_VIEW,
         shortlist: {},
         selectedProgramKey: "",
         selectedExplorerKey: "",
@@ -5416,7 +5441,7 @@ function boot() {
           ui.googleSignIn.innerHTML = "";
           ui.authLine.textContent = message || `Sign in with your ${allowedDomainSuffix} account.`;
           initializeGoogleSignIn(auth.googleClientId || "", allowedDomainSuffix);
-          ui.stamp.textContent = "Awaiting sign-in";
+          ui.stamp.textContent = "Sign-in required";
           setStatus(message || "Sign in to load course options.");
           updateMobileTopMetaVisibility_();
           return;
@@ -5429,8 +5454,15 @@ function boot() {
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions || []);
         seedRows();
         const stamp = formatUtcStamp(state.boot.generatedAt || "");
-        ui.stamp.textContent = stamp ? `Options loaded: ${stamp}` : "Options loaded";
-        ui.authLine.textContent = state.auth.email ? `Signed in as ${state.auth.email}` : "Authenticated";
+        const dataset = boot.dataset && typeof boot.dataset === "object" ? boot.dataset : {};
+        const datasetDate = toYmdDate_(dataset.lastProgramsSyncUtc || dataset.lastProgramsSyncLocal || "");
+        const friendlyDatasetDate = formatFriendlyDate_(datasetDate);
+        ui.stamp.textContent = friendlyDatasetDate
+          ? `Admissions data updated ${friendlyDatasetDate}`
+          : "Advisor workspace ready";
+        ui.stamp.title = stamp ? `Options ready: ${stamp}` : "";
+        ui.authLine.textContent = state.auth.email ? "Staff access ready" : "Access ready";
+        ui.authLine.title = state.auth.email || "";
         updateSnapshotBannerFromBoot_(state.boot);
         updateModeCounts_();
         syncModeTabs_();
@@ -5532,8 +5564,8 @@ function boot() {
         for (let i = 0; i < electiveSlots; i++) addElectiveRow();
         state.result = null;
         state.resultModel = null;
-        state.primaryMode = "results";
-        state.view = "ineligible";
+        state.primaryMode = DEFAULT_PRIMARY_MODE;
+        state.view = DEFAULT_RESULT_VIEW;
         state.shortlist = {};
         state.selectedProgramKey = "";
         state.selectedExplorerKey = "";
@@ -5547,8 +5579,8 @@ function boot() {
         state.electiveRulesCollapsed = false;
         state.mobileRenderLimit = MOBILE_PAGE_SIZE;
         state.mobileFilterDrawerOpen = false;
-        state.mobileScreen = normalizeMobileScreenName_(state.mobileScreen || MOBILE_SCREEN_DEFAULT);
-        state.lastNonDetailScreen = state.mobileScreen === "details" ? MOBILE_SCREEN_DEFAULT : state.mobileScreen;
+        state.mobileScreen = MOBILE_SCREEN_DEFAULT;
+        state.lastNonDetailScreen = MOBILE_SCREEN_DEFAULT;
         if (ui.csvBtn) ui.csvBtn.disabled = true;
         if (ui.pdfBtn) ui.pdfBtn.disabled = true;
         syncResultControlContext_();
@@ -6137,7 +6169,7 @@ function boot() {
           sessionId: String(model.sessionId || ""),
           event: name,
           mode: normalizePrimaryMode_(state.primaryMode),
-          view: String(state.view || "ineligible"),
+          view: String(state.view || DEFAULT_RESULT_VIEW),
           payload: sanitizeTelemetryPayload_(payload),
         };
         model.events.push(record);
@@ -6160,7 +6192,7 @@ function boot() {
             mockMode: state.mockMode ? 1 : 0,
             signedInAs: String(state.auth && state.auth.email ? state.auth.email : ""),
             primaryMode: normalizePrimaryMode_(state.primaryMode),
-            currentView: String(state.view || "ineligible"),
+            currentView: String(state.view || DEFAULT_RESULT_VIEW),
             datasetStamp: getResultDatasetStamp() || "",
             datasetDate: getResultDatasetDate() || "",
           },
@@ -6696,7 +6728,7 @@ function boot() {
       function applyResultPayload(result) {
         state.result = result || null;
         state.resultModel = buildResultModel(state.result);
-        if (RESULT_VIEWS.indexOf(state.view) < 0) state.view = "ineligible";
+        if (RESULT_VIEWS.indexOf(state.view) < 0) state.view = DEFAULT_RESULT_VIEW;
         trimShortlistToCurrentModel();
         trimCompareToCurrentModel();
         if (state.selectedProgramKey && !(state.resultModel && state.resultModel.rowsByKey && state.resultModel.rowsByKey[state.selectedProgramKey])) {
@@ -6986,8 +7018,8 @@ function boot() {
         bindDatalist("namedCourses", state.boot.namedCourseOptions);
         bindDatalist("electiveCourses", state.boot.electiveCourseOptions);
         seedRows();
-        ui.stamp.textContent = "Mock mode";
-        ui.authLine.textContent = "Local preview mode (no real student data is sent).";
+        ui.stamp.textContent = "Local preview";
+        ui.authLine.textContent = "Preview mode for layout and workflow testing.";
         updateSnapshotBannerDate_("2026-02-10");
         updateMobileTopMetaVisibility_();
         updateModeCounts_();
@@ -7006,6 +7038,24 @@ function boot() {
       function formatUtcStamp(value) {
         const iso = String(value || "").trim();
         return iso ? iso.replace("T", " ").replace("Z", " UTC") : "";
+      }
+
+      function formatFriendlyDate_(value) {
+        const ymd = toYmdDate_(value || "");
+        if (!ymd) return "";
+        const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return ymd;
+        const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+        try {
+          return new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            timeZone: "UTC",
+          }).format(date);
+        } catch (_err) {
+          return ymd;
+        }
       }
 
       function toYmdDate_(value) {
@@ -7078,20 +7128,26 @@ function boot() {
       function updateSnapshotBannerDate_(datasetDate) {
         if (!ui.snapshotDataDate) return;
         const ymd = toYmdDate_(datasetDate || "");
+        const friendlyDate = formatFriendlyDate_(ymd);
         if (ui.snapshotBanner) ui.snapshotBanner.classList.remove("fresh", "aging", "stale");
         if (!ymd) {
-          ui.snapshotDataDate.textContent = "Data date: n/a";
+          ui.snapshotDataDate.textContent = "Admissions data date unavailable";
           return;
         }
 
         const daysOld = parseDatasetDateDaysOld_(ymd);
         if (daysOld === null) {
-          ui.snapshotDataDate.textContent = `Data date: ${ymd}`;
+          ui.snapshotDataDate.textContent = friendlyDate
+            ? `Admissions data refreshed ${friendlyDate}`
+            : `Admissions data refreshed ${ymd}`;
           return;
         }
 
         const stale = isDatasetStale_(daysOld);
-        ui.snapshotDataDate.textContent = `Data date: ${ymd} (${daysOld} day${daysOld === 1 ? "" : "s"} old)`;
+        const relative = daysOld === 0 ? "" : ` (${daysOld} day${daysOld === 1 ? "" : "s"} ago)`;
+        ui.snapshotDataDate.textContent = friendlyDate
+          ? `Admissions data refreshed ${friendlyDate}${relative}`
+          : `Admissions data refreshed ${ymd}${relative}`;
         if (ui.snapshotBanner) ui.snapshotBanner.classList.add(stale.bucket);
       }
 
@@ -7110,6 +7166,8 @@ function boot() {
       function updateHeaderStampFromResult() {
         if (!state.result) return;
         const meta = getResultMeta();
+        const datasetDate = getResultDatasetDate() || toYmdDate_(meta.lastProgramsSyncUtc || meta.lastProgramsSyncLocal || "");
+        const friendlyDatasetDate = formatFriendlyDate_(datasetDate);
         const generated = formatUtcStamp(state.result.generatedAt || meta.generatedAt || "");
         const syncedLocal = String(meta.lastProgramsSyncLocal || "").trim();
         const synced = formatUtcStamp(meta.lastProgramsSyncUtc || "");
@@ -7118,10 +7176,11 @@ function boot() {
         const institutions = uniqueStrings(
           rows.map((row) => String(row.institution || "").trim()).filter(Boolean)
         );
-        const sourceText = institutions.length ? institutions.slice(0, 3).join(" / ") : "Admissions dataset";
-        const updateText = syncedLocal || synced || generated || "n/a";
-        ui.stamp.textContent = `Data updated: ${updateText} | Source: ${sourceText}`;
+        ui.stamp.textContent = friendlyDatasetDate
+          ? `Admissions data updated ${friendlyDatasetDate}`
+          : "Advisor workspace ready";
         const hidden = [];
+        if (institutions.length) hidden.push(`Institutions: ${institutions.slice(0, 3).join(" / ")}`);
         if (syncedLocal) hidden.push(`Synced (local): ${syncedLocal}`);
         if (synced) hidden.push(`Synced (UTC): ${synced}`);
         if (generated) hidden.push(`Generated: ${generated}`);
@@ -7132,8 +7191,8 @@ function boot() {
       }
 
       function normalizePrimaryMode_(value) {
-        const mode = String(value || "results").trim().toLowerCase();
-        return PRIMARY_MODES.indexOf(mode) >= 0 ? mode : "results";
+        const mode = String(value || DEFAULT_PRIMARY_MODE).trim().toLowerCase();
+        return PRIMARY_MODES.indexOf(mode) >= 0 ? mode : DEFAULT_PRIMARY_MODE;
       }
 
       function getSortOptionsForMode_(mode) {
@@ -7203,7 +7262,7 @@ function boot() {
           return;
         }
         state.primaryMode = next;
-        if (next === "results" && RESULT_VIEWS.indexOf(state.view) < 0) state.view = "ineligible";
+        if (next === "results" && RESULT_VIEWS.indexOf(state.view) < 0) state.view = DEFAULT_RESULT_VIEW;
         if (next !== "results" && next !== "pinned") closeFiltersDrawer_({ silent: true });
         if (next !== previous && options.track !== false) trackUiEvent_("mode_switch", { to: next });
         syncModeTabs_();
@@ -7231,7 +7290,7 @@ function boot() {
         if (state.primaryMode !== "results") return;
         const btn = e.target && e.target.closest("button[data-view]");
         if (!btn) return;
-        const nextView = String(btn.dataset.view || "ineligible").trim();
+        const nextView = String(btn.dataset.view || DEFAULT_RESULT_VIEW).trim();
         if (RESULT_VIEWS.indexOf(nextView) < 0) return;
         state.view = nextView;
         resetMobileRenderLimit_();
@@ -7740,6 +7799,34 @@ function boot() {
         `;
       }
 
+      function renderGettingStartedStateHtml_() {
+        return `
+          <div class="empty-state">
+            <h3>Start with student marks</h3>
+            <p>Program Explorer is ready while you enter final Grade 12 marks. Run Check Eligibility when you want ranked matches.</p>
+            <ul class="empty-checklist">
+              <li>Enter final Grade 12 courses and marks</li>
+              <li>Use Check Eligibility to rank likely-fit programs</li>
+              <li>Select a program to review requirements, gaps, and next steps</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      function renderDetailsIntroStateHtml_() {
+        return `
+          <div class="empty-state">
+            <h3>Program details will appear here</h3>
+            <p>Browse Program Explorer or run Check Eligibility, then open any program for a clearer admission route and next steps.</p>
+            <ul class="empty-checklist">
+              <li>Use Program Explorer for a quick route and minimum-average scan</li>
+              <li>Run Check Eligibility after entering student marks</li>
+              <li>Pin or compare programs once a shortlist starts to form</li>
+            </ul>
+          </div>
+        `;
+      }
+
       function normalizeDisplayCopy_(value) {
         return String(value || "").replace(/\s+/g, " ").trim();
       }
@@ -7981,11 +8068,13 @@ function boot() {
           ui.rowsStamp.textContent = shownCount === viewCount ? `${shownCount} programs` : `${shownCount} of ${viewCount} programs`;
 
           if (!filteredRows.length) {
-            const emptyMsg =
-              viewCount === 0
-                ? "Program Explorer is empty."
-                : "No programs match the current filters. Clear filters to widen results.";
-            ui.resultsWrap.innerHTML = renderEmptyStateHtml_("No Explorer Matches", emptyMsg);
+            ui.resultsWrap.innerHTML = viewCount === 0
+              ? renderGettingStartedStateHtml_()
+              : renderEmptyStateHtml_(
+                  "No Explorer Matches",
+                  "No programs match the current filters. Clear filters to widen results."
+                );
+            ui.rowsStamp.textContent = viewCount === 0 ? "Program Explorer ready after data loads" : ui.rowsStamp.textContent;
             syncResultControls();
             renderDetailsDrawer();
             return;
@@ -8049,11 +8138,8 @@ function boot() {
         }
 
         if (!state.result || !state.resultModel) {
-          ui.resultsWrap.innerHTML = renderEmptyStateHtml_(
-            "Run Eligibility Check",
-            "Add courses and marks, then run check to see ranked program recommendations."
-          );
-          ui.rowsStamp.textContent = "No results yet";
+          ui.resultsWrap.innerHTML = renderGettingStartedStateHtml_();
+          ui.rowsStamp.textContent = "Enter marks to unlock ranked matches";
           syncResultControls();
           updateFilterCounts();
           renderCompareStrip();
@@ -8234,7 +8320,7 @@ function boot() {
       function renderExplorerDetailsDrawer_() {
         const rows = Array.isArray(state.explorerRows) ? state.explorerRows : [];
         if (!rows.length) {
-          ui.detailsDrawer.innerHTML = `<div class="ghost">Program Explorer is empty. Run a check or reload data.</div>`;
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           return;
         }
 
@@ -8244,7 +8330,7 @@ function boot() {
           state.selectedExplorerKey = row ? row.key : "";
         }
         if (!row) {
-          ui.detailsDrawer.innerHTML = `<div class="ghost">Select a program to inspect details.</div>`;
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           return;
         }
 
@@ -8530,10 +8616,7 @@ function boot() {
         }
         const model = state.resultModel;
         if (!model || !model.rowsByKey) {
-          ui.detailsDrawer.innerHTML = renderEmptyStateHtml_(
-            "Program Detail",
-            "Select a program card to inspect requirements, gaps, and next steps."
-          );
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           schedulePanelHeightSync();
           return;
         }
@@ -8547,10 +8630,7 @@ function boot() {
         }
 
         if (!row) {
-          ui.detailsDrawer.innerHTML = renderEmptyStateHtml_(
-            "Program Detail",
-            "Select a program card to inspect requirements, gaps, and next steps."
-          );
+          ui.detailsDrawer.innerHTML = renderDetailsIntroStateHtml_();
           schedulePanelHeightSync();
           return;
         }

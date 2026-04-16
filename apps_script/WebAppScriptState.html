@@ -3,18 +3,20 @@
       const RESULT_VIEWS = ["eligible", "ineligible", "uncheckable", "all"];
       const DEFAULT_RESULT_SORT = "closest";
       const PRIMARY_MODES = ["results", "explorer", "pinned", "compare"];
+      const DEFAULT_PRIMARY_MODE = "explorer";
+      const DEFAULT_RESULT_VIEW = "all";
       const MOBILE_BREAKPOINT = 980;
       const MOBILE_PAGE_SIZE = 40;
-      const MOBILE_SCREEN_DEFAULT = "results";
+      const MOBILE_SCREEN_DEFAULT = "inputs";
       const MOBILE_SCREENS = ["inputs", "results", "pinned", "compare", "details"];
 
       const state = {
         boot: null,
         result: null,
         resultModel: null,
-        primaryMode: "results",
+        primaryMode: DEFAULT_PRIMARY_MODE,
         explorerRows: [],
-        view: "ineligible",
+        view: DEFAULT_RESULT_VIEW,
         shortlist: {},
         selectedProgramKey: "",
         selectedExplorerKey: "",

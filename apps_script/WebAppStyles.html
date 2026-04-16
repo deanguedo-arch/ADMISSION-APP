@@ -53,7 +53,7 @@
         justify-content: space-between;
         gap: 12px;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
 
       .hero-main {
@@ -62,7 +62,7 @@
         border-top: 4px solid var(--brand);
         border-radius: 12px;
         background: var(--bg-panel);
-        padding: 10px 14px;
+        padding: 8px 12px;
       }
 
       .brand-lockup {
@@ -72,8 +72,8 @@
       }
 
       .brand-logo {
-        width: min(42vw, 280px);
-        max-height: 68px;
+        width: min(38vw, 240px);
+        max-height: 56px;
         object-fit: contain;
         object-position: left center;
       }
@@ -89,22 +89,22 @@
       .subtitle {
         margin: 5px 0 0;
         color: var(--ink-soft);
-        font-size: 0.93rem;
+        font-size: 0.89rem;
       }
 
       .stamp {
-        font-size: 0.86rem;
+        font-size: 0.82rem;
         color: var(--brand-dark);
-        padding: 8px 10px;
+        padding: 7px 9px;
         border: 1px solid var(--line);
         border-radius: 10px;
         background: var(--bg-panel);
-        min-width: 260px;
+        min-width: 220px;
       }
 
       .auth-strip {
-        margin-bottom: 12px;
-        padding: 10px 12px;
+        margin-bottom: 10px;
+        padding: 8px 10px;
         border: 1px solid var(--line);
         border-radius: 12px;
         background: var(--bg-panel);
@@ -369,7 +369,14 @@
       }
 
       .run-actions {
-        margin-top: 12px;
+        margin: 0 0 12px;
+        padding: 2px 0 12px;
+        border-bottom: 1px solid #e4ece8;
+        align-items: center;
+      }
+
+      .run-actions .btn {
+        min-width: 140px;
       }
 
       .btn {
@@ -3416,7 +3423,7 @@
         padding: 14px 12px;
         background: #f8fcfa;
         display: grid;
-        gap: 4px;
+        gap: 6px;
       }
 
       .empty-state h3 {
@@ -3429,6 +3436,15 @@
         margin: 0;
         font-size: 0.86rem;
         color: #4e665d;
+      }
+
+      .empty-checklist {
+        margin: 0;
+        padding-left: 18px;
+        color: #33564b;
+        font-size: 0.85rem;
+        display: grid;
+        gap: 4px;
       }
 
       .card-actions {

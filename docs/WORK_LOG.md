@@ -1418,3 +1418,24 @@ Keep entries short and append-only.
   - `node .\tools\check-web-auth-bootstrap.js`
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
+
+## 2026-04-16 - First-load UX slice for counselor workflow
+
+- Changed the default opening state away from empty/ineligible results:
+  - desktop now lands in `Program Explorer`
+  - mobile now lands on `Inputs`
+  - `resetForm()` restores those same safer defaults
+- Moved the primary `Check Eligibility` action above the course tables so it is visible before the fold.
+- Replaced debug-heavy top chrome copy with calmer workflow copy:
+  - header stamp now uses `Admissions data updated ...`
+  - signed-in line now uses `Staff access ready`
+  - snapshot freshness copy now uses friendlier admissions-data wording
+- Added guided getting-started empty states for the results area and details drawer instead of blank/dead placeholders.
+- Added `tools/check-first-load-ux.js` to lock the new first-load defaults and CTA placement.
+- Rebuilt `docs/` snapshot after the UX pass.
+- Verification PASS:
+  - `node .\tools\check-first-load-ux.js`
+  - `node .\tools\check-admission-route-display.js`
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`
