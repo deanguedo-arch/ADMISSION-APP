@@ -2115,9 +2115,10 @@ function boot() {
         if (ui.requirementTypeFilter && isExplorerMode) {
           renderSelectOptions(
             ui.requirementTypeFilter,
-            "All Req Types",
+            "All Admission Routes",
             requirementTypes,
-            state.resultFilters.requirementType
+            state.resultFilters.requirementType,
+            (value) => formatRequirementTypeForDisplay_(value, value)
           );
           if (state.resultFilters.requirementType && requirementTypes.indexOf(state.resultFilters.requirementType) < 0) {
             state.resultFilters.requirementType = "";
@@ -2127,7 +2128,7 @@ function boot() {
         syncFiltersDrawerControls_();
       }
 
-      function renderSelectOptions(select, emptyLabel, options, selectedValue) {
+      function renderSelectOptions(select, emptyLabel, options, selectedValue, labelFormatter) {
         const selected = String(selectedValue || "").trim();
         const html =
           `<option value="">${escapeHtml(emptyLabel)}</option>` +
@@ -2135,7 +2136,8 @@ function boot() {
             .map((opt) => {
               const value = String(opt || "").trim();
               const selectedAttr = value === selected ? ' selected="selected"' : "";
-              return `<option value="${escapeAttr(value)}"${selectedAttr}>${escapeHtml(value)}</option>`;
+              const label = typeof labelFormatter === "function" ? String(labelFormatter(value) || value) : value;
+              return `<option value="${escapeAttr(value)}"${selectedAttr}>${escapeHtml(label)}</option>`;
             })
             .join("");
         select.innerHTML = html;
@@ -2438,6 +2440,119 @@ function boot() {
         `;
       }
 
+      function normalizeDisplayCopy_(value) {
+        return String(value || "").replace(/\s+/g, " ").trim();
+      }
+
+      function ensureSentenceDisplay_(value) {
+        const text = normalizeDisplayCopy_(value);
+        if (!text) return "";
+        return /[.!?]$/.test(text) ? text : `${text}.`;
+      }
+
+      function sentenceCaseDisplay_(value) {
+        const text = normalizeDisplayCopy_(value).replace(/_/g, " ");
+        if (!text) return "";
+        return text.charAt(0).toUpperCase() + text.slice(1);
+      }
+
+      function requirementTypeBaseLabel_(value) {
+        const token = normalizeDisplayCopy_(value).toLowerCase().replace(/\s+/g, "_");
+        if (!token) return "";
+        if (token === "placement_assessment") return "Placement assessment required";
+        if (token === "alberta_high_school_courses") return "Alberta high school course requirements";
+        if (token === "course_min_only") return "Specific course minimums";
+        if (token === "post_secondary_pathway") return "Post-secondary pathway";
+        if (token === "regular_admission") return "Standard admission requirements";
+        if (token === "assessment_only") return "Assessment-based admission";
+        return sentenceCaseDisplay_(token);
+      }
+
+      function requirementTypeNoteLabel_(value, baseToken) {
+        const note = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ").toLowerCase();
+        const base = normalizeDisplayCopy_(baseToken).replace(/_/g, " ").toLowerCase();
+        if (!note || note === base) return "";
+        if (note === "post-secondary pathway") return base === "post secondary pathway" ? "" : "Previous post-secondary study may also apply";
+        if (note === "regular admission") return base === "regular admission" ? "" : "Standard admission requirements also apply";
+        if (note === "english language proficiency only" || note === "english language proficiency") {
+          return "English language proficiency required";
+        }
+        if (note === "portfolio required") return "Portfolio required";
+        if (note === "audition required") return "Audition required";
+        if (note === "interview required") return "Interview required";
+        if (note === "internationally educated nurse pathway") return "For internationally educated nurses";
+        if (note === "post-diploma pathway") return "For post-diploma applicants";
+        if (/^see (degree|program|department|faculty)$/i.test(note)) {
+          return "See the official program page for exact admission details";
+        }
+        return sentenceCaseDisplay_(note);
+      }
+
+      function formatRequirementTypeForDisplay_(value, fallback) {
+        const safeFallback = normalizeDisplayCopy_(fallback || "Admission details vary; verify the official program page.");
+        const raw = normalizeDisplayCopy_(value);
+        if (!raw) return safeFallback;
+
+        const parts = raw.split(";").map((x) => normalizeDisplayCopy_(x)).filter(Boolean);
+        const baseToken = parts.shift() || "";
+        const baseLabel = requirementTypeBaseLabel_(baseToken);
+        const noteLabels = uniqueStrings(
+          parts
+            .map((part) => requirementTypeNoteLabel_(part, baseToken))
+            .filter(Boolean)
+        );
+        const segments = []
+          .concat(baseLabel ? [baseLabel] : [])
+          .concat(noteLabels);
+        if (!segments.length) return safeFallback;
+        return segments.map((segment) => ensureSentenceDisplay_(segment)).join(" ");
+      }
+
+      function formatCompetitiveGuidanceForDisplay_(value, opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const emptyLabel = Object.prototype.hasOwnProperty.call(options, "emptyLabel")
+          ? String(options.emptyLabel || "")
+          : "Not listed";
+        const raw = normalizeDisplayCopy_(value);
+        if (!raw) return emptyLabel;
+        if (/^minimum only$/i.test(raw)) return emptyLabel;
+        if (/^(see degree|refer to degree)$/i.test(raw)) return emptyLabel;
+        if (
+          /(?:^|[\s>])nimum grades you need to achieve to be considered for admission to the program/i.test(raw) ||
+          /minimum grades you need to achieve to be considered for admission to the program/i.test(raw) ||
+          /program of choice is considered competitive/i.test(raw) ||
+          /international students must qualify for admission under the regular or previous post-secondary categories/i.test(raw)
+        ) {
+          return "See the official program page for current competitive guidance.";
+        }
+        if (raw.length > 220) return "See the official program page for current competitive guidance.";
+        return raw;
+      }
+
+      function summarizeCompetitiveGuidanceForCard_(value) {
+        const text = formatCompetitiveGuidanceForDisplay_(value, { emptyLabel: "" });
+        if (!text) return "";
+        if (/^See the official program page/i.test(text)) return "";
+        return text.length > 110 ? `${text.slice(0, 107).trimEnd()}...` : text;
+      }
+
+      function buildExplorerSummaryText_(row) {
+        const admissionRoute = formatRequirementTypeForDisplay_(
+          row && row.requirementType,
+          "Admission details vary; verify the official program page."
+        );
+        const competitive = summarizeCompetitiveGuidanceForCard_(row && row.competitiveGuidance);
+        if (!competitive) return admissionRoute;
+        return `${admissionRoute} ${ensureSentenceDisplay_(`Competitive guidance: ${competitive}`)}`;
+      }
+
+      function formatMinimumAverageDisplay_(value, emptyLabel) {
+        const label = normalizeDisplayCopy_(emptyLabel || "n/a") || "n/a";
+        const num = Number(value);
+        if (!Number.isFinite(num) || num <= 0) return label;
+        return formatCell(num);
+      }
+
       function renderResults() {
         if (isMobileAppShell_() && state.primaryMode === "explorer") {
           state.primaryMode = "results";
@@ -2485,11 +2600,8 @@ function boot() {
                     row.sourceUrl
                   )}" target="_blank" rel="noopener noreferrer">Program Link</a>`
                 : `<span class="source-link-missing">Source link missing</span>`;
-              const minAvgText = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
-              const reasonText =
-                row.competitiveGuidance ||
-                row.requirementType ||
-                "General admissions snapshot. Run eligibility check with marks for personalized results.";
+              const minAvgText = formatMinimumAverageDisplay_(row.minAvg, "n/a");
+              const reasonText = buildExplorerSummaryText_(row);
               const meetingRecord = getMeetingRecordForKey_(row.key);
               const decision = normalizeMeetingDecision_(meetingRecord.decision);
               const decisionPillHtml = decision
@@ -2734,9 +2846,12 @@ function boot() {
           return;
         }
 
-        const minAvgText = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
-        const competitiveText = row.competitiveGuidance || "Not listed";
-        const requirementText = row.requirementType || "Not listed";
+        const minAvgText = formatMinimumAverageDisplay_(row.minAvg, "Not listed");
+        const competitiveText = formatCompetitiveGuidanceForDisplay_(row.competitiveGuidance, { emptyLabel: "Not listed" });
+        const requirementText = formatRequirementTypeForDisplay_(
+          row.requirementType,
+          "Admission details vary; verify the official program page."
+        );
         const nextStepText = "Enter student marks and run Check Eligibility to get a personalized decision and gaps.";
         const meetingNoteHtml = renderMeetingNoteEditor_(row.key);
         const programLinkHtml = row.sourceUrl
@@ -2771,7 +2886,7 @@ function boot() {
             </div>
           </div>
           <div class="detail-block">
-            <h4>Requirement Type</h4>
+            <h4>Admission Route</h4>
             <p>${escapeHtml(requirementText)}</p>
           </div>
           ${meetingNoteHtml}
@@ -4376,15 +4491,22 @@ function boot() {
           return `<p class="muted">No program is selected in the details drawer right now.</p>`;
         }
         if (state.primaryMode === "explorer") {
-          const minAvg = Number.isFinite(row.minAvg) ? formatCell(row.minAvg) : "n/a";
+          const minAvg = formatMinimumAverageDisplay_(row.minAvg, "n/a");
+          const admissionRoute = formatRequirementTypeForDisplay_(
+            row.requirementType,
+            "Admission details vary; verify the official program page."
+          );
+          const competitiveGuidance = formatCompetitiveGuidanceForDisplay_(row.competitiveGuidance, {
+            emptyLabel: "Not listed",
+          });
           return `
             <div class="summary-grid">
               <div><strong>Institution</strong><span>${escapeHtml(row.institution || "n/a")}</span></div>
               <div><strong>Program</strong><span>${escapeHtml(row.program || "n/a")}</span></div>
               <div><strong>Credential</strong><span>${escapeHtml(row.credential || "n/a")}</span></div>
               <div><strong>Minimum Average</strong><span>${escapeHtml(minAvg)}</span></div>
-              <div><strong>Requirement Type</strong><span>${escapeHtml(row.requirementType || "Not listed")}</span></div>
-              <div><strong>Competitive Guidance</strong><span>${escapeHtml(row.competitiveGuidance || "Not listed")}</span></div>
+              <div><strong>Admission Route</strong><span>${escapeHtml(admissionRoute)}</span></div>
+              <div><strong>Competitive Guidance</strong><span>${escapeHtml(competitiveGuidance)}</span></div>
             </div>
           `;
         }

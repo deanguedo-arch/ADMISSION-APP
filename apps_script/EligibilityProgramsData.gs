@@ -561,7 +561,7 @@ function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
       institution,
       program,
       credential,
-      minAvg: isFinite(minAvg) ? Number(minAvg) : null,
+      minAvg: isFinite(minAvg) && minAvg > 0 ? Number(minAvg) : null,
       competitiveGuidance: competitive || "",
       requirementType: requirementType || "",
       sourceUrl,

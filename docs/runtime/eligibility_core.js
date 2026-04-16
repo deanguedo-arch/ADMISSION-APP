@@ -590,7 +590,7 @@ function listExplorerProgramsForWeb_(programsRange, fallbackDateValue) {
       institution,
       program,
       credential,
-      minAvg: isFinite(minAvg) ? Number(minAvg) : null,
+      minAvg: isFinite(minAvg) && minAvg > 0 ? Number(minAvg) : null,
       competitiveGuidance: competitive || "",
       requirementType: requirementType || "",
       sourceUrl,
@@ -2227,6 +2227,14 @@ function normalizeCompetitive_(text) {
   if (!t) return "";
   if (/^Minimum Only$/i.test(t)) return "";
   if (/^(See Degree|Refer to Degree)$/i.test(t)) return "";
+  if (
+    /(?:^|[\s>])nimum grades you need to achieve to be considered for admission to the program/i.test(t) ||
+    /minimum grades you need to achieve to be considered for admission to the program/i.test(t) ||
+    /program of choice is considered competitive/i.test(t) ||
+    /international students must qualify for admission under the regular or previous post-secondary categories/i.test(t)
+  ) {
+    return "";
+  }
   return t;
 }
 

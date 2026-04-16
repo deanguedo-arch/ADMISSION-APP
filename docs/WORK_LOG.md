@@ -1380,3 +1380,19 @@ Keep entries short and append-only.
   - `AVG_TOTAL_WITHOUT_MIN_AVG`: 2 total across reason combinations
   - `POST_SECONDARY_PATHWAY_MIXED_SIGNALS`: 1
   - `MISSING_SUBJECT_REQUIREMENTS`: 2 total across reason combinations
+
+## 2026-04-16 - Frontend copy cleanup for explorer/details
+
+- Fixed web display regressions where raw internal dataset values were surfacing directly in the student-facing UI.
+- Explorer/result presentation now:
+  - formats internal requirement-route codes into readable labels (`placement_assessment` -> `Placement assessment required`, etc.)
+  - shows `Min Avg` as `n/a` when the source value is blank/zero instead of rendering `0`
+  - uses short professional summary copy on cards instead of dumping raw competitive-note boilerplate
+- Explorer details/packet summary now label this section as `Admission Route` instead of `Requirement Type`.
+- Added front-end cleanup for generic competitive boilerplate so long scraped MacEwan admissions paragraphs collapse to `See the official program page for current competitive guidance.`
+- Added text-wrap guards in the details drawer so long values do not clip or break awkwardly on mobile.
+- Rebuilt branch-based Pages snapshot under `docs/` after the UI copy fix.
+- Verification PASS:
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`
