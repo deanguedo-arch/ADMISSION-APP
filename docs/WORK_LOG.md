@@ -1396,3 +1396,25 @@ Keep entries short and append-only.
   - `node .\tools\check-web-auth-bootstrap.js`
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
+
+## 2026-04-16 - Admission route bullets in details drawer
+
+- Reworked `Admission Route` display in the details drawer from a single dense sentence into:
+  - one short summary line
+  - a bullet list of the key route rules underneath
+- Added route-display logic that turns structured requirement details into readable bullets such as:
+  - course requirements
+  - admission-average course count
+  - remaining group-based subject slots
+  - minimum mark expectations
+  - route notes like portfolio/interview/group limits
+- Applied the new route block to both:
+  - Explorer details drawer
+  - main program details drawer
+- Added `tools/check-admission-route-display.js` to lock the new summary-plus-bullets behavior.
+- Rebuilt `docs/` snapshot after the UI change.
+- Verification PASS:
+  - `node .\tools\check-admission-route-display.js`
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`

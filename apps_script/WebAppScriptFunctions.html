@@ -2508,6 +2508,108 @@ function boot() {
         return segments.map((segment) => ensureSentenceDisplay_(segment)).join(" ");
       }
 
+      function admissionRouteNoteBullet_(value, baseToken) {
+        const note = normalizeDisplayCopy_(value).replace(/^notes:\s*/i, "").replace(/_/g, " ").toLowerCase();
+        const base = normalizeDisplayCopy_(baseToken).replace(/_/g, " ").toLowerCase();
+        if (!note || note === base || note === "regular admission") return "";
+
+        const maxGroupMatch = note.match(/^max(?:imum)?\s+(\d+)\s+group\s+([abcd])$/i);
+        if (maxGroupMatch) {
+          const count = Number(maxGroupMatch[1]);
+          const group = String(maxGroupMatch[2] || "").toUpperCase();
+          const noun = count === 1 ? "subject" : "subjects";
+          return `Maximum ${count} ${noun} from Group ${group}`;
+        }
+
+        if (note === "post-secondary pathway") return base === "post secondary pathway" ? "" : "Previous post-secondary study may also apply";
+        if (note === "english language proficiency only" || note === "english language proficiency") {
+          return "English language proficiency required";
+        }
+        if (note === "portfolio required") return "Portfolio required";
+        if (note === "audition required") return "Audition required";
+        if (note === "interview required") return "Interview required";
+        if (note === "internationally educated nurse pathway") return "For internationally educated nurses";
+        if (note === "post-diploma pathway") return "For post-diploma applicants";
+        if (/^see (degree|program|department|faculty)$/i.test(note)) {
+          return "See the official program page for exact admission details";
+        }
+        return sentenceCaseDisplay_(note);
+      }
+
+      function buildAdmissionRouteDisplay_(opts) {
+        const options = opts && typeof opts === "object" ? opts : {};
+        const raw = normalizeDisplayCopy_(options.requirementType);
+        const fallback = normalizeDisplayCopy_(options.fallback || "Admission details vary; verify the official program page.");
+        if (!raw) return { summary: fallback, bullets: [] };
+
+        const parts = raw.split(";").map((x) => normalizeDisplayCopy_(x)).filter(Boolean);
+        const baseToken = parts.shift() || "";
+        const summary = requirementTypeBaseLabel_(baseToken) || fallback;
+        const requirements = Array.isArray(options.requirements) ? options.requirements : [];
+        const average = options.average && typeof options.average === "object" ? options.average : {};
+        const electives = options.electives && typeof options.electives === "object" ? options.electives : {};
+        const bullets = [];
+        const subjectRequirementBullets = [];
+        const minMarks = [];
+
+        requirements.forEach((req) => {
+          const label = normalizeDisplayCopy_(req && req.label);
+          const requirement = normalizeDisplayCopy_(req && req.requirement);
+          const minMark = Number(req && req.minMark);
+          if (!label || !requirement) return;
+          subjectRequirementBullets.push(`${label}: ${requirement}`);
+          if (Number.isFinite(minMark) && minMark > 0) minMarks.push(minMark);
+        });
+
+        const totalCourses = Number(average && average.totalCourses);
+        if (Number.isFinite(totalCourses) && totalCourses > 0) {
+          const noun = totalCourses === 1 ? "subject" : "subjects";
+          bullets.push(`Admission average uses ${totalCourses} ${noun}`);
+        }
+
+        bullets.push(...subjectRequirementBullets);
+
+        const allowedGroups = Array.isArray(electives.allowedGroups)
+          ? electives.allowedGroups.map((x) => String(x || "").trim().toUpperCase()).filter(Boolean)
+          : [];
+        const remainingSubjects = Number.isFinite(totalCourses) ? Math.max(0, totalCourses - subjectRequirementBullets.length) : 0;
+        if (remainingSubjects > 0 && allowedGroups.length) {
+          const noun = remainingSubjects === 1 ? "subject" : "subjects";
+          bullets.push(`Remaining ${remainingSubjects} ${noun} can come from Groups ${allowedGroups.join("/")}`);
+        }
+
+        const uniqueMinMarks = uniqueStrings(
+          minMarks
+            .filter((x) => Number.isFinite(x) && x > 0)
+            .map((x) => String(Math.round(x)))
+        );
+        if (uniqueMinMarks.length === 1) {
+          bullets.push(`Minimum ${uniqueMinMarks[0]}% in each listed subject`);
+        }
+
+        parts.forEach((part) => {
+          const bullet = admissionRouteNoteBullet_(part, baseToken);
+          if (bullet) bullets.push(bullet);
+        });
+
+        if (!bullets.length) {
+          if (/^placement_assessment$/i.test(baseToken)) {
+            bullets.push("Confirm required assessment steps on the official program page");
+          } else if (/^post_secondary_pathway$/i.test(baseToken)) {
+            bullets.push("Review the official program page for prior post-secondary admission details");
+          } else {
+            bullets.push("Verify exact admission details on the official program page");
+          }
+        }
+
+        return {
+          summary,
+          bullets: uniqueStrings(
+            bullets.map((x) => normalizeDisplayCopy_(x)).filter(Boolean)
+          ),
+        };
+      }
+
       function formatCompetitiveGuidanceForDisplay_(value, opts) {
         const options = opts && typeof opts === "object" ? opts : {};
         const emptyLabel = Object.prototype.hasOwnProperty.call(options, "emptyLabel")
@@ -2848,10 +2950,13 @@ function boot() {
 
         const minAvgText = formatMinimumAverageDisplay_(row.minAvg, "Not listed");
         const competitiveText = formatCompetitiveGuidanceForDisplay_(row.competitiveGuidance, { emptyLabel: "Not listed" });
-        const requirementText = formatRequirementTypeForDisplay_(
-          row.requirementType,
-          "Admission details vary; verify the official program page."
-        );
+        const routeDisplay = buildAdmissionRouteDisplay_({
+          requirementType: row.requirementType,
+          fallback: "Admission details vary; verify the official program page.",
+        });
+        const routeBulletsHtml = routeDisplay.bullets.length
+          ? `<ul class="detail-list">${routeDisplay.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+          : "";
         const nextStepText = "Enter student marks and run Check Eligibility to get a personalized decision and gaps.";
         const meetingNoteHtml = renderMeetingNoteEditor_(row.key);
         const programLinkHtml = row.sourceUrl
@@ -2887,7 +2992,8 @@ function boot() {
           </div>
           <div class="detail-block">
             <h4>Admission Route</h4>
-            <p>${escapeHtml(requirementText)}</p>
+            <p class="detail-summary">${escapeHtml(routeDisplay.summary)}</p>
+            ${routeBulletsHtml}
           </div>
           ${meetingNoteHtml}
         `;
@@ -3595,6 +3701,16 @@ function boot() {
         const avgNeedsAttention = avg.complete === false || avg.meetsMinimum === false;
         const allowedGroups = Array.isArray(electives.allowedGroups) ? electives.allowedGroups : [];
         const selectedElectives = Array.isArray(electives.selected) ? electives.selected : [];
+        const routeDisplay = buildAdmissionRouteDisplay_({
+          requirementType: detail.requirementText,
+          fallback: "Admission details vary; verify the official program page.",
+          requirements: detail.requirements,
+          average: avg,
+          electives,
+        });
+        const routeBulletsHtml = routeDisplay.bullets.length
+          ? `<ul class="detail-list">${routeDisplay.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+          : "";
         const nextSemesterPlan = buildNextSemesterPlan_(row, detail);
         const hasNextPlanItems = !!(nextSemesterPlan.take.length || nextSemesterPlan.upgrade.length || nextSemesterPlan.notes.length);
 
@@ -3712,6 +3828,11 @@ function boot() {
           ${detailActionsHtml}
           ${warningHtml}
           ${highlightsHtml}
+          <div class="detail-block">
+            <h4>Admission Route</h4>
+            <p class="detail-summary">${escapeHtml(routeDisplay.summary)}</p>
+            ${routeBulletsHtml}
+          </div>
           <div class="meaning-panel">
             <h4>What this means</h4>
             ${meaningHtml}
