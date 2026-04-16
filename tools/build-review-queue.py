@@ -33,13 +33,16 @@ OUTPUT_COLUMNS = [
     "Credential_Type",
     "Status",
     "Program_URL",
+    "English_Requirement_Mode",
     "Min_Avg_Final",
     "Avg_Total",
     "Elective_Qty",
+    "Math_Requirement_Mode",
     "Requirement_Type",
 ]
 
 BLANKISH = {"", "unknown", "none", "null", "nan"}
+ALLOWED_REQUIREMENT_MODES = {"course", "placement_assessment", "elp", "other_gate"}
 NORMALIZED_REQUIREMENT_PREFIXES = (
     "alberta_high_school_courses",
     "course_min_only",
@@ -62,6 +65,38 @@ def normalize_text(value: str | None) -> str:
 
 def is_blankish(value: str | None) -> bool:
     return normalize_text(value).lower() in BLANKISH
+
+
+def normalize_requirement_mode(value: str | None) -> str:
+    token = normalize_text(value).lower()
+    if token in ALLOWED_REQUIREMENT_MODES:
+        return token
+    return ""
+
+
+def infer_requirement_mode(subject: str, value: str | None) -> str:
+    text = normalize_text(value)
+    if not text:
+        return ""
+    low = text.lower()
+    if any(token in low for token in ("placement", "assessment", "accuplacer", "placement test")):
+        return "placement_assessment"
+    if subject == "english" and any(token in low for token in ("english language proficiency", "language proficiency", "ielts", "toefl", "duolingo", "cael", "pearson", "pte")):
+        return "elp"
+    if subject == "english" and any(token in low for token in ("english", "ela", "20-1", "20-2", "30-1", "30-2")):
+        return "course"
+    if subject == "math" and any(token in low for token in ("math", "mathematics", "20-1", "20-2", "30-1", "30-2", "31")):
+        return "course"
+    return "other_gate"
+
+
+def get_requirement_mode(row: dict[str, str], subject: str) -> str:
+    mode_field = "English_Requirement_Mode" if subject == "english" else "Math_Requirement_Mode"
+    req_field = "English_Req" if subject == "english" else "Math_Req"
+    explicit = normalize_requirement_mode(row.get(mode_field))
+    if explicit:
+        return explicit
+    return infer_requirement_mode(subject, row.get(req_field))
 
 
 def is_http_url(value: str | None) -> bool:
@@ -105,8 +140,12 @@ def is_inheritance_placeholder(requirement_type: str | None) -> bool:
 
 def has_subject_requirements(row: dict[str, str]) -> bool:
     return any(
-        not is_blankish(row.get(field))
-        for field in ("English_Req", "Math_Req", "Social_Req", "Science_Req")
+        [
+            get_requirement_mode(row, "english") == "course" and not is_blankish(row.get("English_Req")),
+            get_requirement_mode(row, "math") == "course" and not is_blankish(row.get("Math_Req")),
+            not is_blankish(row.get("Social_Req")),
+            not is_blankish(row.get("Science_Req")),
+        ]
     )
 
 

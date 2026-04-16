@@ -2,8 +2,10 @@
   "required_program_field_keys": [
     "bio_30_req",
     "chem_30_req",
+    "english_requirement_mode",
     "phys_30_req",
     "sci_30_req",
+    "math_requirement_mode",
     "social_req",
     "social_min",
     "science_req",
@@ -31,8 +33,12 @@
     "avg_total_source_url",
     "english_req",
     "english_req_confidence",
+    "english_requirement_mode",
+    "english_requirement_mode_confidence",
     "math_req",
     "math_req_confidence",
+    "math_requirement_mode",
+    "math_requirement_mode_confidence",
     "requirement_type",
     "requirement_type_confidence"
   ],

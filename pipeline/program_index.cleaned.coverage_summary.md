@@ -4,5 +4,5 @@
 | --- | ---: | ---: | --- |
 | `NAIT` | 131 | 131 | seed_replace |
 | `NorQuest` | 76 | 76 | seed_backfill |
-| `MacEwan` | 114 | 114 | seed_replace |
+| `MacEwan` | 106 | 106 | seed_replace |
 | `UAlberta` | 14 | 14 | seed_replace |

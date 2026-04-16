@@ -412,8 +412,8 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
   $lower = $text.ToLowerInvariant()
 
   $hasSubjectSignal = @(
-    (Get-PropValue -row $row -names @("English_Req")),
-    (Get-PropValue -row $row -names @("Math_Req")),
+    $(if (Test-SubjectCountsAsCourse -row $row -subject "English") { Get-PropValue -row $row -names @("English_Req") } else { "" }),
+    $(if (Test-SubjectCountsAsCourse -row $row -subject "Math") { Get-PropValue -row $row -names @("Math_Req") } else { "" }),
     (Get-PropValue -row $row -names @("Social_Req")),
     (Get-PropValue -row $row -names @("Science_Req")),
     (Get-PropValue -row $row -names @("Min_Avg_Final")),
@@ -467,6 +467,152 @@ function Normalize-RequirementTypeValue([string]$value, [object]$row) {
   }
 
   return $text
+}
+
+function Normalize-RequirementModeValue([object]$value) {
+  $token = (Normalize-Text $value).ToLowerInvariant()
+  if ($token -in @("course", "placement_assessment", "elp", "other_gate")) {
+    return $token
+  }
+  return ""
+}
+
+function Get-SubjectRequirementPrefix([string]$subject) {
+  switch ($subject.ToLowerInvariant()) {
+    "english" { return "English" }
+    "math" { return "Math" }
+    default { return "" }
+  }
+}
+
+function Normalize-DisplaySubjectRequirement([string]$subject, [object]$value) {
+  $text = Normalize-Text $value
+  if (-not $text) { return "" }
+
+  if ($subject -eq "English") {
+    $text = [regex]::Replace($text, "(?i)\bEnglish Language Arts\b", "English")
+    $text = [regex]::Replace($text, "(?i)\bELA\b", "English")
+  } elseif ($subject -eq "Math") {
+    $text = [regex]::Replace($text, "(?i)\bMathematics\b", "Math")
+  }
+
+  $text = [regex]::Replace($text, "\s*/\s*", " or ")
+  $text = Normalize-Text $text
+  $prefix = Get-SubjectRequirementPrefix $subject
+  if (-not $prefix) { return $text }
+
+  if ($text -match "^(?<first>(?:20|30)-[12]|31)$") {
+    return "$prefix $($Matches.first)"
+  }
+
+  if ($text -match "^(?<first>(?:20|30)-[12]|31)\s+or\s+(?<second>(?:20|30)-[12]|31)$") {
+    return "$prefix $($Matches.first) or $prefix $($Matches.second)"
+  }
+
+  if ($text -match "^(?<label>$([regex]::Escape($prefix)))\s+(?<first>(?:20|30)-[12]|31)\s+or\s+(?<second>(?:20|30)-[12]|31)$") {
+    return "$prefix $($Matches.first) or $prefix $($Matches.second)"
+  }
+
+  return $text
+}
+
+function Test-CourseLikeRequirement([string]$subject, [object]$value) {
+  $text = Normalize-DisplaySubjectRequirement -subject $subject -value $value
+  if (-not $text) { return $false }
+
+  switch ($subject.ToLowerInvariant()) {
+    "english" {
+      return $text -match "(?i)\bEnglish\s+(?:20|30)-[12]\b"
+    }
+    "math" {
+      return $text -match "(?i)\bMath\s+(?:20|30)-[12]\b|\bMath\s+31\b"
+    }
+    default {
+      return $false
+    }
+  }
+}
+
+function Get-InferredRequirementMode([string]$subject, [object]$value) {
+  $text = Normalize-Text $value
+  if (-not $text) { return "" }
+  $lower = $text.ToLowerInvariant()
+
+  if ($lower -match "placement|assessment|accuplacer|placement test|academic assessment") {
+    return "placement_assessment"
+  }
+
+  if ($subject -eq "English" -and $lower -match "english language proficiency|language proficiency|ielts|toefl|duolingo|cael|pearson|pte") {
+    return "elp"
+  }
+
+  if (Test-CourseLikeRequirement -subject $subject -value $text) {
+    return "course"
+  }
+
+  return "other_gate"
+}
+
+function Get-NormalizedSubjectRequirement([string]$subject, [object]$value, [object]$mode) {
+  $rawText = Normalize-Text $value
+  $normalizedMode = Normalize-RequirementModeValue $mode
+  if (-not $normalizedMode -and $rawText) {
+    $normalizedMode = Get-InferredRequirementMode -subject $subject -value $rawText
+  }
+
+  $display = $rawText
+  switch ($normalizedMode) {
+    "course" {
+      $display = Normalize-DisplaySubjectRequirement -subject $subject -value $rawText
+    }
+    "placement_assessment" {
+      $display = "Placement assessment"
+    }
+    "elp" {
+      if ($subject -eq "English") {
+        $display = "English language proficiency"
+      } elseif (-not $display) {
+        $display = "English language proficiency"
+      }
+    }
+    default {
+      $display = Normalize-Text $display
+    }
+  }
+
+  if (-not $display) {
+    $normalizedMode = ""
+  }
+
+  return [pscustomobject]@{
+    Req = $display
+    Mode = $normalizedMode
+  }
+}
+
+function Test-SubjectCountsAsCourse([object]$row, [string]$subject) {
+  $reqField = if ($subject -eq "English") { "English_Req" } elseif ($subject -eq "Math") { "Math_Req" } else { "" }
+  $modeField = if ($subject -eq "English") { "English_Requirement_Mode" } elseif ($subject -eq "Math") { "Math_Requirement_Mode" } else { "" }
+  if (-not $reqField -or -not $modeField) { return $false }
+
+  $requirement = Normalize-Text $row.$reqField
+  if (-not $requirement) { return $false }
+
+  $mode = Normalize-RequirementModeValue $row.$modeField
+  if (-not $mode) {
+    $mode = Get-InferredRequirementMode -subject $subject -value $requirement
+  }
+  return $mode -eq "course"
+}
+
+function Normalize-SubjectRequirementFields([object]$row) {
+  $english = Get-NormalizedSubjectRequirement -subject "English" -value $row.English_Req -mode $row.English_Requirement_Mode
+  $row.English_Req = $english.Req
+  $row.English_Requirement_Mode = $english.Mode
+
+  $math = Get-NormalizedSubjectRequirement -subject "Math" -value $row.Math_Req -mode $row.Math_Requirement_Mode
+  $row.Math_Req = $math.Req
+  $row.Math_Requirement_Mode = $math.Mode
 }
 
 function Convert-CountTokenToInt([object]$value) {
@@ -528,8 +674,8 @@ function Get-InferredAvgTotal([object]$row) {
   }
 
   $count = 0
-  if (-not (Is-Blank $row.English_Req)) { $count++ }
-  if (-not (Is-Blank $row.Math_Req)) { $count++ }
+  if (Test-SubjectCountsAsCourse -row $row -subject "English") { $count++ }
+  if (Test-SubjectCountsAsCourse -row $row -subject "Math") { $count++ }
   if (-not (Is-Blank $row.Social_Req)) { $count++ }
   if (-not (Is-Blank $row.Science_Req)) { $count += (Get-RequirementUnitCount $row.Science_Req) }
 
@@ -896,8 +1042,10 @@ $structuredFieldMap = [ordered]@{
   competitive_final = "Competitive_Final"
   avg_total = "Avg_Total"
   english_req = "English_Req"
+  english_requirement_mode = "English_Requirement_Mode"
   english_min = "English_Min"
   math_req = "Math_Req"
+  math_requirement_mode = "Math_Requirement_Mode"
   math_min = "Math_Min"
   social_req = "Social_Req"
   social_min = "Social_Min"
@@ -1174,10 +1322,12 @@ $canonical = foreach ($r in $rows) {
     Avg_Total            = (Normalize-Text (Get-PropValue -row $r -names @("Avg_Total", "avg_total")))
 
     English_Req          = $englishReq
+    English_Requirement_Mode = (Normalize-Text (Get-PropValue -row $r -names @("English_Requirement_Mode", "english_requirement_mode")))
     English_Min          = $englishMin
     Eng_30_2_Allowed     = $r.Eng_30_2_Allowed
 
     Math_Req             = $r.Math_Req
+    Math_Requirement_Mode = (Normalize-Text (Get-PropValue -row $r -names @("Math_Requirement_Mode", "math_requirement_mode")))
     Math_Min             = $r.Math_Min
 
     Social_Req           = $r.Social_Req
@@ -1243,10 +1393,12 @@ if ($DropNaitNonPrograms -and $naitSeedRowsByKey.Count -gt 0) {
       Avg_Total            = ""
 
       English_Req          = ""
+      English_Requirement_Mode = ""
       English_Min          = ""
       Eng_30_2_Allowed     = ""
 
       Math_Req             = ""
+      Math_Requirement_Mode = ""
       Math_Min             = ""
 
       Social_Req           = ""
@@ -1317,10 +1469,12 @@ if ($DropNorQuestNonPrograms -and $norquestSeedRowsByKey.Count -gt 0) {
       Avg_Total            = ""
 
       English_Req          = ""
+      English_Requirement_Mode = ""
       English_Min          = ""
       Eng_30_2_Allowed     = ""
 
       Math_Req             = ""
+      Math_Requirement_Mode = ""
       Math_Min             = ""
 
       Social_Req           = ""
@@ -1634,6 +1788,8 @@ if ($structuredByKey.Count -gt 0 -or $structuredByUrlKey.Count -gt 0) {
 }
 
 foreach ($row in @($canonical)) {
+  Normalize-SubjectRequirementFields -row $row
+
   if (-not (Is-Blank $row.Requirement_Type)) {
     $row.Requirement_Type = Normalize-RequirementTypeValue -value $row.Requirement_Type -row $row
   }
@@ -1658,6 +1814,8 @@ if ($rulesetsByInstitution.Count -gt 0) {
     $rowReqType = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
     $hasRuleSignal = $false
     foreach ($fieldName in @("Min_Avg_Final", "English_Req", "Math_Req", "Social_Req", "Science_Req", "Elective_Qty", "HS_Diploma_Req")) {
+      if ($fieldName -eq "English_Req" -and -not (Test-SubjectCountsAsCourse -row $row -subject "English")) { continue }
+      if ($fieldName -eq "Math_Req" -and -not (Test-SubjectCountsAsCourse -row $row -subject "Math")) { continue }
       $fieldValue = (Normalize-Text $row.$fieldName).ToLowerInvariant()
       if ($fieldValue -and $fieldValue -notin @("unknown", "none", "null", "nan", "no")) {
         $hasRuleSignal = $true
@@ -1776,6 +1934,8 @@ if ($norquestSeedRowsByKey.Count -gt 0) {
 }
 
 foreach ($row in @($canonical)) {
+  Normalize-SubjectRequirementFields -row $row
+
   $normalizedRequirementType = Normalize-RequirementTypeValue -value (Normalize-Text $row.Requirement_Type) -row $row
   $normalizedRequirementType = (Normalize-Text $normalizedRequirementType).Replace("notes: notes:", "notes: ")
   if ($normalizedRequirementType) {
@@ -1794,8 +1954,8 @@ foreach ($row in @($canonical)) {
   }
 
   $hasSubjectRequirements = @(
-    $row.English_Req,
-    $row.Math_Req,
+    $(if (Test-SubjectCountsAsCourse -row $row -subject "English") { $row.English_Req } else { "" }),
+    $(if (Test-SubjectCountsAsCourse -row $row -subject "Math") { $row.Math_Req } else { "" }),
     $row.Social_Req,
     $row.Science_Req
   ) | Where-Object { -not (Is-Blank $_) }
@@ -1821,6 +1981,12 @@ foreach ($row in @($canonical)) {
 
   if ($reqTypeLower.StartsWith("regular_admission") -and $reqTypeLower.Contains("post-secondary pathway")) {
     $row.Requirement_Type = "post_secondary_pathway$notesSuffix"
+    $row.HS_Diploma_Req = "No"
+    $row.Math_Assessment_Flag = "No"
+    $reqTypeLower = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
+  }
+
+  if ($reqTypeLower.StartsWith("post_secondary_pathway")) {
     $row.HS_Diploma_Req = "No"
     $row.Math_Assessment_Flag = "No"
   }

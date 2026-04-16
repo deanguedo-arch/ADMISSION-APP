@@ -99,10 +99,14 @@ function courseAliases_() {
   return map;
 }
 
-function evalSubject_(courseMap, subject, reqText, minMark) {
+function evalSubject_(courseMap, subject, reqText, minMark, requirementMode) {
   const t = String(reqText || "").trim();
+  const mode = normalizeRequirementModeToken_(requirementMode) || inferRequirementMode_(subject, t);
   if (!t) return { kind: "none" };
   if (/^(See Degree|Refer to Degree)$/i.test(t)) return { kind: "unknown", reason: t };
+  if (mode === "placement_assessment") return { kind: "assessment", reason: "assessment/placement mentioned" };
+  if (mode === "elp") return { kind: "unknown", reason: "English language proficiency" };
+  if (mode === "other_gate") return { kind: "unknown", reason: t || `${title_(subject)} gate` };
   if (/(placement|assessment|test)/i.test(t)) return { kind: "assessment", reason: "assessment/placement mentioned" };
   if (/english language proficiency/i.test(t)) return { kind: "unknown", reason: "English language proficiency" };
   if (/\bunspecified\b/i.test(t)) return { kind: "unknown", reason: `${title_(subject)} requirement unspecified` };

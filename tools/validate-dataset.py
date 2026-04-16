@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,7 +21,9 @@ REQUIRED_HEADERS = [
     "Min_Avg_Final",
     "Competitive_Final",
     "Avg_Total",
+    "English_Requirement_Mode",
     "Elective_Qty",
+    "Math_Requirement_Mode",
     "Requirement_Type",
     "Math_Assessment_Flag",
 ]
@@ -34,6 +37,7 @@ KEY_FIELDS = ["Institution", "Program", "Credential_Type", "Program_URL"]
 COLLISION_PAYLOAD_FIELDS = ["Requirement_Type", "Min_Avg_Final", "Elective_Qty", "Status"]
 KEY_REQUIREMENT_FIELDS = ["Requirement_Type", "Min_Avg_Final", "Math_Req", "English_Req"]
 BLANKISH_TOKENS = {"", "unknown", "none", "null", "nan"}
+ALLOWED_REQUIREMENT_MODES = {"course", "placement_assessment", "elp", "other_gate"}
 ACCESSORY_NOTE_TOKENS = (
     "interview required",
     "portfolio required",
@@ -76,10 +80,67 @@ def is_blankish(value: str | None) -> bool:
     return normalize_text(value).lower() in BLANKISH_TOKENS
 
 
+def normalize_requirement_mode(value: str | None) -> str:
+    token = normalize_text(value).lower()
+    if token in ALLOWED_REQUIREMENT_MODES:
+        return token
+    return ""
+
+
+def infer_requirement_mode(subject: str, value: str | None) -> str:
+    text = normalize_text(value)
+    if not text:
+        return ""
+    low = text.lower()
+    if any(token in low for token in ("placement", "assessment", "accuplacer", "placement test")):
+        return "placement_assessment"
+    if subject == "english" and any(token in low for token in ("english language proficiency", "language proficiency", "ielts", "toefl", "duolingo", "cael", "pearson", "pte")):
+        return "elp"
+    if is_course_like_requirement(subject, text):
+        return "course"
+    return "other_gate"
+
+
+def get_requirement_mode(row: dict[str, str], subject: str) -> str:
+    mode_field = "English_Requirement_Mode" if subject == "english" else "Math_Requirement_Mode"
+    req_field = "English_Req" if subject == "english" else "Math_Req"
+    explicit = normalize_requirement_mode(row.get(mode_field))
+    if explicit:
+        return explicit
+    return infer_requirement_mode(subject, row.get(req_field))
+
+
+def is_course_like_requirement(subject: str, value: str | None) -> bool:
+    text = normalize_text(value)
+    if not text:
+        return False
+    if subject == "english":
+        return bool(
+            re.search(r"\b(?:english(?:\s+language\s+arts)?|ela)\s*(?:20|30)-[12]\b", text, flags=re.I)
+            or re.search(r"^(?:20|30)-[12](?:\s+or\s+(?:20|30)-[12])?$", text, flags=re.I)
+        )
+    if subject == "math":
+        return bool(
+            re.search(r"\b(?:math|mathematics)\s*(?:20|30)-[12]\b", text, flags=re.I)
+            or re.search(r"\b(?:math|mathematics)\s*31\b", text, flags=re.I)
+            or re.search(r"^(?:(?:20|30)-[12]|31)(?:\s+or\s+(?:(?:20|30)-[12]|31))?$", text, flags=re.I)
+        )
+    return False
+
+
+def has_noncourse_gate_tokens(value: str | None) -> bool:
+    low = normalize_text(value).lower()
+    return any(token in low for token in ("placement", "assessment", "accuplacer", "english language proficiency", "language proficiency"))
+
+
 def has_subject_requirements(row: dict[str, str]) -> bool:
     return any(
-        not is_blankish(row.get(field))
-        for field in ("English_Req", "Math_Req", "Social_Req", "Science_Req")
+        [
+            get_requirement_mode(row, "english") == "course" and not is_blankish(row.get("English_Req")),
+            get_requirement_mode(row, "math") == "course" and not is_blankish(row.get("Math_Req")),
+            not is_blankish(row.get("Social_Req")),
+            not is_blankish(row.get("Science_Req")),
+        ]
     )
 
 
@@ -95,11 +156,11 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
     missing_headers = [h for h in REQUIRED_HEADERS if h not in headers]
     if missing_headers:
         errors.append("Missing required headers: " + ", ".join(missing_headers))
-        return ValidationResult(ok=False, errors=errors)
+        return ValidationResult(ok=False, errors=errors, warnings=warnings)
 
     if not rows:
         errors.append("Dataset is empty.")
-        return ValidationResult(ok=False, errors=errors)
+        return ValidationResult(ok=False, errors=errors, warnings=warnings)
 
     total_rows = len(rows)
     missing_url_rows: list[int] = []
@@ -114,6 +175,8 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
     incomplete_key_rows: list[int] = []
     key_payload_groups: dict[tuple[str, ...], set[tuple[str, ...]]] = defaultdict(set)
     exact_duplicate_counter: Counter[tuple[str, ...]] = Counter()
+    invalid_requirement_modes: list[tuple[int, str, str, str]] = []
+    invalid_mode_value_combos: list[tuple[int, str]] = []
     institution_rows: Counter[str] = Counter()
     institution_blank_counts: dict[str, Counter[str]] = defaultdict(Counter)
     shell_rows_by_institution: Counter[str] = Counter()
@@ -155,6 +218,28 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
         key_payload_groups[key].add(payload)
         full_signature = tuple(normalize_text(row.get(h)).lower() for h in headers)
         exact_duplicate_counter[full_signature] += 1
+
+        for subject, req_field, mode_field in (
+            ("english", "English_Req", "English_Requirement_Mode"),
+            ("math", "Math_Req", "Math_Requirement_Mode"),
+        ):
+            raw_mode = normalize_text(row.get(mode_field))
+            req_value = normalize_text(row.get(req_field))
+            if raw_mode and not normalize_requirement_mode(raw_mode):
+                invalid_requirement_modes.append((i, normalize_text(row.get("Program")), mode_field, raw_mode))
+                continue
+            if not req_value:
+                continue
+            mode = get_requirement_mode(row, subject)
+            course_like = is_course_like_requirement(subject, req_value)
+            if mode == "placement_assessment" and course_like:
+                invalid_mode_value_combos.append((i, f"{mode_field}={mode} with {req_field}='{req_value}'"))
+            elif mode == "elp" and course_like:
+                invalid_mode_value_combos.append((i, f"{mode_field}={mode} with {req_field}='{req_value}'"))
+            elif mode == "course" and has_noncourse_gate_tokens(req_value):
+                invalid_mode_value_combos.append((i, f"{mode_field}={mode} with {req_field}='{req_value}'"))
+            elif mode == "other_gate" and course_like:
+                invalid_mode_value_combos.append((i, f"{mode_field}={mode} with {req_field}='{req_value}'"))
 
         for field in KEY_REQUIREMENT_FIELDS:
             if is_blankish(row.get(field)):
@@ -242,6 +327,26 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
         sample_rows = ", ".join(str(row) for row in incomplete_key_rows[:12])
         errors.append(f"Incomplete key fields found in {len(incomplete_key_rows)} rows. Examples: {sample_rows}")
 
+    if invalid_requirement_modes:
+        samples = "; ".join(
+            f"row {row} {program} {field}='{value}'"
+            for row, program, field, value in invalid_requirement_modes[:12]
+        )
+        errors.append(
+            "Invalid requirement-mode values found "
+            f"({len(invalid_requirement_modes)} rows). Examples: {samples}"
+        )
+
+    if invalid_mode_value_combos:
+        samples = "; ".join(
+            f"row {row} {detail}"
+            for row, detail in invalid_mode_value_combos[:12]
+        )
+        errors.append(
+            "Invalid requirement-mode/value combinations found "
+            f"({len(invalid_mode_value_combos)} rows). Examples: {samples}"
+        )
+
     if assessment_type_mismatch_rows:
         samples = "; ".join(
             f"row {row} {institution} | {program} | Requirement_Type='{requirement_type}'"
@@ -271,6 +376,18 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
             f"Key collisions found ({len(collision_groups)} groups). Examples: " + "; ".join(samples)
         )
 
+    if exact_duplicate_groups:
+        duplicate_examples = []
+        for signature, count in exact_duplicate_counter.items():
+            if count <= 1:
+                continue
+            duplicate_examples.append(f"[{' | '.join(signature[:4])}] x{count}")
+            if len(duplicate_examples) >= 8:
+                break
+        errors.append(
+            f"Exact duplicate rows found ({len(exact_duplicate_groups)} groups). Examples: " + "; ".join(duplicate_examples)
+        )
+
     print("Dataset validation summary")
     print(f"  File: {path}")
     print(f"  Rows: {total_rows}")
@@ -279,7 +396,7 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
     print(f"  Invalid numeric fields: {len(numeric_failures)}")
     print(f"  Out-of-range numeric fields: {len(numeric_range_failures)}")
     print(f"  Key collision groups: {len(collision_groups)}")
-    print(f"  Exact duplicate groups (warning only): {len(exact_duplicate_groups)}")
+    print(f"  Exact duplicate groups: {len(exact_duplicate_groups)}")
     print(f"  Incomplete key rows: {len(incomplete_key_rows)}")
 
     for institution, count in sorted(institution_rows.items()):

@@ -178,6 +178,23 @@ def enrich_seed_rows_with_requirements(
     return out
 
 
+def dedupe_seed_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    out: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        program_name = normalize_space(row.get("program_name") or "")
+        source_url = normalize_space(row.get("requirements_url") or row.get("program_url_seed") or "")
+        if not program_name or not source_url:
+            out.append(row)
+            continue
+        key = (program_name.lower(), source_url.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    return out
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--in", dest="in_path", default=DEFAULT_INPUT)
@@ -200,6 +217,7 @@ def main(argv: list[str]) -> int:
         fetch_html = HtmlFetcher(timeout=max(1, args.timeout), max_fetches=max(1, args.max_fetches))
         rows = enrich_seed_rows_with_requirements(rows, fetch_html=fetch_html)
         fetch_count = fetch_html.fetch_count
+    rows = dedupe_seed_rows(rows)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", newline="", encoding="utf-8") as f:

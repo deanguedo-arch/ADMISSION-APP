@@ -6,7 +6,9 @@
     "expected_exact": {
       "min_avg_final": "60",
       "english_req": "English 30-1",
+      "english_requirement_mode": "course",
       "math_req": "Math 30-1",
+      "math_requirement_mode": "course",
       "requirement_type": "alberta_high_school_courses"
     },
     "min_confidence": {
@@ -65,7 +67,9 @@
     "text": "Admission requires English 30-1 or 30-2 and Mathematics 30-2 (or equivalent).",
     "expected_exact": {
       "english_req": "English 30-1 or English 30-2",
+      "english_requirement_mode": "course",
       "math_req": "Math 30-2",
+      "math_requirement_mode": "course",
       "requirement_type": "alberta_high_school_courses"
     },
     "expected_missing": [
@@ -79,7 +83,9 @@
     "text": "Applicants must complete English 30-1 and Mathematics 30-2 prior to admission.",
     "expected_exact": {
       "english_req": "English 30-1",
+      "english_requirement_mode": "course",
       "math_req": "Math 30-2",
+      "math_requirement_mode": "course",
       "requirement_type": "alberta_high_school_courses"
     },
     "expected_missing": [
@@ -95,7 +101,9 @@
       "min_avg_final": "65",
       "avg_total": "5",
       "english_req": "English 30-2",
+      "english_requirement_mode": "course",
       "math_req": "Math 30-2",
+      "math_requirement_mode": "course",
       "elective_qty": "3",
       "requirement_type": "alberta_high_school_courses"
     },
@@ -185,6 +193,8 @@
     "text": "Applicants must have English Language Arts 30-1 at 60 percent or English Language Arts 30-2 at 70 percent, Mathematics 20-1 at 60 percent or Mathematics 20-2 at 70 percent or Mathematics 30-1 at 50 percent or Mathematics 30-2 at 60 percent, and Biology 30 at 60 percent. Applicants may also meet academic requirements through a free academic assessment. English language proficiency requirements such as IELTS, TOEFL, Duolingo, CAEL, and Pearson may also apply.",
     "expected_exact": {
       "english_min": "60",
+      "english_requirement_mode": "course",
+      "math_requirement_mode": "course",
       "math_assessment_flag": "Yes",
       "bio_30_req": "Yes",
       "requirement_type": "placement_assessment",
@@ -262,6 +272,35 @@
     "min_confidence": {
       "avg_total": "medium"
     }
+  },
+  {
+    "id": "english-elp-mode-is-typed",
+    "institution": "NorQuest",
+    "text": "Applicants must meet English language proficiency requirements. Accepted tests include IELTS, TOEFL, Duolingo, CAEL, and Pearson.",
+    "expected_exact": {
+      "english_req": "English language proficiency",
+      "english_requirement_mode": "elp",
+      "elp_tests_mentioned": "IELTS; TOEFL; Duolingo; CAEL; Pearson"
+    },
+    "expected_missing": [
+      "math_req",
+      "math_requirement_mode"
+    ]
+  },
+  {
+    "id": "math-placement-mode-is-typed",
+    "institution": "NorQuest",
+    "text": "Applicants may satisfy the Mathematics requirement through a placement test or academic assessment.",
+    "expected_exact": {
+      "math_req": "Placement assessment",
+      "math_requirement_mode": "placement_assessment",
+      "math_assessment_flag": "Yes",
+      "requirement_type": "placement_assessment"
+    },
+    "expected_missing": [
+      "english_req",
+      "english_requirement_mode"
+    ]
   },
   {
     "id": "broad-admissions-page-does-not-promote-note-dump",

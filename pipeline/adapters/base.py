@@ -10,8 +10,10 @@ PROGRAM_FIELD_KEYS: tuple[str, ...] = (
     "competitive_floor_numeric",
     "avg_total",
     "english_req",
+    "english_requirement_mode",
     "english_min",
     "math_req",
+    "math_requirement_mode",
     "math_min",
     "social_req",
     "social_min",
@@ -358,6 +360,13 @@ STRICT_NOTE_CONTEXT_PATTERN = (
     r"\b(?:admission|admissions|entrance|require|required|requirements|applicant|applicants|application|"
     r"eligibility|selection|pre-screening|must|submit|provide|non-academic)\b"
 )
+
+ALLOWED_REQUIREMENT_MODES: tuple[str, ...] = (
+    "course",
+    "placement_assessment",
+    "elp",
+    "other_gate",
+)
 ELP_NOTE_CONTEXT_PATTERN = (
     r"\b(?:english\s+language\s+proficiency|proficiency|admission|admissions|require|required|requirements|"
     r"test\s+scores?|applicant|applicants)\b"
@@ -402,10 +411,15 @@ def is_broad_accessory_note_source(source_url: str | None) -> bool:
     broad_tokens = (
         "/admissions/how-to-apply",
         "/apply-enrol/admissions/application/how-to-apply",
+        "/applying-to-norquest/how-to-apply",
         "/programs-and-courses/open-studies",
+        "/programs-and-courses/microcredentials",
         "/english-language-proficiency",
+        "/international-students/",
     )
-    return any(token in url for token in broad_tokens)
+    if any(token in url for token in broad_tokens):
+        return True
+    return url.endswith("/programs-and-courses") or url.endswith("/programs-and-courses/")
 
 
 def allow_broad_source_signal(
@@ -603,6 +617,67 @@ def extract_elective_details(text: str) -> tuple[str | None, str | None, str | N
     return None, None, None
 
 
+def normalize_requirement_mode(value: object) -> str:
+    token = normalize_text(value).lower()
+    if token in ALLOWED_REQUIREMENT_MODES:
+        return token
+    return ""
+
+
+def subject_field_is_course_mode(fields: dict[str, ExtractedField], subject: str) -> bool:
+    req_key = f"{subject}_req"
+    mode_key = f"{subject}_requirement_mode"
+    req_value = normalize_field(fields.get(req_key, ExtractedField(value=None)).value)
+    if not req_value:
+        return False
+    mode = normalize_requirement_mode(fields.get(mode_key, ExtractedField(value=None)).value)
+    if not mode:
+        return True
+    return mode == "course"
+
+
+def extract_english_elp_requirement(text: str, source_url: str | None = "") -> tuple[str | None, str | None, str | None]:
+    if is_broad_accessory_note_source(source_url):
+        return None, None, None
+    if has_post_secondary_pathway_signal(text) and not has_high_school_requirement_signal(text):
+        return None, None, None
+
+    patterns = [
+        r"\benglish\s+language\s+proficiency\b",
+        r"\blanguage\s+proficiency\b",
+    ]
+    for pattern in patterns:
+        for match in re.finditer(pattern, text, flags=re.I):
+            snippet = excerpt_around(text, match.start(), match.end(), radius=140)
+            if not fragment_has_requirement_context(snippet, ELP_NOTE_CONTEXT_PATTERN):
+                continue
+            return "English language proficiency", "elp", snippet
+
+    tests, snippet = extract_elp_tests(text)
+    if tests and snippet and fragment_has_requirement_context(snippet, ELP_NOTE_CONTEXT_PATTERN):
+        return "English language proficiency", "elp", snippet
+    return None, None, None
+
+
+def extract_math_assessment_requirement(text: str, source_url: str | None = "") -> tuple[str | None, str | None, str | None]:
+    if is_broad_accessory_note_source(source_url):
+        return None, None, None
+
+    patterns = [
+        r"\bmathematics?\b[^.;\n]{0,80}\b(?:placement\s+test|placement\s+assessment|academic\s+assessment|accuplacer|math\s+assessment)\b",
+        r"\b(?:placement\s+test|placement\s+assessment|academic\s+assessment|accuplacer|math\s+assessment)\b[^.;\n]{0,80}\bmathematics?\b",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.I)
+        if not match:
+            continue
+        snippet = excerpt_around(text, match.start(), match.end(), radius=140)
+        if not fragment_has_requirement_context(snippet, ASSESSMENT_CONTEXT_PATTERN):
+            continue
+        return "Placement assessment", "placement_assessment", snippet
+    return None, None, None
+
+
 ASSESSMENT_CONTEXT_PATTERN = (
     r"\b(?:academic\s+requirements?|admission|admissions|applicant|applicants|application|"
     r"may\s+meet|can\s+meet|meet\s+their|free\s+assessment|accuplacer|placement\s+assessment|"
@@ -680,13 +755,25 @@ def infer_avg_total_from_fields(
     snippet_parts: list[str] = []
     source_url = ""
 
-    for key in ("english_req", "math_req", "social_req"):
+    for key in ("social_req",):
         field = fields[key]
         value = normalize_field(field.value)
         if not value:
             continue
         total += 1
         snippet_parts.append(f"{key}={value}")
+        if not source_url:
+            source_url = normalize_field(field.source_url)
+
+    for subject in ("english", "math"):
+        if not subject_field_is_course_mode(fields, subject):
+            continue
+        field = fields[f"{subject}_req"]
+        value = normalize_field(field.value)
+        if not value:
+            continue
+        total += 1
+        snippet_parts.append(f"{subject}_req={value}")
         if not source_url:
             source_url = normalize_field(field.source_url)
 
@@ -708,9 +795,12 @@ def infer_avg_total_from_fields(
         if not source_url:
             source_url = normalize_field(elective_field.source_url)
 
-    has_requirement_signal = any(
-        normalize_field(fields[key].value)
-        for key in ("min_avg_final", "english_req", "math_req", "social_req", "science_req", "elective_qty")
+    has_requirement_signal = bool(normalize_field(fields["min_avg_final"].value) or normalize_field(fields["elective_qty"].value))
+    has_requirement_signal = has_requirement_signal or any(
+        subject_field_is_course_mode(fields, subject) for subject in ("english", "math")
+    )
+    has_requirement_signal = has_requirement_signal or any(
+        normalize_field(fields[key].value) for key in ("social_req", "science_req")
     )
     requirement_type = normalize_field(fields["requirement_type"].value).lower()
     if "placement_assessment" in requirement_type:
@@ -857,16 +947,28 @@ def extract_generic_program_fields(
             english_req, english_min, english_snippet = None, None, None
         if english_req:
             record_field(fields, evidence, "english_req", english_req, confidence="high", rule_id="english_course_parse", snippet=english_snippet, source_url=document.url)
+            record_field(fields, evidence, "english_requirement_mode", "course", confidence="high", rule_id="english_requirement_mode_course", snippet=english_snippet, source_url=document.url)
         if english_min:
             record_field(fields, evidence, "english_min", english_min, confidence="high", rule_id="english_min_parse", snippet=english_snippet, source_url=document.url)
+        if not english_req:
+            english_gate_req, english_gate_mode, english_gate_snippet = extract_english_elp_requirement(text, source_url=document.url)
+            if english_gate_req and english_gate_mode:
+                record_field(fields, evidence, "english_req", english_gate_req, confidence="medium", rule_id="english_gate_normalize", snippet=english_gate_snippet, source_url=document.url)
+                record_field(fields, evidence, "english_requirement_mode", english_gate_mode, confidence="medium", rule_id="english_requirement_mode_gate", snippet=english_gate_snippet, source_url=document.url)
 
         math_req, math_min, math_snippet = extract_courses_and_min(text, MATH_PATTERNS, fallback_label="Mathematics", rule_prefix="math")
         if math_req and not allow_broad_source_signal(document.url, math_snippet):
             math_req, math_min, math_snippet = None, None, None
         if math_req:
             record_field(fields, evidence, "math_req", math_req, confidence="high", rule_id="math_course_parse", snippet=math_snippet, source_url=document.url)
+            record_field(fields, evidence, "math_requirement_mode", "course", confidence="high", rule_id="math_requirement_mode_course", snippet=math_snippet, source_url=document.url)
         if math_min:
             record_field(fields, evidence, "math_min", math_min, confidence="high", rule_id="math_min_parse", snippet=math_snippet, source_url=document.url)
+        if not math_req:
+            math_gate_req, math_gate_mode, math_gate_snippet = extract_math_assessment_requirement(text, source_url=document.url)
+            if math_gate_req and math_gate_mode:
+                record_field(fields, evidence, "math_req", math_gate_req, confidence="medium", rule_id="math_gate_normalize", snippet=math_gate_snippet, source_url=document.url)
+                record_field(fields, evidence, "math_requirement_mode", math_gate_mode, confidence="medium", rule_id="math_requirement_mode_gate", snippet=math_gate_snippet, source_url=document.url)
 
         social_req, social_min, social_snippet = extract_courses_and_min(text, SOCIAL_PATTERNS, fallback_label="Social Studies", rule_prefix="social")
         if social_req and not allow_broad_source_signal(document.url, social_snippet):
@@ -897,7 +999,9 @@ def extract_generic_program_fields(
 
         doc_has_core_requirement_signal = bool(
             english_req
+            or normalize_field(fields["english_requirement_mode"].value) == "elp"
             or math_req
+            or normalize_field(fields["math_requirement_mode"].value) == "placement_assessment"
             or social_req
             or science_req
             or elective_qty
@@ -921,12 +1025,19 @@ def extract_generic_program_fields(
             if elp_tests:
                 record_field(fields, evidence, "elp_tests_mentioned", elp_tests, confidence="medium", rule_id="elp_test_detect", snippet=elp_snippet, source_url=document.url)
 
-            if has_high_school_requirement_signal(text):
+            if has_high_school_requirement_signal(text) and (
+                not broad_source or bool(english_req or math_req or social_req or science_req or elective_qty or min_avg)
+            ):
                 record_field(fields, evidence, "hs_diploma_req", "Yes", confidence="medium", rule_id="hs_diploma_signal", snippet=text[:220], source_url=document.url)
 
             req_base, req_notes, req_conf = derive_requirement_type(
                 text,
-                has_subject_requirements=bool(english_req or math_req or social_req or science_req),
+                has_subject_requirements=bool(
+                    english_req and normalize_field(fields["english_requirement_mode"].value) == "course"
+                    or math_req and normalize_field(fields["math_requirement_mode"].value) == "course"
+                    or social_req
+                    or science_req
+                ),
                 has_min_average=bool(min_avg),
                 source_url=document.url,
             )
@@ -935,15 +1046,27 @@ def extract_generic_program_fields(
                 record_field(fields, evidence, "requirement_type", req_value, confidence=req_conf, rule_id="requirement_type_normalize", snippet=text[:240], source_url=document.url)
 
     if not normalize_field(fields["math_assessment_flag"].value):
-        if normalize_field(fields["math_req"].value):
+        if subject_field_is_course_mode(fields, "math"):
             record_field(fields, evidence, "math_assessment_flag", "No", confidence="low", rule_id="math_assessment_default_no", snippet=fields["math_req"].snippet, source_url=fields["math_req"].source_url)
 
     if not normalize_field(fields["hs_diploma_req"].value):
-        if any(normalize_field(fields[key].value) for key in ("english_req", "math_req", "science_req", "social_req")):
+        if any(
+            (
+                subject_field_is_course_mode(fields, "english"),
+                subject_field_is_course_mode(fields, "math"),
+                normalize_field(fields["science_req"].value),
+                normalize_field(fields["social_req"].value),
+            )
+        ):
             record_field(fields, evidence, "hs_diploma_req", "Yes", confidence="low", rule_id="hs_diploma_subject_default", snippet=fields["requirement_type"].snippet, source_url=fields["requirement_type"].source_url)
     if not normalize_field(fields["hs_diploma_req"].value):
         if has_post_secondary_pathway_signal(combined) and not any(
-            normalize_field(fields[key].value) for key in ("english_req", "math_req", "science_req", "social_req")
+            (
+                subject_field_is_course_mode(fields, "english"),
+                subject_field_is_course_mode(fields, "math"),
+                normalize_field(fields["science_req"].value),
+                normalize_field(fields["social_req"].value),
+            )
         ):
             record_field(
                 fields,

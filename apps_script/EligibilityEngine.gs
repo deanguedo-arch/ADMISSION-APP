@@ -58,14 +58,16 @@ function evaluateProgramsForStudent_(opts) {
     const competitiveGuidance = normalizeCompetitive_(getStr_(r, idx, "Competitive_Final"));
     appendDatasetNotes_(requirementTypeEffective, notes, advisories);
 
-    const englishReq = unifyEnglishReq_(r, idx);
+    const englishReq = getSubjectRequirementText_("english", r, idx);
+    const englishMode = getSubjectRequirementMode_("english", r, idx);
     const englishMin = toNumber_(unifyEnglishMin_(r, idx));
-    const englishEval = evalSubject_(courseMap, "english", englishReq, englishMin);
+    const englishEval = evalSubject_(courseMap, "english", englishReq, englishMin, englishMode);
     appendEval_(englishEval, "English", reasons, notes, advisories);
 
-    const mathReq = getStr_(r, idx, "Math_Req");
+    const mathReq = getSubjectRequirementText_("math", r, idx);
+    const mathMode = getSubjectRequirementMode_("math", r, idx);
     const mathMin = toNumber_(getStr_(r, idx, "Math_Min"));
-    const mathEval = evalSubject_(courseMap, "math", mathReq, mathMin);
+    const mathEval = evalSubject_(courseMap, "math", mathReq, mathMin, mathMode);
     appendEval_(mathEval, "Math", reasons, notes, advisories);
 
     const socialReq = getStr_(r, idx, "Social_Req");

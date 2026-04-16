@@ -1335,3 +1335,48 @@ Keep entries short and append-only.
 - Remaining warning-level review:
   - 4 NorQuest `UNKNOWN_REQUIREMENT_TYPE_WITH_URL` rows remain in `out/review_queue.csv` because current extracted evidence only supports ELP signals, not a defensible requirement-type classification (`Teaching English as a Second Language`, `Practical Nurse Diploma for Internationally Educated Nurses`, `Autism Studies`, `Digital Marketing`)
   - 8 MacEwan exact duplicate groups remain warning-only and are currently duplicate payload rows sharing the same admissions URL
+
+## 2026-04-16 - Requirement-mode typing + rebuild hardening
+
+- Added typed subject gate fields across extraction, canonical cleanup, validation, review queue, and Apps Script compatibility paths:
+  - `English_Requirement_Mode`
+  - `Math_Requirement_Mode`
+  - allowed values: `course`, `placement_assessment`, `elp`, `other_gate`
+- Normalized mixed-purpose subject values so placement/ELP meaning is explicit in the new mode fields while `English_Req` / `Math_Req` stay display-friendly.
+- Tightened ELP locality and broad-source blocking in `pipeline/adapters/base.py` so NorQuest general admissions / international / open-studies pages stop bleeding program-level subject and requirement signals into rows.
+- Added hard QA gates in `tools/validate-dataset.py` for:
+  - invalid requirement modes
+  - invalid mode/value combinations
+  - exact duplicate canonical rows
+  - existing placement-plus-average contradiction checks
+- Updated `tools/build-review-queue.py` to carry typed subject modes and to treat English/Math as structured course requirements only when mode is `course`.
+- Added JS smoke checks to `.github/workflows/dataset-validation.yml`:
+  - `node tools/check-web-auth-bootstrap.js`
+  - `node tools/check-science-requirement-parsing.js`
+  - `node tools/check-placement-confidence.js`
+- Fixed exact MacEwan duplicate generation in pipeline seed/index build; cleaned index now has 327 rows with MacEwan reduced to 106 and zero exact duplicate groups.
+- Resolved the 4 NorQuest unknown requirement-type rows through pipeline tightening plus overrides:
+  - `Teaching English as a Second Language`
+  - `Practical Nurse Diploma for Internationally Educated Nurses`
+  - `Autism Studies`
+  - `Digital Marketing`
+- Fresh rebuild results:
+  - `pipeline/program_index.cleaned.csv`: 327 rows
+  - `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`: 325 rows
+  - `out/review_queue.csv`: 68 rows
+- Verification PASS:
+  - `python .\pipeline\check_*.py`
+  - `python .\tools\validate-dataset.py --input data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `python .\tools\build-review-queue.py --input data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `node .\tools\check-science-requirement-parsing.js`
+  - `node .\tools\check-placement-confidence.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`
+- Remaining warnings after rebuild are review-level, not hard failures:
+  - `PLACEMENT_OR_ASSESSMENT_FLAG`: 60
+  - `STRUCTURED_COURSES_WITHOUT_AVERAGE_CONTEXT`: 2
+  - `INHERITANCE_PLACEHOLDER`: 2
+  - `AVG_TOTAL_WITHOUT_MIN_AVG`: 2 total across reason combinations
+  - `POST_SECONDARY_PATHWAY_MIXED_SIGNALS`: 1
+  - `MISSING_SUBJECT_REQUIREMENTS`: 2 total across reason combinations

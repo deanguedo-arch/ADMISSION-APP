@@ -265,6 +265,7 @@ def load_macewan_seed(seed_path: Path) -> list[dict[str, str]]:
         },
     )
     out: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
     for row in rows:
         program_name = row.get("program_name", "")
         requirements_url = row.get("requirements_url", "")
@@ -272,6 +273,10 @@ def load_macewan_seed(seed_path: Path) -> list[dict[str, str]]:
         source_url = requirements_url or program_url_seed
         if not program_name or not source_url:
             continue
+        key = (program_name.lower(), source_url.lower())
+        if key in seen:
+            continue
+        seen.add(key)
         out.append({"program_name": program_name, "source_url": source_url})
     return out
 

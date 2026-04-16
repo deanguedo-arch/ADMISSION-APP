@@ -197,6 +197,42 @@ function unifyEnglishMin_(row, idx) {
   return b;
 }
 
+function normalizeRequirementModeToken_(value) {
+  const token = String(value || "").trim().toLowerCase();
+  if (token === "course" || token === "placement_assessment" || token === "elp" || token === "other_gate") {
+    return token;
+  }
+  return "";
+}
+
+function inferRequirementMode_(subject, reqText) {
+  const t = String(reqText || "").trim();
+  if (!t) return "";
+  if (/(placement|assessment|accuplacer|test)/i.test(t)) return "placement_assessment";
+  if (subject === "english" && /(english language proficiency|language proficiency|ielts|toefl|duolingo|cael|pearson|pte)/i.test(t)) {
+    return "elp";
+  }
+  if (subject === "english" && /(english|ela|\b(?:20|30)-[12]\b)/i.test(t)) return "course";
+  if (subject === "math" && /(math|mathematics|\b(?:20|30)-[12]\b|\b31\b)/i.test(t)) return "course";
+  return "other_gate";
+}
+
+function getSubjectRequirementMode_(subject, row, idx) {
+  const modeColumn = subject === "english" ? "English_Requirement_Mode" : subject === "math" ? "Math_Requirement_Mode" : "";
+  const explicit = modeColumn ? normalizeRequirementModeToken_(getStr_(row, idx, modeColumn)) : "";
+  if (explicit) return explicit;
+  const req = subject === "english" ? unifyEnglishReq_(row, idx) : subject === "math" ? getStr_(row, idx, "Math_Req") : "";
+  return inferRequirementMode_(subject, req);
+}
+
+function getSubjectRequirementText_(subject, row, idx) {
+  const req = subject === "english" ? unifyEnglishReq_(row, idx) : subject === "math" ? getStr_(row, idx, "Math_Req") : "";
+  const mode = getSubjectRequirementMode_(subject, row, idx);
+  if (mode === "placement_assessment") return "Placement assessment";
+  if (mode === "elp") return "English language proficiency";
+  return req;
+}
+
 function toNumber_(v) {
   if (v === null || v === undefined) return NaN;
   const s = String(v).trim();
