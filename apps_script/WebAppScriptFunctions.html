@@ -112,10 +112,12 @@ function boot() {
         if (boot.requiresAuth) {
           const auth = boot.auth || {};
           const message = String(auth.message || "").trim();
+          const allowedDomainSuffix = String(auth.allowedDomainSuffix || "@eips.ca").trim() || "@eips.ca";
           ui.googleSignIn.innerHTML = "";
-          ui.authLine.textContent = message || `Sign in with your ${auth.allowedDomainSuffix || "@eips.ca"} account.`;
+          ui.authLine.textContent = message || `Sign in with your ${allowedDomainSuffix} account.`;
+          initializeGoogleSignIn(auth.googleClientId || "", allowedDomainSuffix);
           ui.stamp.textContent = "Awaiting sign-in";
-          setStatus(message || "Sign in with your school account and reload the page.", true);
+          setStatus(message || "Sign in to load course options.");
           updateMobileTopMetaVisibility_();
           return;
         }
@@ -137,16 +139,51 @@ function boot() {
         trackUiEvent_("bootstrap_ready", { explorerPrograms: state.explorerRows.length });
       }
 
-      function initializeGoogleSignIn(clientId) {
+      function renderGoogleAccountChooserFallback_(allowedDomainSuffix, note) {
+        if (!ui.googleSignIn) return;
+        const suffix = String(allowedDomainSuffix || "@eips.ca").trim() || "@eips.ca";
+        const existing = ui.googleSignIn.querySelector(".auth-fallback");
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+        const wrap = document.createElement("div");
+        wrap.className = "auth-fallback";
+
+        const link = document.createElement("a");
+        link.className = "btn btn-subtle auth-fallback-link";
+        link.href = `https://accounts.google.com/AccountChooser?continue=${encodeURIComponent(window.location.href)}`;
+        link.target = "_top";
+        link.rel = "noopener noreferrer";
+        link.textContent = `Choose ${suffix} account`;
+        wrap.appendChild(link);
+
+        const noteText = String(note || "").trim();
+        if (noteText) {
+          const noteEl = document.createElement("p");
+          noteEl.className = "ghost auth-fallback-note";
+          noteEl.textContent = noteText;
+          wrap.appendChild(noteEl);
+        }
+
+        ui.googleSignIn.appendChild(wrap);
+      }
+
+      function initializeGoogleSignIn(clientId, allowedDomainSuffix) {
+        const fallbackNote = "If the Google sign-in button does not appear, use the chooser link and reload.";
         if (!clientId) {
+          ui.googleSignIn.innerHTML = "";
+          renderGoogleAccountChooserFallback_(allowedDomainSuffix, fallbackNote);
           setStatus(
             "Web app auth is not configured. Set Script Property WEBAPP_GOOGLE_CLIENT_ID in Apps Script.",
             true
           );
+          updateMobileTopMetaVisibility_();
           return;
         }
         if (!(window.google && google.accounts && google.accounts.id)) {
+          ui.googleSignIn.innerHTML = "";
+          renderGoogleAccountChooserFallback_(allowedDomainSuffix, fallbackNote);
           setStatus("Google sign-in script did not load. Refresh and try again.", true);
+          updateMobileTopMetaVisibility_();
           return;
         }
         ui.googleSignIn.innerHTML = "";
@@ -163,6 +200,8 @@ function boot() {
           text: "signin_with",
           logo_alignment: "left",
         });
+        renderGoogleAccountChooserFallback_(allowedDomainSuffix, fallbackNote);
+        updateMobileTopMetaVisibility_();
       }
 
       function onGoogleCredential(response) {

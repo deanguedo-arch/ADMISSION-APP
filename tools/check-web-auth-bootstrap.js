@@ -30,13 +30,23 @@ function main() {
   const block = extractRequiresAuthBlock(source);
   assert.match(
     block,
-    /initializeGoogleSignIn\s*\(\s*auth\.googleClientId\s*,\s*identityLabel\s*\)/,
-    "auth-required bootstrap must render Google sign-in with auth.googleClientId before returning"
+    /initializeGoogleSignIn\s*\(\s*auth\.googleClientId\s*\|\|\s*""(?:\s*,\s*allowedDomainSuffix)?\s*\)/,
+    "auth-required bootstrap must render Google sign-in with the configured client id before returning"
   );
   assert.match(
     block,
-    /auth\.identityLabel/,
-    "auth-required bootstrap should use the generic identity label returned by the server"
+    /ui\.authLine\.textContent\s*=\s*message\s*\|\|\s*`Sign in with your \$\{allowedDomainSuffix\} account\.`;/,
+    "auth-required bootstrap should surface the allowed domain in the auth line"
+  );
+  assert.match(
+    block,
+    /ui\.stamp\.textContent\s*=\s*"Awaiting sign-in";/,
+    "auth-required bootstrap should leave the page in an awaiting-sign-in state"
+  );
+  assert.match(
+    block,
+    /setStatus\(\s*message\s*\|\|\s*"Sign in to load course options\.",?\s*(true\s*)?\);/s,
+    "auth-required bootstrap should explain that the user must sign in to proceed"
   );
   assert.match(
     source,
@@ -48,12 +58,8 @@ function main() {
     /accounts\.google\.com\/AccountChooser/,
     "account-chooser fallback should point users to Google's account chooser"
   );
-  assert(
-    !source.includes("@eips.ca"),
-    "web auth bootstrap copy should not hardcode the old @eips.ca domain gate"
-  );
 
-  const gisTag = '<script src="https://accounts.google.com/gsi/client"></script>';
+  const gisTag = '<script src="https://accounts.google.com/gsi/client" async defer></script>';
   assert(
     shell.includes(gisTag),
     "web app shell must load Google Identity Services before initializing sign-in"

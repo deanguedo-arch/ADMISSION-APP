@@ -17,6 +17,22 @@ Device(s):
 - [ ] `.\BUILD_OFFLINE_SNAPSHOT.bat` PASS
 - [ ] `offline_snapshot/site/snapshot.meta.json` exists and has expected `dataset_date`
 - [ ] Local snapshot preview starts: `.\offline_snapshot\start-preview.ps1 -Mode auto -Port 5180`
+- [ ] Snapshot smoke PASS: `node .\tools\check-release-gate-smoke.js --mode current`
+
+## A.1) Smoke Harness Modes
+- `current`: runs against the latest built snapshot and checks summary consistency plus anchor-program sanity.
+- `baseline`: only for the locked baseline snapshot (`dataset_date = 2026-02-20`); enforces the fixed expected counts and anchor assertions below.
+
+Commands:
+
+```powershell
+node .\tools\check-release-gate-smoke.js --mode current
+node .\tools\check-release-gate-smoke.js --mode baseline
+```
+
+Expected behavior:
+- `current` should PASS on the snapshot you just built.
+- `baseline` should FAIL fast unless the built snapshot date is exactly `2026-02-20`.
 
 ## B) iPhone Safari Test (Staging)
 - [ ] Staging URL opens in Safari with no blocking error

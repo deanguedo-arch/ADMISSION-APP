@@ -1275,3 +1275,37 @@ Keep entries short and append-only.
 - Counted `Competitive_Final` and `Avg_Total` as structured MacEwan signals in the same gate, matching the richer canonical schema now produced by the structured pipeline.
 - Changed the Step 2 GitHub workflow default so fresh Actions runs do not skip structured scraping by default; `tools/refresh-all.ps1` now fails clearly if `-SkipScrape` is used without existing `programs_structured.csv` artifacts.
 - Updated operator docs and the normal-use playbook generator so Step 2 instructions say `skip_scrape = false` for fresh GitHub Actions runs and no longer reference the removed `sync-programs.yml` workflow.
+## 2026-04-16 (handoff resume: auth bootstrap regression sync)
+- Resumed from `docs/SESSION_HANDOFF.md`, confirmed `main` is clean and both Apps Script guardrails still PASS.
+- Found `tools/check-web-auth-bootstrap.js` was stale against the reverted `@eips.ca` session-auth bootstrap; updated the regression to assert the current domain-gated `requiresAuth` messaging instead of the removed GIS chooser flow.
+- Validation PASS: `node .\tools\check-web-auth-bootstrap.js`, `node .\tools\check-science-requirement-parsing.js`, `node .\tools\check-placement-confidence.js`, `powershell .\tools\validate-webapp-surface.ps1`, and `powershell .\tools\validate-apps-script-structure.ps1`.
+- Local preview smoke PASS: `node .\tools\local-preview-server.js --port 5510` served `http://localhost:5510/WebApp.html?mock=1` with include resolution intact.
+## 2026-04-16 (Phase 8: release-gate smoke harness)
+- Added design + implementation docs for the release smoke slice:
+  - `docs/plans/2026-04-16-release-gate-smoke-design.md`
+  - `docs/plans/2026-04-16-release-gate-smoke.md`
+- Added `tools/check-release-gate-smoke.js` to validate the built offline snapshot through the snapshot runtime in two modes:
+  - `--mode current` for current snapshot sanity checks
+  - `--mode baseline` for the locked `2026-02-20` expected-count gate
+- Added black-box regression coverage in `tools/test-release-gate-smoke.js`.
+- Validation PASS:
+  - `node .\tools\test-release-gate-smoke.js`
+  - `node .\tools\check-release-gate-smoke.js --mode current`
+- Expected validation FAIL on current snapshot:
+  - `node .\tools\check-release-gate-smoke.js --mode baseline`
+  - reason: current snapshot `dataset_date=2026-04-13`, not the locked baseline `2026-02-20`
+- Updated `docs/RELEASE_GATE_IPHONE.md` with the new smoke harness commands and mode guidance.
+## 2026-04-16 (auth bootstrap path restored)
+- Restored the real auth-required web flow after the GIS bootstrap regression:
+  - `apps_script/WebApp.html` now loads the Google Identity Services client script again.
+  - `apps_script/WebAppScriptFunctions.html` now calls `initializeGoogleSignIn(...)` when `getWebAppBootstrapData()` returns `requiresAuth: true`.
+  - Added `renderGoogleAccountChooserFallback_()` so the auth strip always exposes a chooser link even if GIS is blocked or misconfigured.
+- Added lightweight auth-strip styles in `apps_script/WebAppStyles.html` for the chooser fallback.
+- Rebuilt compiled preview output with `node .\tools\build-pages.js`.
+- Validation PASS:
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `node .\tools\check-science-requirement-parsing.js`
+  - `node .\tools\check-placement-confidence.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`
+  - local preview auth smoke at `http://localhost:5511/WebApp.html?mock=1`
