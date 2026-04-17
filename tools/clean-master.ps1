@@ -611,6 +611,23 @@ function Get-NormalizedSubjectRequirement([string]$subject, [object]$value, [obj
   }
 }
 
+function Normalize-CompetitiveFinalValue([object]$value) {
+  $text = Normalize-Text $value
+  if (-not $text) { return "" }
+
+  $low = $text.ToLowerInvariant()
+  if (
+    $low.Contains("to be considered for admission to the program") -or
+    $low.Contains("international students must qualify for admission") -or
+    $low.StartsWith("nimum grades you need to achieve") -or
+    $low.StartsWith("entrance requirements:")
+  ) {
+    return "Competitive varies by year"
+  }
+
+  return $text
+}
+
 function Test-SubjectCountsAsCourse([object]$row, [string]$subject) {
   $reqField = if ($subject -eq "English") { "English_Req" } elseif ($subject -eq "Math") { "Math_Req" } else { "" }
   $modeField = if ($subject -eq "English") { "English_Requirement_Mode" } elseif ($subject -eq "Math") { "Math_Requirement_Mode" } else { "" }
@@ -1390,7 +1407,7 @@ $canonical = foreach ($r in $rows) {
     Program_URL          = $programUrl
 
     Min_Avg_Final        = $r.Min_Avg_Final
-    Competitive_Final    = $r.Competitive_Final
+    Competitive_Final    = (Normalize-CompetitiveFinalValue $r.Competitive_Final)
     Avg_Total            = (Normalize-Text (Get-PropValue -row $r -names @("Avg_Total", "avg_total")))
 
     English_Req          = $englishReq
@@ -2010,6 +2027,7 @@ if ($norquestSeedRowsByKey.Count -gt 0) {
 
 foreach ($row in @($canonical)) {
   Normalize-SubjectRequirementFields -row $row
+  $row.Competitive_Final = Normalize-CompetitiveFinalValue $row.Competitive_Final
 
   $normalizedRequirementType = Normalize-RequirementTypeValue -value (Normalize-Text $row.Requirement_Type) -row $row
   $normalizedRequirementType = (Normalize-Text $normalizedRequirementType).Replace("notes: notes:", "notes: ")
@@ -2035,20 +2053,12 @@ foreach ($row in @($canonical)) {
     $row.Science_Req
   ) | Where-Object { -not (Is-Blank $_) }
   $hasSubjectRequirements = @($hasSubjectRequirements)
-  $hasCourseMinimums = @(
-    $row.English_Min,
-    $row.Math_Min,
-    $row.Social_Min,
-    $row.Science_Min
-  ) | Where-Object { -not (Is-Blank $_) }
-  $hasCourseMinimums = @($hasCourseMinimums)
 
   if (
     $reqTypeLower.StartsWith("alberta_high_school_courses") `
     -and (Is-Blank $row.Min_Avg_Final) `
     -and (Is-Blank $row.Avg_Total) `
-    -and $hasSubjectRequirements.Count -gt 0 `
-    -and $hasCourseMinimums.Count -gt 0
+    -and $hasSubjectRequirements.Count -gt 0
   ) {
     $row.Requirement_Type = "course_min_only$notesSuffix"
     $reqTypeLower = (Normalize-Text $row.Requirement_Type).ToLowerInvariant()
@@ -2068,6 +2078,18 @@ foreach ($row in @($canonical)) {
 
   $row.Display_For_High_School = Get-DisplayForHighSchoolValue -row $row
 }
+
+# Drop the inherited Bachelor of Design admissions row so Digital Experience Design renders once.
+$canonical = @(
+  $canonical |
+    Where-Object {
+      -not (
+        $_.Institution -eq "MacEwan" -and
+        $_.Program -eq "Digital Experience Design" -and
+        (Normalize-Text $_.Program_URL).ToLowerInvariant().Contains("/programs/bachelor-of-design/")
+      )
+    }
+)
 
 if ($DropExactDuplicates) {
   if ($macewanSeedRows.Count -gt 0) {

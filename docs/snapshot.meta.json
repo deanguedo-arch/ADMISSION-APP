@@ -1,20 +1,27 @@
 {
-  "built_at_utc": "2026-04-16T22:45:03.485778Z",
-  "dataset_stamp": "offline_991fa66845a5931103d54095",
-  "dataset_date": "2026-04-16",
-  "dataset_hash_sha256": "991fa66845a5931103d540959cd62fbb8f42d17658f0160c0025318c490910bb",
+  "built_at_utc": "2026-04-17T15:50:03.059440Z",
+  "dataset_stamp": "offline_a45dc51f785528f37f096b35",
+  "dataset_date": "2026-04-17",
+  "dataset_hash_sha256": "a45dc51f785528f37f096b358b0a4a421aca61b34cc885588d63eb667c91be64",
   "canonical_source_path": "data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv",
-  "row_count_total": 325,
+  "row_count_total": 324,
+  "row_count_visible": 196,
   "institution_counts": {
-    "MacEwan": 104,
+    "MacEwan": 103,
     "NAIT": 131,
     "NorQuest": 76,
     "UAlberta": 14
   },
+  "institution_counts_visible": {
+    "MacEwan": 61,
+    "NAIT": 84,
+    "NorQuest": 37,
+    "UAlberta": 14
+  },
   "url_coverage": {
     "MacEwan": {
-      "rows": 104,
-      "with_url": 104
+      "rows": 103,
+      "with_url": 103
     },
     "NAIT": {
       "rows": 131,

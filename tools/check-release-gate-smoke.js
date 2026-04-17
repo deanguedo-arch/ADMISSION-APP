@@ -113,15 +113,41 @@ const CURRENT_ANCHORS = [
     profile: "A",
     institution: "NorQuest",
     program: "Building Service Worker",
-    allowedSnapshotResults: ["Likely eligible", "Uncheckable"],
-    allowedConfidence: ["Low", "Uncheckable"],
+    expectMissing: true,
   },
   {
     profile: "B",
     institution: "NorQuest",
     program: "Building Service Worker",
-    allowedSnapshotResults: ["Likely eligible", "Uncheckable"],
-    allowedConfidence: ["Low", "Uncheckable"],
+    expectMissing: true,
+  },
+  {
+    profile: "A",
+    institution: "NorQuest",
+    program: "Machine Learning Analyst",
+    snapshotResult: "Likely eligible",
+    confidence: "High",
+  },
+  {
+    profile: "B",
+    institution: "NorQuest",
+    program: "Machine Learning Analyst",
+    snapshotResult: "Likely eligible",
+    confidence: "High",
+  },
+  {
+    profile: "A",
+    institution: "UAlberta",
+    program: "Education (First-Year)",
+    snapshotResult: "Likely eligible",
+    confidence: "High",
+  },
+  {
+    profile: "B",
+    institution: "UAlberta",
+    program: "Education (First-Year)",
+    snapshotResult: "Likely ineligible",
+    confidence: "High",
   },
   {
     profile: "A",
@@ -275,6 +301,14 @@ function findAnchor(result, anchor, failures) {
   });
 
   const minMatches = Math.max(1, Number(anchor.minMatches || 1));
+  if (anchor.expectMissing) {
+    if (matches.length > 0) {
+      const labels = matches.map((detail) => `${detail.institution} | ${detail.program} | ${detail.credential || "Unknown"}`);
+      addFailure(failures, `Anchor should be hidden but was found: ${buildAnchorLabel(anchor)} -> ${labels.join("; ")}`);
+    }
+    return [];
+  }
+
   if (matches.length < minMatches) {
     addFailure(
       failures,
@@ -332,7 +366,19 @@ function validateAnchor(details, anchor, failures) {
   });
 }
 
-function validateSharedShape(profile, result, snapshotMeta, failures) {
+function resolveExpectedProgramCount(snapshotMeta) {
+  const visible = Number(snapshotMeta.row_count_visible || 0);
+  if (visible > 0) {
+    return { count: visible, field: "row_count_visible" };
+  }
+  const total = Number(snapshotMeta.row_count_total || 0);
+  if (total > 0) {
+    return { count: total, field: "row_count_total" };
+  }
+  return null;
+}
+
+function validateSharedShape(profile, result, expectedCountMeta, failures) {
   const summary = normalizeSummary(result.summary);
   const rowKeysByView = requireObject(result.rowKeysByView, "rowKeysByView");
   const detailsByKey = requireObject(result.detailsByKey, "detailsByKey");
@@ -385,9 +431,11 @@ function validateSharedShape(profile, result, snapshotMeta, failures) {
     addFailure(failures, `${profileLabel}: detailsByKey size ${Object.keys(detailsByKey).length} != totalPrograms ${summary.totalPrograms}`);
   }
 
-  const metaTotal = Number(snapshotMeta.row_count_total || 0);
-  if (metaTotal > 0 && summary.totalPrograms !== metaTotal) {
-    addFailure(failures, `${profileLabel}: totalPrograms ${summary.totalPrograms} != snapshot meta row_count_total ${metaTotal}`);
+  if (expectedCountMeta && summary.totalPrograms !== expectedCountMeta.count) {
+    addFailure(
+      failures,
+      `${profileLabel}: totalPrograms ${summary.totalPrograms} != snapshot meta ${expectedCountMeta.field} ${expectedCountMeta.count}`
+    );
   }
 
   return summary;
@@ -449,10 +497,11 @@ async function main() {
   const context = loadSnapshotContext();
   const resultsByProfile = await runProfiles(context);
   const summaries = {};
+  const expectedCountMeta = resolveExpectedProgramCount(snapshotMeta);
 
   PROFILES.forEach((profile) => {
     const result = resultsByProfile[profile.key];
-    const summary = validateSharedShape(profile, result, snapshotMeta, failures);
+    const summary = validateSharedShape(profile, result, expectedCountMeta, failures);
     summaries[profile.key] = summary;
   });
 

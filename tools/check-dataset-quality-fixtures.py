@@ -1,30 +1,10 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import csv
 import importlib.util
 import sys
 import tempfile
 from pathlib import Path
-
-
-REQUIRED_HEADERS = [
-    "Institution",
-    "Program",
-    "Credential_Type",
-    "Status",
-    "Program_URL",
-    "Min_Avg_Final",
-    "Competitive_Final",
-    "Avg_Total",
-    "Elective_Qty",
-    "Requirement_Type",
-    "Math_Assessment_Flag",
-    "English_Req",
-    "Math_Req",
-    "Social_Req",
-    "Science_Req",
-]
 
 
 def load_validator():
@@ -38,18 +18,42 @@ def load_validator():
     return module
 
 
-def write_rows(path: Path, rows: list[dict[str, str]]) -> None:
+def build_fixture_headers(validator_module) -> list[str]:
+    required = [str(h) for h in getattr(validator_module, "REQUIRED_HEADERS", [])]
+    extras = [
+        "English_Req",
+        "Math_Req",
+        "Social_Req",
+        "Science_Req",
+        "English_Requirement_Mode",
+        "Math_Requirement_Mode",
+    ]
+    seen = set()
+    out: list[str] = []
+    for header in required + extras:
+        token = str(header or "").strip()
+        if not token or token in seen:
+            continue
+        seen.add(token)
+        out.append(token)
+    return out
+
+
+def write_rows(path: Path, rows: list[dict[str, str]], headers: list[str]) -> None:
+    import csv
+
     with path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=REQUIRED_HEADERS)
+        writer = csv.DictWriter(f, fieldnames=headers)
         writer.writeheader()
         for row in rows:
-            payload = {field: "" for field in REQUIRED_HEADERS}
+            payload = {field: "" for field in headers}
             payload.update(row)
             writer.writerow(payload)
 
 
 def main() -> int:
     validator = load_validator()
+    fixture_headers = build_fixture_headers(validator)
     base_row = {
         "Institution": "Fixture",
         "Program": "Fixture Program",
@@ -58,7 +62,10 @@ def main() -> int:
         "Program_URL": "https://example.test/program",
         "Requirement_Type": "alberta_high_school_courses",
         "English_Req": "English 30-1",
+        "English_Requirement_Mode": "course",
         "Math_Req": "Math 30-1",
+        "Math_Requirement_Mode": "course",
+        "Display_For_High_School": "Yes",
     }
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -74,6 +81,7 @@ def main() -> int:
                     "Math_Assessment_Flag": "Yes",
                 }
             ],
+            headers=fixture_headers,
         )
         placement_result = validator.validate_dataset(tmp_path, missing_url_threshold=1.0)
         if placement_result.ok or not any("placement_assessment" in err for err in placement_result.errors):
@@ -90,6 +98,7 @@ def main() -> int:
                     "Min_Avg_Final": "",
                 }
             ],
+            headers=fixture_headers,
         )
         ambiguous_result = validator.validate_dataset(tmp_path, missing_url_threshold=1.0)
         if not any("Avg_Total present without Min_Avg_Final" in warning for warning in ambiguous_result.warnings):

@@ -376,6 +376,29 @@ def _url_coverage(rows: List[Dict[str, str]], header: List[str]) -> Dict[str, Di
     return dict(sorted(coverage.items(), key=lambda kv: kv[0].lower()))
 
 
+def _display_for_high_school_stats(rows: List[Dict[str, str]], header: List[str]) -> Dict[str, object]:
+    idx = _header_lookup(header)
+    inst_col = idx.get("institution")
+    display_col = idx.get("display_for_high_school")
+    if not inst_col or not display_col:
+        return {"row_count_visible": 0, "institution_counts_visible": {}}
+
+    counter: Counter[str] = Counter()
+    visible_total = 0
+    for row in rows:
+        display = str(row.get(display_col, "")).strip().lower()
+        if display != "yes":
+            continue
+        visible_total += 1
+        inst = str(row.get(inst_col, "")).strip()
+        if inst:
+            counter[inst] += 1
+    return {
+        "row_count_visible": visible_total,
+        "institution_counts_visible": dict(sorted(counter.items(), key=lambda kv: kv[0].lower())),
+    }
+
+
 def _snapshot_dataset_stamp(dataset_hash: str) -> str:
     return f"offline_{dataset_hash[:24]}"
 
@@ -436,6 +459,7 @@ def main() -> int:
     programs_range = _to_programs_range(header, rows)
     inst_counts = _institution_counts(rows, header)
     url_cov = _url_coverage(rows, header)
+    display_stats = _display_for_high_school_stats(rows, header)
 
     avg_header, avg_rows = _read_optional_csv(avg_rules_path)
     elective_header, elective_rows = _read_optional_csv(elective_rules_path)
@@ -462,7 +486,9 @@ def main() -> int:
         "lastProgramsSyncUtc": built_at_utc,
         "lastProgramsSyncLocal": "",
         "institutionCounts": inst_counts,
+        "institutionCountsVisible": display_stats["institution_counts_visible"],
         "urlCoverage": url_cov,
+        "rowCountVisible": display_stats["row_count_visible"],
     }
 
     web_root = repo_root / "apps_script"
@@ -488,7 +514,9 @@ def main() -> int:
         "dataset_hash_sha256": canonical_hash,
         "canonical_source_path": str(canonical_path.relative_to(repo_root)).replace("\\", "/"),
         "row_count_total": len(rows),
+        "row_count_visible": display_stats["row_count_visible"],
         "institution_counts": inst_counts,
+        "institution_counts_visible": display_stats["institution_counts_visible"],
         "url_coverage": url_cov,
         "avg_rules_rows_loaded": len(avg_rows),
         "elective_rule_rows_loaded": len(elective_rows),

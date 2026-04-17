@@ -1532,3 +1532,57 @@ Keep entries short and append-only.
   - `node .\tools\check-details-panel-height-sync.js`
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
+
+## 2026-04-17 - QA harness sync + release-gate visible-count contract + data cleanup hardening
+
+- Fixed stale QA harness in `tools/check-dataset-quality-fixtures.py`:
+  - fixture headers now derive from `tools/validate-dataset.py` required headers
+  - fixtures now include typed requirement modes and `Display_For_High_School`
+  - `placement_assessment + Avg_Total` hard-fail path is now exercised without false header drift failures
+- Updated release-gate smoke contract in `tools/check-release-gate-smoke.js`:
+  - current-mode totals now validate against visible program counts (`row_count_visible`) when present
+  - current-mode anchors now explicitly expect hidden rows like `NorQuest | Building Service Worker` to be missing
+  - current-mode anchors now verify visible direct-entry rows (`Machine Learning Analyst`, `Education (First-Year)`)
+- Added visible-count metadata to snapshot builder in `offline_snapshot/build_snapshot.py`:
+  - `row_count_visible`
+  - `institution_counts_visible`
+  - mirrored into snapshot payload/meta for offline runtime and smoke checks
+- Hardened canonical cleanup for competitive-field pollution and visible duplicate:
+  - `tools/clean-master.ps1` now normalizes polluted `Competitive_Final` prose blocks to `Competitive varies by year`
+  - dropped inherited duplicate row `MacEwan | Digital Experience Design` from Bachelor of Design admissions URL path
+  - row count now `324` (from `325`) and visible high-school rows now `196`
+- Strengthened dataset validation in `tools/validate-dataset.py`:
+  - hard-fail on polluted/boilerplate `Competitive_Final` values
+  - hard-fail on duplicate visible cards (same Institution/Program/Credential/Status with `Display_For_High_School=Yes`)
+  - `STRUCTURED_COURSES_WITHOUT_AVERAGE_CONTEXT` warning now tracks unresolved `alberta_high_school_courses` only
+- Expanded CI coverage in `.github/workflows/dataset-validation.yml`:
+  - `check-dataset-quality-fixtures.py`
+  - `check-first-load-ux.js`
+  - `check-course-input-upsert.js`
+  - `check-details-panel-height-sync.js`
+  - `check-explorer-program-structure.js`
+  - `check-offline-bridge-explorer-bootstrap.js`
+  - `check-admission-route-display.js`
+- Rebuilt outputs:
+  - `data/ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `offline_snapshot/site/*`
+  - `docs/*`
+- Verification PASS:
+  - `python .\tools\check-dataset-quality-fixtures.py`
+  - `python .\tools\validate-dataset.py --input .\data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `python .\tools\build-review-queue.py --input .\data\ALBERTA_ADMISSIONS_MASTER_CANONICAL.csv`
+  - `node .\tools\check-release-gate-smoke.js`
+  - `node .\tools\test-release-gate-smoke.js`
+  - `python .\tools\check-high-school-display-flag.py`
+  - `node .\tools\check-web-high-school-filter.js`
+  - `node .\tools\check-web-auth-bootstrap.js`
+  - `node .\tools\check-science-requirement-parsing.js`
+  - `node .\tools\check-placement-confidence.js`
+  - `node .\tools\check-first-load-ux.js`
+  - `node .\tools\check-course-input-upsert.js`
+  - `node .\tools\check-details-panel-height-sync.js`
+  - `node .\tools\check-explorer-program-structure.js`
+  - `node .\tools\check-offline-bridge-explorer-bootstrap.js`
+  - `node .\tools\check-admission-route-display.js`
+  - `powershell .\tools\validate-webapp-surface.ps1`
+  - `powershell .\tools\validate-apps-script-structure.ps1`

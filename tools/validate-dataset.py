@@ -45,6 +45,17 @@ ACCESSORY_NOTE_TOKENS = (
     "audition required",
     "casper required",
 )
+COMPETITIVE_FINAL_GARBAGE_TOKENS = (
+    "to be considered for admission to the program",
+    "international students must qualify for admission",
+    "entrance requirements:",
+    "nimum grades you need to achieve",
+)
+COMPETITIVE_FINAL_ALLOWED_PHRASES = (
+    "competitive varies by year",
+    "minimum only",
+    "not direct-entry to bcom",
+)
 
 
 @dataclass
@@ -134,6 +145,21 @@ def has_noncourse_gate_tokens(value: str | None) -> bool:
     return any(token in low for token in ("placement", "assessment", "accuplacer", "english language proficiency", "language proficiency"))
 
 
+def is_competitive_final_polluted(value: str | None) -> bool:
+    text = normalize_text(value)
+    if not text:
+        return False
+    low = text.lower()
+    if low in COMPETITIVE_FINAL_ALLOWED_PHRASES:
+        return False
+    if any(token in low for token in COMPETITIVE_FINAL_GARBAGE_TOKENS):
+        return True
+    word_count = len(text.split())
+    if word_count > 24 and (":" in text or "." in text):
+        return True
+    return False
+
+
 def has_subject_requirements(row: dict[str, str]) -> bool:
     return any(
         [
@@ -179,10 +205,12 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
     invalid_requirement_modes: list[tuple[int, str, str, str]] = []
     invalid_mode_value_combos: list[tuple[int, str]] = []
     invalid_display_values: list[tuple[int, str, str]] = []
+    competitive_final_pollution_rows: list[tuple[int, str, str, str]] = []
     institution_rows: Counter[str] = Counter()
     institution_blank_counts: dict[str, Counter[str]] = defaultdict(Counter)
     shell_rows_by_institution: Counter[str] = Counter()
     note_token_counts: dict[str, Counter[str]] = defaultdict(Counter)
+    visible_program_counter: Counter[tuple[str, str, str, str]] = Counter()
 
     for i, row in enumerate(rows, start=2):
         institution = normalize_text(row.get("Institution")) or "<blank>"
@@ -190,6 +218,15 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
         display_value = normalize_text(row.get("Display_For_High_School"))
         if display_value not in {"Yes", "No"}:
             invalid_display_values.append((i, normalize_text(row.get("Program")), display_value or "<blank>"))
+        elif display_value == "Yes":
+            visible_program_counter[
+                (
+                    normalize_text(row.get("Institution")).lower(),
+                    normalize_text(row.get("Program")).lower(),
+                    normalize_text(row.get("Credential_Type")).lower(),
+                    normalize_text(row.get("Status")).lower(),
+                )
+            ] += 1
 
         url = normalize_text(row.get("Program_URL"))
         if not url:
@@ -252,6 +289,16 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
 
         math_assessment = normalize_text(row.get("Math_Assessment_Flag")).lower()
         requirement_type = normalize_text(row.get("Requirement_Type")).lower()
+        competitive_final = normalize_text(row.get("Competitive_Final"))
+        if is_competitive_final_polluted(competitive_final):
+            competitive_final_pollution_rows.append(
+                (
+                    i,
+                    institution,
+                    normalize_text(row.get("Program")),
+                    competitive_final,
+                )
+            )
         if (
             math_assessment == "yes"
             and requirement_type
@@ -294,7 +341,7 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
             )
 
         if (
-            requirement_type.startswith(("alberta_high_school_courses", "course_min_only"))
+            requirement_type.startswith("alberta_high_school_courses")
             and has_subject_requirements(row)
             and is_blankish(row.get("Min_Avg_Final"))
             and is_blankish(row.get("Avg_Total"))
@@ -315,6 +362,7 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
 
     collision_groups = [(key, payloads) for key, payloads in key_payload_groups.items() if len(payloads) > 1]
     exact_duplicate_groups = [count for count in exact_duplicate_counter.values() if count > 1]
+    visible_duplicate_groups = [(key, count) for key, count in visible_program_counter.items() if count > 1]
 
     missing_url_ratio = len(missing_url_rows) / total_rows if total_rows else 0.0
     if missing_url_ratio > missing_url_threshold:
@@ -357,6 +405,26 @@ def validate_dataset(path: Path, missing_url_threshold: float) -> ValidationResu
         errors.append(
             "Invalid Display_For_High_School values found "
             f"({len(invalid_display_values)} rows). Examples: {samples}"
+        )
+
+    if visible_duplicate_groups:
+        samples = "; ".join(
+            f"{' | '.join(token for token in key if token)} x{count}"
+            for key, count in visible_duplicate_groups[:8]
+        )
+        errors.append(
+            "Visible duplicate program groups found (same Institution/Program/Credential_Type/Status with Display_For_High_School=Yes) "
+            f"({len(visible_duplicate_groups)} groups). Examples: {samples}"
+        )
+
+    if competitive_final_pollution_rows:
+        samples = "; ".join(
+            f"row {row} {institution} | {program} | Competitive_Final='{value}'"
+            for row, institution, program, value in competitive_final_pollution_rows[:8]
+        )
+        errors.append(
+            "Competitive_Final contains polluted prose/requirements blocks "
+            f"({len(competitive_final_pollution_rows)} rows). Examples: {samples}"
         )
 
     if invalid_mode_value_combos:

@@ -29,6 +29,9 @@ jobs:
       - name: Validate canonical dataset
         run: python tools/validate-dataset.py
 
+      - name: Check dataset quality fixtures
+        run: python tools/check-dataset-quality-fixtures.py
+
       - name: Build review queue artifact
         run: python tools/build-review-queue.py
 
@@ -46,3 +49,21 @@ jobs:
 
       - name: Check placement confidence
         run: node tools/check-placement-confidence.js
+
+      - name: Check first load UX
+        run: node tools/check-first-load-ux.js
+
+      - name: Check course input upsert
+        run: node tools/check-course-input-upsert.js
+
+      - name: Check details panel height sync
+        run: node tools/check-details-panel-height-sync.js
+
+      - name: Check explorer program structure
+        run: node tools/check-explorer-program-structure.js
+
+      - name: Check offline bridge explorer bootstrap
+        run: node tools/check-offline-bridge-explorer-bootstrap.js
+
+      - name: Check admission route display
+        run: node tools/check-admission-route-display.js
