@@ -67,3 +67,6 @@ jobs:
 
       - name: Check admission route display
         run: node tools/check-admission-route-display.js
+
+      - name: Check refresh workflow skips unsafe CI flags
+        run: node tools/check-refresh-workflow-no-skip-scrape.js

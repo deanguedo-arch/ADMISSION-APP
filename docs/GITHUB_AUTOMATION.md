@@ -22,12 +22,12 @@ In GitHub -> Settings -> Secrets and variables -> Actions, add:
 - `SHEETS_SYNC_TOKEN` = your `SYNC_TOKEN` from Apps Script properties
 
 ## 3) Run once manually before schedule
-In GitHub -> Actions -> `Publish Admissions Data to Sheets (Refresh + Sync + Commit)` -> `Run workflow`.
+In GitHub -> Actions -> `STEP 2 - Publish Admissions Data to Sheets` -> `Run workflow`.
 
 Use:
 - `limit = 0`
 - `institutions =` blank
-- `skip_scrape = false`
+- GitHub-hosted Step 2 always runs the full scrape/enrichment path.
 
 Confirm:
 - workflow passes
@@ -41,7 +41,7 @@ Only use `-SkipScrape` locally or on a runner that already has `pipeline_artifac
 .\REFRESH_ALL.cmd -SkipScrape -SkipAvgApply
 ```
 
-Fresh GitHub Actions runners do not keep ignored `pipeline_artifacts`, so the Step 2 workflow should run with `skip_scrape = false`.
+Fresh GitHub Actions runners do not keep ignored `pipeline_artifacts`, so `-SkipScrape` stays a local-only shortcut.
 
 ## Built-in fail-safes
 - Pre-upload validation gate (`tools/validate-canonical.ps1`)

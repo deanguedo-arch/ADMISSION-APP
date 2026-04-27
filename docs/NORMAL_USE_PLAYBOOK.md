@@ -26,9 +26,10 @@ This document is the day-to-day workflow after one-time setup is complete.
 ### A) Full data refresh (primary one-click run)
 1. Open GitHub -> Actions.
 2. Run workflow: `STEP 2 - Publish Admissions Data to Sheets`.
-3. Use `limit = 0`, blank `institutions`, and `skip_scrape = false` for fresh GitHub Actions runs.
-4. Wait for green status.
-5. Confirm canonical dataset changed only when expected.
+3. Use `limit = 0` and leave `institutions` blank for the normal full refresh.
+4. GitHub-hosted Step 2 always runs the full scrape/enrichment path.
+5. Wait for green status.
+6. Confirm canonical dataset changed only when expected.
 
 Expected outcome:
 - Canonical CSV refreshed.

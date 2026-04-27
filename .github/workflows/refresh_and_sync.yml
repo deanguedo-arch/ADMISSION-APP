@@ -11,11 +11,6 @@ on:
         description: "Optional CSV of institutions (e.g., NAIT,NorQuest,MacEwan). Blank = all."
         required: false
         default: ""
-      skip_scrape:
-        description: "Skip scraping/enrichment only when this runner already has pipeline_artifacts. Fresh GitHub runs should leave this false."
-        type: boolean
-        required: false
-        default: false
   # Optional schedule (disabled by default to avoid unexpected quota/scrape load).
   # schedule:
   #   - cron: "0 13 * * *"
@@ -67,9 +62,6 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($limit)) { $limit = "0" }
 
           $args = @("-Limit", $limit)
-          if ("${{ inputs.skip_scrape }}" -eq "true") {
-            $args += "-SkipScrape"
-          }
 
           $instCsv = "${{ inputs.institutions }}"
           if (-not [string]::IsNullOrWhiteSpace($instCsv)) {
@@ -81,6 +73,7 @@ jobs:
             }
           }
 
+          Write-Host "GitHub Actions Step 2 always runs full scrape/enrichment on fresh runners."
           Write-Host "RUN_ALL args (refresh only): $($args -join ' ')"
           & cmd /c scripts\\RUN_ALL.cmd @args
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

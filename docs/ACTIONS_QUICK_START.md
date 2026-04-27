@@ -13,8 +13,8 @@ Use these workflows in order. Everything else was removed on purpose.
 - Typical manual run settings:
   - `limit = 0`
   - `institutions =` blank
-  - `skip_scrape = false`
-- Only set `skip_scrape = true` when you are running locally or on a runner that already has `pipeline_artifacts/extract/programs_structured.csv`. Fresh GitHub Actions runners do not have those ignored artifacts.
+- GitHub-hosted Step 2 always runs the full scrape/enrichment path.
+- If you need a local publish from existing artifacts, use `.\REFRESH_ALL.cmd -SkipScrape -SkipAvgApply` from PowerShell instead of the GitHub workflow UI.
 
 ## STEP 3 - Publish Offline Snapshot (GitHub Pages)
 - Workflow: `STEP 3 - Publish Offline Snapshot (GitHub Pages)`

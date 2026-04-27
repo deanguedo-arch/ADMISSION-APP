@@ -1586,3 +1586,7 @@ Keep entries short and append-only.
   - `node .\tools\check-admission-route-display.js`
   - `powershell .\tools\validate-webapp-surface.ps1`
   - `powershell .\tools\validate-apps-script-structure.ps1`
+## 2026-04-22 (Step 2 GitHub workflow hardening)
+- Investigated the April 22 `STEP 2 - Publish Admissions Data to Sheets` failure and confirmed the GitHub-hosted run was dispatched with `skip_scrape = true`, which hard-failed on the intended fresh-runner guard because `pipeline_artifacts/extract/programs_structured.csv` does not exist in Actions.
+- Removed `skip_scrape` from `.github/workflows/refresh_and_sync.yml` so GitHub Step 2 always runs the full scrape/enrichment path, added `tools/check-refresh-workflow-no-skip-scrape.js`, and wired that regression into `.github/workflows/dataset-validation.yml`.
+- Updated `docs/ACTIONS_QUICK_START.md`, `docs/GITHUB_AUTOMATION.md`, regenerated `docs/NORMAL_USE_PLAYBOOK.md`, and verified the public Pages snapshot was already live with `dataset_date = 2026-04-22` and `row_count_visible = 196`.
