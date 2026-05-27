@@ -10,7 +10,7 @@
     "publish/sync/deploy ready",
     "code correctness proved"
   ],
-  "visualProofCommand": "npm run stax:collect-visual -- --repo <repo> --path <screenshot.png> --description <what was verified> --checklist <check>",
+  "visualProofCommand": "From the STAX checkout/tooling repo: npm run stax:collect-visual -- --repo <repo> --path <screenshot.png> --description <what was verified> --checklist <target page/state> --checklist <responsive/viewport checked> --checklist <visible outcome>",
   "reportSections": [
     "STAX acknowledgement",
     "Objective",
