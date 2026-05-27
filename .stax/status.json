@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "stax-sidecar-status-v1",
+  "generatedAt": "2026-05-27T15:50:47.783Z",
+  "repo": "ADMISSION-APP",
+  "repoPath": "/Users/deanguedo/Documents/GitHub/ADMISSION-APP",
+  "branch": "main",
+  "commitSha": "21d9ba2a03009d1e27c8905315d6a39def82aa78",
+  "task": "STAX sidecar audit for ADMISSION-APP.",
+  "verdict": "Provisional",
+  "exitCode": 2,
+  "why": "Fresh STAX sidecar heartbeat is missing.",
+  "verified": [
+    "No working-tree diff is currently present."
+  ],
+  "weak": [
+    "Fresh STAX sidecar heartbeat is missing.",
+    "Fresh Codex turn capture is missing.",
+    ".stax/codex-report.md is missing; STAX cannot verify the agent's proof report.",
+    ".stax/codex-report.md is missing the current STAX acknowledgement from .stax/turn-contract.json."
+  ],
+  "unverified": [],
+  "risk": [],
+  "oneNextAction": "Ask Codex to write .stax/codex-report.md using the required STAX report fields.",
+  "codexPrompt": "STAX Sidecar rejected or held this task because proof is incomplete.\n\nDo exactly one cleanup pass:\nAsk Codex to write .stax/codex-report.md using the required STAX report fields.\n\nAddress these proof gaps:\n- No specific unverified item was recorded.\n\nDo not broaden scope. Do not claim tests passed without local command evidence. Update .stax/codex-report.md, then stop.\nRisk to avoid: fake-complete reporting.",
+  "protocolStatus": "warning",
+  "protocolFailures": [
+    {
+      "id": "codex_report_missing",
+      "severity": "warning",
+      "message": ".stax/codex-report.md is missing; STAX cannot verify the agent's proof report."
+    },
+    {
+      "id": "stax_ack_missing",
+      "severity": "warning",
+      "message": ".stax/codex-report.md is missing the current STAX acknowledgement from .stax/turn-contract.json."
+    }
+  ],
+  "protocol": {
+    "schemaVersion": "stax-protocol-compliance-v1",
+    "generatedAt": "2026-05-27T15:50:47.782Z",
+    "mode": "normal",
+    "status": "warning",
+    "acknowledgedTurnContract": false,
+    "codexReportPresent": false,
+    "requiredSectionsPresent": [],
+    "missingRequiredSections": [
+      "STAX acknowledgement",
+      "Objective",
+      "Files changed",
+      "Tests added",
+      "Commands run",
+      "Command output summary with exit codes",
+      "What is verified",
+      "What is weak/provisional",
+      "What is unverified",
+      "Risks",
+      "One next action"
+    ],
+    "findings": [
+      {
+        "id": "codex_report_missing",
+        "severity": "warning",
+        "message": ".stax/codex-report.md is missing; STAX cannot verify the agent's proof report."
+      },
+      {
+        "id": "stax_ack_missing",
+        "severity": "warning",
+        "message": ".stax/codex-report.md is missing the current STAX acknowledgement from .stax/turn-contract.json."
+      }
+    ],
+    "acknowledgement": "STAX_ACK turn_2026-05-27T15-50-47-433Z_8afb 19c35bac 6a68af56",
+    "contractTurnId": "turn_2026-05-27T15-50-47-433Z_8afb"
+  },
+  "cardShapeIssues": []
+}

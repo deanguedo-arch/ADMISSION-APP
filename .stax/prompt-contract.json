@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "stax-prompt-contract-v1",
+  "requiresCodexReport": true,
+  "requiresExactTurnAcknowledgement": true,
+  "claimsNeedLocalProof": true,
+  "prohibitedClaimsWithoutProof": [
+    "tests passed",
+    "build succeeded",
+    "visual/layout ready",
+    "publish/sync/deploy ready",
+    "code correctness proved"
+  ],
+  "visualProofCommand": "npm run stax:collect-visual -- --repo <repo> --path <screenshot.png> --description <what was verified> --checklist <check>",
+  "reportSections": [
+    "STAX acknowledgement",
+    "Objective",
+    "Files changed",
+    "Tests added",
+    "Commands run",
+    "Command output summary with exit codes",
+    "What is verified",
+    "What is weak/provisional",
+    "What is unverified",
+    "Risks",
+    "One next action"
+  ]
+}

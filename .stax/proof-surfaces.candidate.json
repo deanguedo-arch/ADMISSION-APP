@@ -1,0 +1,280 @@
+{
+  "schemaVersion": "stax-proof-surface-pack-v1",
+  "repoPath": "/Users/deanguedo/Documents/GitHub/ADMISSION-APP",
+  "repoName": "ADMISSION-APP",
+  "status": "candidate",
+  "generatedAt": "2026-05-27T15:54:12.899Z",
+  "confidence": "high",
+  "detectedStack": [
+    "html-css",
+    "node",
+    "python"
+  ],
+  "proofSurfaces": [
+    {
+      "claimType": "build_ready",
+      "requiredEvidence": [
+        "local_command_output",
+        "target_repo_cwd"
+      ],
+      "commands": [
+        "BUILD_OFFLINE_SNAPSHOT.bat",
+        "npm run build:pages",
+        "tools/build-pages.js",
+        "tools/build-review-queue.py"
+      ],
+      "blockedEvidence": [],
+      "confidence": "medium",
+      "source": "package.json scripts",
+      "nextAction": "Run npm run build:pages through stax:collect in the target repo."
+    },
+    {
+      "claimType": "tests_passed",
+      "requiredEvidence": [
+        "local_command_output",
+        "target_repo_cwd"
+      ],
+      "commands": [
+        "tools/check-admission-route-display.js",
+        "tools/check-audit-canonical-regressions.py",
+        "tools/check-course-input-upsert.js",
+        "tools/check-dataset-quality-fixtures.py",
+        "tools/check-details-panel-height-sync.js",
+        "tools/check-eligibility.ps1",
+        "tools/check-explorer-program-structure.js",
+        "tools/check-first-load-ux.js",
+        "tools/check-high-school-display-flag.py",
+        "tools/check-offline-bridge-explorer-bootstrap.js",
+        "tools/check-placement-confidence.js",
+        "tools/check-refresh-workflow-no-skip-scrape.js",
+        "tools/check-release-gate-smoke.js",
+        "tools/check-science-requirement-parsing.js",
+        "tools/check-web-auth-bootstrap.js",
+        "tools/check-web-high-school-filter.js",
+        "tools/check-workspace.ps1",
+        "tools/test-release-gate-smoke.js",
+        "tools/validate-apps-script-structure.ps1",
+        "tools/validate-canonical.ps1",
+        "tools/validate-dataset.py",
+        "tools/validate-sync-surface.ps1",
+        "tools/validate-webapp-surface.ps1"
+      ],
+      "blockedEvidence": [],
+      "confidence": "medium",
+      "source": "package.json scripts",
+      "nextAction": "Run tools/test-release-gate-smoke.js through stax:collect in the target repo."
+    },
+    {
+      "claimType": "visual_ready",
+      "requiredEvidence": [
+        "rendered_screenshot",
+        "visual_checklist"
+      ],
+      "commands": [
+        "tools/check-release-gate-smoke.js",
+        "tools/test-release-gate-smoke.js"
+      ],
+      "blockedEvidence": [
+        "css_diff_only",
+        "source_diff_only"
+      ],
+      "confidence": "high",
+      "source": "workspace/config/script detection",
+      "nextAction": "Capture rendered visual proof and run tools/check-release-gate-smoke.js through stax:collect."
+    },
+    {
+      "claimType": "publish_sync_deploy_ready",
+      "requiredEvidence": [
+        "human_approval",
+        "non_mutating_preflight",
+        "target_validation"
+      ],
+      "commands": [
+        "tools/check-admission-route-display.js",
+        "tools/check-audit-canonical-regressions.py",
+        "tools/check-course-input-upsert.js",
+        "tools/check-dataset-quality-fixtures.py",
+        "tools/check-details-panel-height-sync.js",
+        "tools/check-eligibility.ps1",
+        "tools/check-explorer-program-structure.js",
+        "tools/check-first-load-ux.js",
+        "tools/check-high-school-display-flag.py",
+        "tools/check-offline-bridge-explorer-bootstrap.js",
+        "tools/check-placement-confidence.js",
+        "tools/check-refresh-workflow-no-skip-scrape.js",
+        "tools/check-release-gate-smoke.js",
+        "tools/check-science-requirement-parsing.js",
+        "tools/check-web-auth-bootstrap.js",
+        "tools/check-web-high-school-filter.js",
+        "tools/check-workspace.ps1",
+        "tools/validate-apps-script-structure.ps1",
+        "tools/validate-canonical.ps1",
+        "tools/validate-dataset.py",
+        "tools/validate-sync-surface.ps1",
+        "tools/validate-webapp-surface.ps1"
+      ],
+      "blockedEvidence": [
+        "docs_updated_only",
+        "script_exists_only"
+      ],
+      "confidence": "medium",
+      "source": "risky package script detection",
+      "nextAction": "Run tools/check-admission-route-display.js through stax:collect and record explicit target approval."
+    },
+    {
+      "claimType": "data_pipeline_ready",
+      "requiredEvidence": [
+        "schema_or_fixture_validation",
+        "quality_command_output"
+      ],
+      "commands": [
+        "tools/check-admission-route-display.js",
+        "tools/check-audit-canonical-regressions.py",
+        "tools/check-course-input-upsert.js",
+        "tools/check-dataset-quality-fixtures.py",
+        "tools/check-details-panel-height-sync.js",
+        "tools/check-eligibility.ps1",
+        "tools/check-explorer-program-structure.js",
+        "tools/check-first-load-ux.js",
+        "tools/check-high-school-display-flag.py",
+        "tools/check-offline-bridge-explorer-bootstrap.js",
+        "tools/check-placement-confidence.js",
+        "tools/check-refresh-workflow-no-skip-scrape.js",
+        "tools/check-release-gate-smoke.js",
+        "tools/check-science-requirement-parsing.js",
+        "tools/check-web-auth-bootstrap.js",
+        "tools/check-web-high-school-filter.js",
+        "tools/check-workspace.ps1",
+        "tools/validate-apps-script-structure.ps1",
+        "tools/validate-canonical.ps1",
+        "tools/validate-dataset.py",
+        "tools/validate-sync-surface.ps1",
+        "tools/validate-webapp-surface.ps1"
+      ],
+      "blockedEvidence": [
+        "file_exists_only",
+        "docs_updated_only"
+      ],
+      "confidence": "medium",
+      "source": "data script/path detection",
+      "nextAction": "Run tools/check-admission-route-display.js through stax:collect and cite the validation output."
+    },
+    {
+      "claimType": "gold_fixture_update",
+      "requiredEvidence": [
+        "source_truth_reference",
+        "separate_human_approval",
+        "validation_command_output"
+      ],
+      "commands": [
+        "BUILD_OFFLINE_SNAPSHOT.bat",
+        "START_OFFLINE_SNAPSHOT_PREVIEW.bat"
+      ],
+      "blockedEvidence": [
+        "seed_gold_only",
+        "fixture_update_only"
+      ],
+      "confidence": "high",
+      "source": "gold/fixture script or path detection",
+      "nextAction": "Do not treat gold or fixture updates as repair proof without source-truth validation and explicit approval."
+    },
+    {
+      "claimType": "repo_identity",
+      "requiredEvidence": [
+        "target_repo_cwd",
+        "matching_repo_path",
+        "matching_worktree_fingerprint"
+      ],
+      "commands": [],
+      "blockedEvidence": [
+        "wrong_repo_command_output"
+      ],
+      "confidence": "high",
+      "source": "generic STAX sidecar rule",
+      "nextAction": "Collect command evidence from the target repo root; wrong-repo output cannot verify this repo."
+    }
+  ],
+  "blockedActions": [
+    {
+      "action": "PUBLISH_DATA_TO_SHEETS.bat",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "SYNC_ALL.cmd",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "SYNC_ELECTIVE_RULES.cmd",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "SYNC_PROGRAMS.cmd",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "scripts/SYNC_ALL.cmd",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "tools/setup-appsscript-deploy.ps1",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "tools/sync-all-to-sheets.ps1",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "tools/sync-elective-rules.ps1",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "tools/sync-main.ps1",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    },
+    {
+      "action": "tools/sync-programs.ps1",
+      "requires": [
+        "explicit human approval",
+        "non-mutating preflight proof",
+        "target validation"
+      ]
+    }
+  ],
+  "warnings": []
+}
