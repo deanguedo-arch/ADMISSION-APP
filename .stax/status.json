@@ -1,10 +1,10 @@
 {
   "schemaVersion": "stax-sidecar-status-v1",
-  "generatedAt": "2026-05-28T04:43:31.733Z",
+  "generatedAt": "2026-05-28T04:44:26.875Z",
   "repo": "ADMISSION-APP",
   "repoPath": "/Users/deanguedo/Documents/GitHub/ADMISSION-APP",
   "branch": "main",
-  "commitSha": "78236ec2666e7def95970c3d3a7b4027cb03a549",
+  "commitSha": "d623f0948dfe96b5454befed263b93a00572f2fb",
   "task": "Verify the ADMISSION-APP local page build proof only: `npm run build:pages` must run through STAX command evidence on the current worktree.",
   "verdict": "Accept",
   "exitCode": 0,
@@ -16,9 +16,10 @@
     "Claim-to-proof: protocol_compliance claim is fully supported.",
     "Command evidence provenance verified: cmd_2026-05-28T04_43_02_629Z_9a14d75cbfdf.",
     "Command evidence freshness verified: cmd_2026-05-28T04_43_02_629Z_9a14d75cbfdf matches the current auditable worktree.",
+    "Command evidence 78236ec2666e predates current head only by STAX sidecar artifact commits.",
     "Historical command evidence ignored for current proof because npm run build:pages is wrong_commit.",
     "Proof strength: Audit-grade (0.95) - Unsupported file_path claim: tmp/stax-admission-pages/index.html (File path was not present in the repo evidence pack.).",
-    "Fresh STAX sidecar heartbeat is present (128538ms old).",
+    "Fresh STAX sidecar heartbeat is present (183681ms old).",
     "Fresh Codex turn capture is present for session 019e1246-dcae-7c00-8915-6615c5fb3fe7 with 2257 message(s).",
     "Protocol warning recorded as non-blocking: Current Codex turn capture does not contain the current STAX acknowledgement; report acknowledgement is present, so this may be capture lag."
   ],
@@ -30,7 +31,7 @@
   "proofStrength": {
     "schemaVersion": "proof-strength-v1",
     "claimType": "verification_run",
-    "claimText": "Verify the ADMISSION-APP local page build proof only: `npm run build:pages` must run through STAX command evidence on the current worktree.\n\nSTAX acknowledgement: STAX_ACK turn_2026-05-28T04-42-37-084Z_1959 45ee914a b14ea114\n\nObjective:\nRefresh ADMISSION-APP local page-build observer proof only, using non-mutating output-to-temp build evidence.\n\nFiles changed:\n- `.stax/proof-surfaces.candidate.json`\n- `.stax/next-codex-prompt.md`\n- `.stax/proof_strength.json`\n- `.stax/reports/latest-confidence-report.md`\n- `.stax/reports/latest-proof-report.md`\n- `.stax/status.json`\n- `.stax/codex-report.md` was updated as an ignored local report artifact.\n- No app source, dataset, Apps Script source, published docs output, sync, deploy, or protected external-action files are intentionally changed.\n\nTests added:\n- None.\n\nCommands run:\n- `npm run stax:sidecar-upgrade -- --repo /Users/deanguedo/Documents/GitHub/ADMISSION-APP --discover-surfaces`\n  - exitCode: 0\n  - result: proof-surface candidate refreshed.\n- `npm run stax:collect -- --repo /Users/deanguedo/Documents/GitHub/ADMISSION-APP -- npm run build:pages -- --output /tmp/stax-admission-pages/index.html`\n  - exitCode: 0\n  - evidence: `cmd_2026-05-28T04_43_02_629Z_9a14d75cbfdf`\n  - output: built from `apps_script/WebApp.html` to `/tmp/stax-admission-pages/index.html`.\n\nCommand output summary with exit codes:\n- Sidecar upgrade exited 0.\n- STAX-collected non-mutating page build exited 0 on ADMISSION-APP `main` at `78236ec2666e7def95970c3d3a7b4027cb03a549`.\n- The earlier tracked `docs/index.html` generated diff was restored; this current proof does not modify tracked published page output.\n- No protected external action command was run.\n\nWhat is verified:\n- ADMISSION-APP local `main` and `origin/main` are aligned at `78236ec2666e7def95970c3d3a7b4027cb03a549`.\n- Local STAX command evidence exists for the page-build proof command.\n- The non-mutating page build exits 0 in the target repo.\n- The repo has no tracked app/source/data/published-output diff after the proof run.\n\nWhat is weak/provisional:\n- This proves only local page-build generation to a temporary output path.\n- The proof-surface file is still candidate-only until explicitly approved.\n- Live target readiness, sync readiness, deploy readiness, and visual readiness are outside this proof lane.\n\nWhat is unverified:\n- Live target readiness is not claimed.\n- Dataset validation is not claimed.\n- Visual readiness is not claimed.\n- Apps Script publish/sync/deploy readiness is not claimed.\n\nRisks:\n- Do not treat this as proof for protected external actions.\n- Do not treat script existence as command execution proof.\n- Do not promote repo-specific ADMISSION paths into global STAX learning.\n\nOne next action:\nRun the ADMISSION sidecar gate. If it accepts, export an updated current operating-window bundle and import it into STAX.",
+    "claimText": "Verify the ADMISSION-APP local page build proof only: `npm run build:pages` must run through STAX command evidence on the current worktree.\n\nSTAX acknowledgement: STAX_ACK turn_2026-05-28T04-43-55-031Z_8bb9 547ee8cf 94ed1f33\n\nObjective:\nRefresh ADMISSION-APP local page-build observer proof only, using non-mutating output-to-temp build evidence.\n\nFiles changed:\n- `.stax/proof-surfaces.candidate.json`\n- `.stax/next-codex-prompt.md`\n- `.stax/proof_strength.json`\n- `.stax/reports/latest-confidence-report.md`\n- `.stax/reports/latest-proof-report.md`\n- `.stax/status.json`\n- `.stax/codex-report.md` was updated as an ignored local report artifact.\n- No app source, dataset, Apps Script source, published docs output, sync, deploy, or protected external-action files are intentionally changed.\n\nTests added:\n- None.\n\nCommands run:\n- `npm run stax:sidecar-upgrade -- --repo /Users/deanguedo/Documents/GitHub/ADMISSION-APP --discover-surfaces`\n  - exitCode: 0\n  - result: proof-surface candidate refreshed.\n- `npm run stax:collect -- --repo /Users/deanguedo/Documents/GitHub/ADMISSION-APP -- npm run build:pages -- --output /tmp/stax-admission-pages/index.html`\n  - exitCode: 0\n  - evidence: `cmd_2026-05-28T04_43_02_629Z_9a14d75cbfdf`\n  - output: built from `apps_script/WebApp.html` to `/tmp/stax-admission-pages/index.html`.\n\nCommand output summary with exit codes:\n- Sidecar upgrade exited 0.\n- STAX-collected non-mutating page build exited 0 on ADMISSION-APP `main` at `78236ec2666e7def95970c3d3a7b4027cb03a549`.\n- The earlier tracked `docs/index.html` generated diff was restored; this current proof does not modify tracked published page output.\n- No protected external action command was run.\n\nWhat is verified:\n- ADMISSION-APP local `main` and `origin/main` are aligned at `78236ec2666e7def95970c3d3a7b4027cb03a549`.\n- Local STAX command evidence exists for the page-build proof command.\n- The non-mutating page build exits 0 in the target repo.\n- The repo has no tracked app/source/data/published-output diff after the proof run.\n\nWhat is weak/provisional:\n- This proves only local page-build generation to a temporary output path.\n- The proof-surface file is still candidate-only until explicitly approved.\n- Live target readiness, sync readiness, deploy readiness, and visual readiness are outside this proof lane.\n\nWhat is unverified:\n- Live target readiness is not claimed.\n- Dataset validation is not claimed.\n- Visual readiness is not claimed.\n- Apps Script publish/sync/deploy readiness is not claimed.\n\nRisks:\n- Do not treat this as proof for protected external actions.\n- Do not treat script existence as command execution proof.\n- Do not promote repo-specific ADMISSION paths into global STAX learning.\n\nOne next action:\nRun the ADMISSION sidecar gate. If it accepts, export an updated current operating-window bundle and import it into STAX.",
     "rawScore": 0.95,
     "finalScore": 0.95,
     "label": "Audit-grade",
@@ -66,7 +67,7 @@
   ],
   "protocol": {
     "schemaVersion": "stax-protocol-compliance-v1",
-    "generatedAt": "2026-05-28T04:43:31.730Z",
+    "generatedAt": "2026-05-28T04:44:26.873Z",
     "mode": "normal",
     "status": "warning",
     "acknowledgedTurnContract": false,
@@ -92,8 +93,8 @@
         "message": "Current Codex turn capture does not contain the current STAX acknowledgement; report acknowledgement is present, so this may be capture lag."
       }
     ],
-    "acknowledgement": "STAX_ACK turn_2026-05-28T04-42-37-084Z_1959 45ee914a b14ea114",
-    "contractTurnId": "turn_2026-05-28T04-42-37-084Z_1959"
+    "acknowledgement": "STAX_ACK turn_2026-05-28T04-43-55-031Z_8bb9 547ee8cf 94ed1f33",
+    "contractTurnId": "turn_2026-05-28T04-43-55-031Z_8bb9"
   },
   "cardShapeIssues": []
 }
