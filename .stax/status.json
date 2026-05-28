@@ -1,49 +1,77 @@
 {
   "schemaVersion": "stax-sidecar-status-v1",
-  "generatedAt": "2026-05-27T15:50:47.783Z",
+  "generatedAt": "2026-05-28T04:41:36.222Z",
   "repo": "ADMISSION-APP",
   "repoPath": "/Users/deanguedo/Documents/GitHub/ADMISSION-APP",
   "branch": "main",
-  "commitSha": "21d9ba2a03009d1e27c8905315d6a39def82aa78",
-  "task": "STAX sidecar audit for ADMISSION-APP.",
-  "verdict": "Provisional",
-  "exitCode": 2,
-  "why": "Fresh STAX sidecar heartbeat is missing.",
+  "commitSha": "22acdc54747b16a9008e9ecc532806707323add9",
+  "task": "Verify the ADMISSION-APP local page build proof only: `npm run build:pages` must run through STAX command evidence on the current worktree.",
+  "verdict": "Accept",
+  "exitCode": 0,
+  "why": "Accept means required claims are supported by verified evidence for this repo state; STAX does not certify general code correctness.",
   "verified": [
-    "No working-tree diff is currently present."
+    "No working-tree diff is currently present.",
+    "Codex report contract includes Files changed, Commands run, What is verified, What is unverified, and Risks.",
+    "Command evidence classifier: strong_local_proof for npm run build:pages -- --output /tmp/stax-admission-pages/index.html.",
+    "Claim-to-proof: protocol_compliance claim is fully supported.",
+    "Command evidence provenance verified: cmd_2026-05-28T04_40_34_945Z_9a14d75cbfdf.",
+    "Command evidence freshness verified: cmd_2026-05-28T04_40_34_945Z_9a14d75cbfdf matches the current auditable worktree.",
+    "Historical command evidence ignored for current proof because npm run build:pages is wrong_worktree.",
+    "Proof strength: Audit-grade (0.95) - Unsupported file_path claim: tmp/stax-admission-pages/index.html (File path was not present in the repo evidence pack.).",
+    "Fresh STAX sidecar heartbeat is present (13028ms old).",
+    "Fresh Codex turn capture is present for session 019e1246-dcae-7c00-8915-6615c5fb3fe7 with 2257 message(s).",
+    "Protocol warning recorded as non-blocking: Current Codex turn capture does not contain the current STAX acknowledgement; report acknowledgement is present, so this may be capture lag."
   ],
-  "weak": [
-    "Fresh STAX sidecar heartbeat is missing.",
-    "Fresh Codex turn capture is missing.",
-    ".stax/codex-report.md is missing; STAX cannot verify the agent's proof report.",
-    ".stax/codex-report.md is missing the current STAX acknowledgement from .stax/turn-contract.json."
-  ],
+  "weak": [],
   "unverified": [],
   "risk": [],
-  "oneNextAction": "Ask Codex to write .stax/codex-report.md using the required STAX report fields.",
-  "codexPrompt": "STAX Sidecar rejected or held this task because proof is incomplete.\n\nDo exactly one cleanup pass:\nAsk Codex to write .stax/codex-report.md using the required STAX report fields.\n\nAddress these proof gaps:\n- No specific unverified item was recorded.\n\nDo not broaden scope. Do not claim tests passed without local command evidence. Update .stax/codex-report.md, then stop.\nRisk to avoid: fake-complete reporting.",
+  "oneNextAction": "Record the STAX sidecar Accept, keep scope unchanged, and stop. Accept means required claims are supported by verified evidence for this repo state; STAX does not certify general code correctness.",
+  "codexPrompt": "Report the STAX sidecar Accept as proof-gate status only. Accept means required claims are supported by verified evidence for this repo state; STAX does not certify general code correctness. Keep the scope unchanged, and stop.",
+  "proofStrength": {
+    "schemaVersion": "proof-strength-v1",
+    "claimType": "verification_run",
+    "claimText": "Verify the ADMISSION-APP local page build proof only: `npm run build:pages` must run through STAX command evidence on the current worktree.\n\nSTAX acknowledgement: STAX_ACK turn_2026-05-28T02-42-58-665Z_aa39 59ec637a 98b1e17d\n\nObjective:\nRefresh ADMISSION-APP local page-build observer proof only, using non-mutating output-to-temp build evidence.\n\nFiles changed:\n- `.stax/proof-surfaces.candidate.json`\n- `.stax/next-codex-prompt.md`\n- `.stax/proof_strength.json`\n- `.stax/reports/latest-confidence-report.md`\n- `.stax/reports/latest-proof-report.md`\n- `.stax/status.json`\n- `.stax/codex-report.md` was updated as an ignored local report artifact.\n- No app source, dataset, Apps Script source, published docs output, sync, deploy, or protected external-action files are intentionally changed.\n\nTests added:\n- None.\n\nCommands run:\n- `npm run stax:sidecar-upgrade -- --repo /Users/deanguedo/Documents/GitHub/ADMISSION-APP --discover-surfaces`\n  - exitCode: 0\n  - result: proof-surface candidate refreshed.\n- `npm run stax:collect -- --repo /Users/deanguedo/Documents/GitHub/ADMISSION-APP -- npm run build:pages -- --output /tmp/stax-admission-pages/index.html`\n  - exitCode: 0\n  - evidence: `cmd_2026-05-28T04_40_34_945Z_9a14d75cbfdf`\n  - output: built from `apps_script/WebApp.html` to `/tmp/stax-admission-pages/index.html`.\n\nCommand output summary with exit codes:\n- Sidecar upgrade exited 0.\n- STAX-collected non-mutating page build exited 0 on ADMISSION-APP `main` at `22acdc54747b16a9008e9ecc532806707323add9`.\n- The earlier tracked `docs/index.html` generated diff was restored; this current proof does not modify tracked published page output.\n- No protected external action command was run.\n\nWhat is verified:\n- ADMISSION-APP local `main` and `origin/main` are aligned at `22acdc54747b16a9008e9ecc532806707323add9`.\n- Local STAX command evidence exists for the page-build proof command.\n- The non-mutating page build exits 0 in the target repo.\n- The repo has no tracked app/source/data/published-output diff after the proof run.\n\nWhat is weak/provisional:\n- This proves only local page-build generation to a temporary output path.\n- The proof-surface file is still candidate-only until explicitly approved.\n- Live target readiness, sync readiness, deploy readiness, and visual readiness are outside this proof lane.\n\nWhat is unverified:\n- Live target readiness is not claimed.\n- Dataset validation is not claimed.\n- Visual readiness is not claimed.\n- Apps Script publish/sync/deploy readiness is not claimed.\n\nRisks:\n- Do not treat this as proof for protected external actions.\n- Do not treat script existence as command execution proof.\n- Do not promote repo-specific ADMISSION paths into global STAX learning.\n\nOne next action:\nRun the ADMISSION sidecar gate. If it accepts, export an updated current operating-window bundle and import it into STAX.",
+    "rawScore": 0.95,
+    "finalScore": 0.95,
+    "label": "Audit-grade",
+    "capApplied": [],
+    "rejectReasons": [],
+    "primaryLimiter": "Unsupported file_path claim: tmp/stax-admission-pages/index.html (File path was not present in the repo evidence pack.).",
+    "missingProof": [
+      "Unsupported file_path claim: tmp/stax-admission-pages/index.html (File path was not present in the repo evidence pack.)."
+    ],
+    "weakProof": [
+      "Weak command claim: npm run build:pages (Command is named, but no command output was cited.).",
+      "Weak command claim: npm run stax:sidecar-upgrade -- --repo (Command is named, but no command output was cited.).",
+      "Weak command claim: npm run stax:collect -- --repo (Command is named, but no command output was cited.).",
+      "Weak command claim: npm run build:pages -- --output (Command is named, but no command output was cited.)."
+    ],
+    "strongProof": [
+      "Grounded file_path claim: apps_script/WebApp.html.",
+      "Grounded file_path claim: docs/index.html.",
+      "Grounded completion claim: What is verified:.",
+      "Grounded verification claim: What is verified:.",
+      "Local STAX command evidence passed: npm run build:pages -- --output /tmp/stax-admission-pages/index.html exited 0.",
+      "Verified local STAX command provenance is present for this repo state."
+    ],
+    "oneNextAction": "Add the missing proof item, then rerun the proof-strength gate."
+  },
   "protocolStatus": "warning",
   "protocolFailures": [
     {
-      "id": "codex_report_missing",
+      "id": "current_turn_capture_missing_ack",
       "severity": "warning",
-      "message": ".stax/codex-report.md is missing; STAX cannot verify the agent's proof report."
-    },
-    {
-      "id": "stax_ack_missing",
-      "severity": "warning",
-      "message": ".stax/codex-report.md is missing the current STAX acknowledgement from .stax/turn-contract.json."
+      "message": "Current Codex turn capture does not contain the current STAX acknowledgement; report acknowledgement is present, so this may be capture lag."
     }
   ],
   "protocol": {
     "schemaVersion": "stax-protocol-compliance-v1",
-    "generatedAt": "2026-05-27T15:50:47.782Z",
+    "generatedAt": "2026-05-28T04:41:36.220Z",
     "mode": "normal",
     "status": "warning",
     "acknowledgedTurnContract": false,
-    "codexReportPresent": false,
-    "requiredSectionsPresent": [],
-    "missingRequiredSections": [
+    "codexReportPresent": true,
+    "requiredSectionsPresent": [
       "STAX acknowledgement",
       "Objective",
       "Files changed",
@@ -56,20 +84,16 @@
       "Risks",
       "One next action"
     ],
+    "missingRequiredSections": [],
     "findings": [
       {
-        "id": "codex_report_missing",
+        "id": "current_turn_capture_missing_ack",
         "severity": "warning",
-        "message": ".stax/codex-report.md is missing; STAX cannot verify the agent's proof report."
-      },
-      {
-        "id": "stax_ack_missing",
-        "severity": "warning",
-        "message": ".stax/codex-report.md is missing the current STAX acknowledgement from .stax/turn-contract.json."
+        "message": "Current Codex turn capture does not contain the current STAX acknowledgement; report acknowledgement is present, so this may be capture lag."
       }
     ],
-    "acknowledgement": "STAX_ACK turn_2026-05-27T15-50-47-433Z_8afb 19c35bac 6a68af56",
-    "contractTurnId": "turn_2026-05-27T15-50-47-433Z_8afb"
+    "acknowledgement": "STAX_ACK turn_2026-05-28T02-42-58-665Z_aa39 59ec637a 98b1e17d",
+    "contractTurnId": "turn_2026-05-28T02-42-58-665Z_aa39"
   },
   "cardShapeIssues": []
 }
