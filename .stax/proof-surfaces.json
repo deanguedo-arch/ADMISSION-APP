@@ -2,7 +2,7 @@
   "schemaVersion": "stax-proof-surface-pack-v1",
   "repoPath": "/Users/deanguedo/Documents/GitHub/ADMISSION-APP",
   "repoName": "ADMISSION-APP",
-  "status": "candidate",
+  "status": "approved",
   "generatedAt": "2026-05-29T02:56:33.139Z",
   "confidence": "high",
   "detectedStack": [
@@ -276,5 +276,6 @@
       ]
     }
   ],
-  "warnings": []
+  "warnings": [],
+  "approvedAt": "2026-05-29T02:56:33.351Z"
 }
